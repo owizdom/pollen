@@ -1,0 +1,34 @@
+"""Pareto-frontier gain for ecdsa.fail (qubits, toffoli), both minimised."""
+from __future__ import annotations
+
+
+def _point(row):
+    m = row.metrics or {}
+    q, t = m.get("qubits"), m.get("toffoli")
+    if q is None or t is None:
+        return None
+    return (q, t)
+
+
+def _dominates(a, b) -> bool:
+    return a[0] <= b[0] and a[1] <= b[1] and (a[0] < b[0] or a[1] < b[1])
+
+
+def pareto_gain(rows) -> list[bool]:
+    order = sorted(range(len(rows)), key=lambda i: (rows[i].created_at, i))
+    out = [False] * len(rows)
+    seen: list[tuple] = []
+    k = 0
+    while k < len(order):
+        j = k
+        while j < len(order) and rows[order[j]].created_at == rows[order[k]].created_at:
+            j += 1
+        group = order[k:j]
+        pts = {}
+        for i in group:
+            p = _point(rows[i])
+            pts[i] = p
+            out[i] = p is not None and not any(_dominates(e, p) for e in seen)
+        seen.extend(p for p in pts.values() if p is not None)
+        k = j
+    return out

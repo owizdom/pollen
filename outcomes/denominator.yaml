@@ -1,0 +1,42 @@
+# Never-evaluated rejection reasons (spec 0001 section 3.1). A row whose
+# rejection_reason matches is dropped before any analysis, as are cancelled
+# rows. Reasons were read from the distinct rejection_reason/status values in
+# snapshot/raw and the public ecdsa.fail submissions API; no outcome was split
+# by treatment to choose them. Ordinary "score did not improve current best" and
+# "score improved but fell short of ... bips" rows were scored, so they stay in.
+# Status "failed" rows (infrastructure and workflow failures) stay in, as the
+# denominator spec lists only the three categories below.
+
+# Exact strings applied to every benchmark.
+default:
+  # Pre-filter on the solver's own claim; the evaluator never ran.
+  - "claimed score did not improve current best"
+  # Empty submission, nothing to evaluate.
+  - "Submission rejected: submission does not contain code changes"
+  # Packaging error: archive had no files.
+  - "Submission rejected: submission archive did not contain any files"
+  # HashSmash judge could not evaluate the submission at all.
+  - "Original HashSmash judge: not_evaluable"
+
+# Regexes (re.search, whole reason string) applied to every benchmark.
+default_regex:
+  # Packaging error: archive path outside editable paths.
+  - '^Submission rejected: submission archive path: must be inside one of the editable paths'
+  # Packaging error: disallowed tar entry (links, devices).
+  - '^Submission rejected: .*tar entry type .* is not allowed'
+  # Packaging error: archive could not be fetched.
+  - '^submission archive download failed'
+  # Queued under a round count the benchmark had stopped accepting.
+  - '^Round count \d+ was not accepted when this submission was queued$'
+
+# Benchmark-specific exact strings, keyed by the benchmark name in the snapshot.
+benchmarks:
+  gpsanant/ecdsafail-challenge:
+    - "claimed score did not improve current best"
+    - "Submission rejected: submission does not contain code changes"
+    - "Submission rejected: submission archive did not contain any files"
+
+# Benchmark-specific regexes.
+benchmarks_regex:
+  gpsanant/ecdsafail-challenge:
+    - '^Submission rejected: submission archive path: must be inside one of the editable paths'
