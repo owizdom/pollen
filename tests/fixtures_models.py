@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 
-def make_treatment(seed=0, n_solvers=40, rows_per_solver=25, varying_share=0.5, n_weeks=10):
+def make_treatment(seed=0, n_solvers=40, rows_per_solver=25, varying_share=0.5, n_weeks=20):
     """Real-like treatment structure: about 1,000 rows, ~40 solvers, half with
     treatment variation (the rest are all-treated or all-control)."""
     rng = np.random.default_rng(seed)
@@ -142,3 +142,94 @@ def covariate_stratum_data(seed=9, n_groups=80, per_group=8):
             p = 1 / (1 + np.exp(-(a + 0.5 * t + 0.7 * x)))
             rows.append({"g": g, "t": t, "x": x, "y": int(rng.random() < p)})
     return pd.DataFrame(rows)
+
+
+FAMILIES = ["A", "B", "C", "D"]
+
+
+def realistic_frame(seed=0, n_solvers=50, n_rows=800, n_weeks=20):
+    """Realistic s5.1 design: skewed solver sizes, one child family per solver, each solver
+    active in 1 to 3 weeks, parent family varying, covariates as dummies. cross_family is
+    True when parent and child family differ."""
+    rng = np.random.default_rng(seed)
+    raw = rng.lognormal(0.0, 1.0, n_solvers)
+    sizes = np.clip(np.round(raw / raw.sum() * n_rows).astype(int), 3, 30)
+    fam_p = np.array([0.4, 0.3, 0.2, 0.1])
+    recs = []
+    for s in range(n_solvers):
+        child = FAMILIES[int(rng.choice(4, p=fam_p))]
+        n_active = int(rng.choice([1, 2, 3], p=[0.15, 0.35, 0.5]))
+        start = int(rng.integers(0, n_weeks - n_active + 1))
+        weeks = np.arange(start, start + n_active)
+        for j in range(int(sizes[s])):
+            parent = FAMILIES[int(rng.choice(4, p=fam_p))]
+            recs.append(
+                {
+                    "solver": f"s{s:02d}",
+                    "week": f"2026-W{(wk_i := int(rng.choice(weeks))) + 1:02d}",
+                    "days_since_open": float(wk_i * 7 + int(rng.integers(0, 7))),
+                    "child_family_folded": child,
+                    "parent_family_folded": parent,
+                    "cross_family": parent != child,
+                    "parent_is_current_best": int(rng.random() < 0.2),
+                    "log_prior_rows": float(np.log1p(j)),
+                }
+            )
+    df = pd.DataFrame(recs)
+    df["cross_solver"] = rng.random(len(df)) > 0.03
+    df["in_window"] = rng.random(len(df)) > 0.03
+    df["parent_method"] = rng.choice(["tree", "declared", "novel"], size=len(df), p=[0.67, 0.30, 0.03])
+    import patsy
+
+    wk = pd.DataFrame(
+        np.asarray(patsy.dmatrix("cr(x, df=4) - 1", {"x": df["days_since_open"]})),
+        columns=[f"time_s{i}" for i in range(1, 5)],
+    )
+    cf = pd.get_dummies(df["child_family_folded"], prefix="cf", dtype=float).iloc[:, 1:]
+    pf = pd.get_dummies(df["parent_family_folded"], prefix="pf", dtype=float).iloc[:, 1:]
+    return pd.concat([df, wk, cf, pf], axis=1)
+
+
+def primary(df):
+    """The rows analysis.design.primary_rows keeps."""
+    keep = df["cross_solver"] & df["in_window"] & df["parent_method"].isin(["declared", "tree"])
+    return df[keep].reset_index(drop=True)
+
+
+def realistic_covariates(df):
+    dummies = [c for c in df.columns if c.startswith(("time_s", "cf_", "pf_"))]
+    return dummies + ["parent_is_current_best", "log_prior_rows"]
+
+
+def joint_separated_data(n_groups=40):
+    """Treatment and covariate x jointly separate the outcome in every stratum
+    (y = 1 iff t + x >= 1), though neither does alone."""
+    rows = []
+    for g in range(n_groups):
+        for t, x, y in [(0, 0, 0), (1, 0, 1), (0, 1, 1), (1, 1, 1)]:
+            rows.append({"g": g, "t": t, "x": x, "y": y})
+    return pd.DataFrame(rows)
+
+
+def constant_treatment_data(seed=12, n_groups=40, per_group=8):
+    """Treatment is constant within every stratum; outcomes vary."""
+    rng = np.random.default_rng(seed)
+    rows = []
+    for g in range(n_groups):
+        tc = g % 2
+        y = (rng.random(per_group) < 0.5).astype(int)
+        y[0], y[1] = 0, 1
+        for j in range(per_group):
+            rows.append({"g": g, "t": tc, "x": float(rng.normal()), "y": int(y[j])})
+    return pd.DataFrame(rows)
+
+
+def separated_rank_deficient_data(n_groups=20, seed=14):
+    """Perfect separation plus a within-stratum-constant covariate c and a duplicate covariate
+    (x2 = 2 * x)."""
+    rng = np.random.default_rng(seed)
+    d = separated_data(n_groups)
+    d["c"] = (d["g"] % 3).astype(float)
+    d["x"] = rng.normal(size=len(d))
+    d["x2"] = 2 * d["x"]
+    return d

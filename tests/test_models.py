@@ -30,7 +30,9 @@ def simulate():
 
 
 def est(models, log_or, se):
-    return models.Estimate(log_or=log_or, se=se, n=100, n_groups_informative=10, method="clogit")
+    return models.Estimate(
+        log_or=log_or, se=se, n=100, n_groups_informative=10, method="clogit", dropped_covariates=()
+    )
 
 
 # ---------------------------------------------------------------- cond_logit
@@ -387,7 +389,93 @@ def test_plant_does_not_mutate_input(simulate):
     pd.testing.assert_frame_equal(t, before)
 
 
-# ---------------------------------------------------------------- AT13 / AT14
+# ---------------------------------------------------------------- realistic design
+
+def _ref_fit(d, ycol, cov, group="solver"):
+    """Rank-reduced statsmodels ConditionalLogit on outcome-varying strata."""
+    import warnings
+    from statsmodels.discrete.conditional_models import ConditionalLogit
+
+    ov = d[d.groupby(group)[ycol].transform("nunique") > 1]
+    X = ov[["t"] + list(cov)].astype(float)
+    Xd = X - X.groupby(ov[group]).transform("mean")
+    keep = []
+    for c in X.columns:
+        if np.linalg.matrix_rank(Xd[keep + [c]].to_numpy(), tol=1e-9) > len(keep):
+            keep.append(c)
+    assert keep[0] == "t"
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        res = ConditionalLogit(
+            ov[ycol].to_numpy(float), X[keep].to_numpy(), groups=ov[group].to_numpy()
+        ).fit(method="newton", maxiter=2000, disp=False)
+    return float(res.params[0]), ov, Xd
+
+
+def test_realistic_design_uses_clogit_and_matches_reference(models, simulate):
+    n_clogit = 0
+    n = 30
+    for seed in range(n):
+        orr = 1.0 if seed % 2 == 0 else 1.5
+        f = fx.primary(fx.realistic_frame(seed))
+        d = simulate.plant(f, odds_ratio=orr, base_rate=0.25, icc=0.05, seed=seed)
+        d = d.assign(t=d["cross_family"].astype(int), y=d["y_sim"].astype(int))
+        cov = fx.realistic_covariates(d)
+        r = models.cond_logit(d, "y", "t", cov, "solver")
+        if r.method != "clogit":
+            continue
+        n_clogit += 1
+        ref, ov, Xd = _ref_fit(d, "y", cov)
+        assert r.log_or == pytest.approx(ref, abs=1e-4), (seed, r.log_or, ref)
+        constant = {c for c in cov if np.allclose(Xd[c].to_numpy(), 0)}
+        assert any(c.startswith("cf_") for c in constant)
+        assert constant <= set(r.dropped_covariates), (seed, constant - set(r.dropped_covariates))
+        assert "t" not in set(r.dropped_covariates)
+        assert r.n_groups_informative == ov["solver"].nunique()
+    assert n_clogit >= 28, n_clogit
+
+
+def test_cond_logit_treatment_constant_within_strata_is_unidentified(models):
+    r = models.cond_logit(fx.constant_treatment_data(), "y", "t", ["x"], "g")
+    assert r.method == "unidentified"
+    assert math.isnan(r.log_or)
+
+
+def test_firth_on_rank_deficient_design_drops_columns_and_converges(models):
+    d = fx.separated_rank_deficient_data()
+    r = models.cond_logit(d, "y", "t", ["c", "x", "x2"], "g")
+    assert r.method == "firth"
+    assert math.isfinite(r.log_or) and math.isfinite(r.se)
+    assert r.log_or > 0
+    dropped = set(r.dropped_covariates)
+    assert "c" in dropped
+    assert len(dropped & {"x", "x2"}) == 1
+
+
+def test_firth_forced_nonconvergence_is_failed_never_a_number(models, monkeypatch):
+    d = fx.separated_data()
+    ok = models.cond_logit(d, "y", "t", [], "g")
+    assert ok.method == "firth"
+
+    orig = models._firth
+    monkeypatch.setattr(models, "_firth", lambda *a, **k: orig(*a, **{**k, "max_iter": 1}))
+    for name in dir(models):
+        v = getattr(models, name)
+        if isinstance(v, int) and not isinstance(v, bool) and "MAX" in name.upper() and "ITER" in name.upper():
+            monkeypatch.setattr(models, name, 1)
+    r = models.cond_logit(d, "y", "t", [], "g")
+    assert r.method == "failed"
+    assert math.isnan(r.log_or)
+
+
+def test_cond_logit_joint_separation_by_treatment_and_covariate_uses_firth(models):
+    r = models.cond_logit(fx.joint_separated_data(), "y", "t", ["x"], "g")
+    assert r.method == "firth"
+    assert math.isfinite(r.log_or) and abs(r.log_or) < 8
+    assert math.isfinite(r.se)
+
+
+# ---------------------------------------------------------------- AT13 / AT14 (realistic design)
 
 def _outcome_col(planted, t):
     return [c for c in planted.columns if c not in t.columns][0]
@@ -395,13 +483,13 @@ def _outcome_col(planted, t):
 
 def _fit(models, df, ycol):
     d = df.assign(t=df["cross_family"].astype(int), y=df[ycol].astype(int))
-    return models.cond_logit(d, "y", "t", ["log_prior_rows"], "solver")
+    return models.cond_logit(d, "y", "t", fx.realistic_covariates(d), "solver")
 
 
 def test_at13_planted_or_recovered_in_90_of_100(models, simulate):
-    t = fx.make_treatment(seed=100)
-    assert 800 <= len(t) <= 1250
-    assert t["solver"].nunique() == 40
+    t = fx.primary(fx.realistic_frame(seed=100))
+    assert 500 <= len(t) <= 900
+    assert t["solver"].nunique() >= 45
     covered = 0
     for seed in range(100):
         d = simulate.plant(t, odds_ratio=1.5, base_rate=0.25, icc=0.05, seed=seed)
@@ -412,7 +500,7 @@ def test_at13_planted_or_recovered_in_90_of_100(models, simulate):
 
 
 def test_at14_placebo_shuffle_covers_zero_in_90_of_100(models, simulate):
-    t = fx.make_treatment(seed=101)
+    t = fx.primary(fx.realistic_frame(seed=101))
     covered = 0
     for seed in range(100):
         d = simulate.plant(t, odds_ratio=1.5, base_rate=0.25, icc=0.05, seed=seed)
@@ -430,8 +518,10 @@ def test_at14_placebo_shuffle_covers_zero_in_90_of_100(models, simulate):
 
 def test_at13_or_one_equivalence_rate_matches_power_prediction(models, simulate):
     power = importlib.import_module("analysis.power")
-    t = fx.make_treatment(seed=100)
-    predicted = power.equivalence_power(t, 0.25, icc=0.05, sims=300, seed=20261017)
+    frame = fx.realistic_frame(seed=100)
+    t = fx.primary(frame)
+    sims = 150
+    predicted = power.equivalence_power(frame, 0.25, icc=0.05, sims=sims, seed=20261017)
     n = 100
     hits = 0
     for seed in range(n):
@@ -441,6 +531,5 @@ def test_at13_or_one_equivalence_rate_matches_power_prediction(models, simulate)
         c90 = (r.log_or - 1.644854 * r.se, r.log_or + 1.644854 * r.se)
         hits += models.tost(r.log_or, c95, c90, (0.80, 1.25)) == "equivalent to no effect"
     rate = hits / n
-    sims = 300
     half = 2.576 * math.sqrt(predicted * (1 - predicted) * (1 / n + 1 / sims))
     assert predicted - half <= rate <= predicted + half, (rate, predicted, half)
