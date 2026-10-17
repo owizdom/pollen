@@ -431,7 +431,7 @@ def test_at14_placebo_shuffle_covers_zero_in_90_of_100(models, simulate):
 def test_at13_or_one_equivalence_rate_matches_power_prediction(models, simulate):
     power = importlib.import_module("analysis.power")
     t = fx.make_treatment(seed=100)
-    predicted = power.equivalence_power(t, 0.25, icc=0.05)
+    predicted = power.equivalence_power(t, 0.25, icc=0.05, sims=300, seed=20261017)
     n = 100
     hits = 0
     for seed in range(n):
@@ -441,5 +441,6 @@ def test_at13_or_one_equivalence_rate_matches_power_prediction(models, simulate)
         c90 = (r.log_or - 1.644854 * r.se, r.log_or + 1.644854 * r.se)
         hits += models.tost(r.log_or, c95, c90, (0.80, 1.25)) == "equivalent to no effect"
     rate = hits / n
-    half = 2.576 * math.sqrt(predicted * (1 - predicted) / n)
+    sims = 300
+    half = 2.576 * math.sqrt(predicted * (1 - predicted) * (1 / n + 1 / sims))
     assert predicted - half <= rate <= predicted + half, (rate, predicted, half)

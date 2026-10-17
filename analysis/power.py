@@ -1,77 +1,93 @@
-"""Equivalence power from treatment counts only (spec 0001 section 5.3). Uses no outcomes."""
+"""Equivalence power from treatment counts only (spec 0001 section 5.3). Uses no outcomes.
+
+Outcomes are planted at an odds ratio of 1 on the real treatment frame and the primary
+model is fitted to each run.
+"""
 from __future__ import annotations
 
 import math
 
-import numpy as np
+import pandas as pd
+
+from analysis import models, simulate
 
 Z90 = 1.6448536269514722
-_C2 = 0.3458  # (16*sqrt(3)/(15*pi))^2, logit-normal attenuation
+CATEGORICAL = ("week", "child_family_folded", "parent_family_folded")
+OUTCOME = simulate.OUTCOME
 
 
-def _arms(cells):
-    d = cells[cells["cross_family"].notna()]
-    return (d["solver"].to_numpy(), d["cross_family"].astype(bool).to_numpy().astype(float))
+def _known(frame) -> pd.DataFrame:
+    return frame[frame["cross_family"].notna()].reset_index(drop=True)
 
 
-def min_events(cells) -> int:
+def min_rows(cells) -> int:
     """Row count of the smaller treatment arm (rows with a known cross_family)."""
-    _, x = _arms(cells)
+    x = _known(cells)["cross_family"].astype(bool)
     return int(min(x.sum(), len(x) - x.sum()))
 
 
-def _fit(y, X, cid, ng):
-    """Logistic IRLS with cluster-robust SE for the slope; None on failure."""
-    b = np.zeros(2)
-    for _ in range(30):
-        p = 1 / (1 + np.exp(-X @ b))
-        w = p * (1 - p)
-        H = X.T @ (X * w[:, None])
-        try:
-            step = np.linalg.solve(H, X.T @ (y - p))
-        except np.linalg.LinAlgError:
-            return None
-        b = b + step
-        if np.abs(step).max() < 1e-8:
-            break
+def _design(frame):
+    """Numeric design frame and covariate names (section 5.1); constant columns dropped."""
+    d = _known(frame)
+    d["cross_family"] = d["cross_family"].astype(bool)
+    parts, covs = [], []
+    for c in CATEGORICAL:
+        if c in d:
+            dm = pd.get_dummies(d[c].astype(str), prefix=c, drop_first=True, dtype=float)
+            parts.append(dm)
+    for c in ("parent_is_current_best", "log_prior_rows"):
+        if c in d:
+            parts.append(d[[c]].astype(float))
+    if parts:
+        x = pd.concat(parts, axis=1)
+        x = x.loc[:, x.nunique() > 1]
+        covs = list(x.columns)
+        d = pd.concat([d[["solver", "cross_family"]], x], axis=1)
     else:
-        return None
-    if np.abs(b).max() > 12:
-        return None
-    p = 1 / (1 + np.exp(-X @ b))
-    sc = np.zeros((ng, 2))
-    np.add.at(sc, cid, X * (y - p)[:, None])
-    try:
-        Hi = np.linalg.inv(X.T @ (X * (p * (1 - p))[:, None]))
-    except np.linalg.LinAlgError:
-        return None
-    V = Hi @ (sc.T @ sc) @ Hi * (ng / max(ng - 1, 1))
-    se = math.sqrt(V[1, 1]) if V[1, 1] > 0 else None
-    return b[1], se
+        d = d[["solver", "cross_family"]].copy()
+    return d, covs
 
 
-def equivalence_power(cells, base_rate, margin=(0.80, 1.25), alpha=0.05, icc=0.05,
-                      sims=2000, seed=20261017) -> float:
-    """Share of simulated datasets whose (1-2*alpha) interval for the odds ratio lies inside
-    margin, at a true OR of 1, with a random solver intercept of the given ICC and the
-    marginal rate base_rate in both arms."""
-    from scipy.stats import norm
-    solvers, x = _arms(cells)
-    _, cid = np.unique(solvers, return_inverse=True)
-    ng, n = int(cid.max()) + 1, len(x)
-    lo, hi = math.log(margin[0]), math.log(margin[1])
-    z = norm.ppf(1 - alpha)
-    sigma = math.sqrt(icc / (1 - icc) * math.pi ** 2 / 3)
-    intercept = math.log(base_rate / (1 - base_rate)) * math.sqrt(1 + _C2 * sigma ** 2)
-    rng = np.random.default_rng(seed)
-    X = np.column_stack([np.ones(n), x])
+def _one_fit(design, covs, base_rate, icc, seed):
+    d = simulate.plant(design, 1.0, base_rate, icc, seed)
+    d["cross_family"] = d["cross_family"].astype(float)
+    return models.cond_logit(d, OUTCOME, "cross_family", covs, "solver")
+
+
+def _valid(e) -> bool:
+    return e is not None and math.isfinite(e.log_or) and math.isfinite(e.se) and e.se > 0
+
+
+def _inside(lo_hi, margin) -> bool:
+    return lo_hi[0] > math.log(margin[0]) and lo_hi[1] < math.log(margin[1])
+
+
+def equivalence_power(frame, base_rate, margin=(0.80, 1.25), icc=0.05, sims=2000,
+                      seed=20261017) -> float:
+    """Share of runs whose 90% interval for the odds ratio lies inside margin, at a true OR
+    of 1, for one benchmark."""
+    design, covs = _design(frame)
     ok = 0
-    for _ in range(sims):
-        eta = intercept + rng.normal(0, sigma, ng)[cid]
-        y = (rng.random(n) < 1 / (1 + np.exp(-eta))).astype(float)
-        r = _fit(y, X, cid, ng)
-        if r is None or r[1] is None:
-            continue
-        b, se = r
-        ok += (b - z * se > lo) and (b + z * se < hi)
+    for i in range(sims):
+        e = _one_fit(design, covs, base_rate, icc, seed * 100003 + i)
+        if _valid(e):
+            ok += _inside((e.log_or - Z90 * e.se, e.log_or + Z90 * e.se), margin)
+    return ok / sims
+
+
+def pooled_equivalence_power(frames, base_rates, margin=(0.80, 1.25), icc=0.05, sims=2000,
+                             seed=20261017) -> float:
+    """As equivalence_power for the primary estimand: each run pools the per-benchmark
+    estimates with the HKSJ meta-analysis and tests the pooled 90% interval."""
+    designs = {k: _design(f) for k, f in frames.items()}
+    ok = 0
+    for i in range(sims):
+        ests = []
+        for j, k in enumerate(sorted(designs)):
+            d, covs = designs[k]
+            e = _one_fit(d, covs, base_rates[k], icc, seed * 100003 + i * 1009 + j)
+            if _valid(e):
+                ests.append(e)
+        if ests:
+            ok += _inside(models.meta_hksj(ests).ci90, margin)
     return ok / sims

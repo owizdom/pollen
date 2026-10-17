@@ -7,6 +7,7 @@ frontier holder at the child's creation; the child's own promoted flag is never 
 from __future__ import annotations
 
 import gzip
+import hashlib
 import json
 import math
 from collections import Counter
@@ -24,17 +25,39 @@ FOLD_BELOW = 30
 LINEAGE_ROOT = Path(__file__).resolve().parent.parent / "lineage" / "frozen"
 
 
+class FrozenError(Exception):
+    """A frozen lineage file is absent, unlisted or does not match SHA256SUMS."""
+
+
+def _verified(lineage_root, slug, name) -> Path:
+    root = Path(lineage_root)
+    p = root / slug / name
+    if not p.is_file():
+        raise FrozenError(f"missing {p}")
+    sums = root / "SHA256SUMS"
+    if not sums.is_file():
+        raise FrozenError(f"missing {sums}")
+    want = {}
+    for line in sums.read_text().splitlines():
+        digest, _, rel = line.partition("  ")
+        if rel.strip():
+            want[rel.strip()] = digest.strip()
+    key = f"{slug}/{name}"
+    if key not in want:
+        raise FrozenError(f"{key} not listed in {sums}")
+    if hashlib.sha256(p.read_bytes()).hexdigest() != want[key]:
+        raise FrozenError(f"{key} does not match {sums}")
+    return p
+
+
 def _read_parents(lineage_root, slug) -> dict:
-    p = Path(lineage_root) / slug / "parents.json.gz"
-    if not p.exists():
-        return {}
+    p = _verified(lineage_root, slug, "parents.json.gz")
     with gzip.open(p, "rb") as f:
         return json.loads(f.read())
 
 
 def _missing_shas(lineage_root, slug) -> set:
-    p = Path(lineage_root) / slug / "missing.json"
-    return set(json.loads(p.read_text())) if p.exists() else set()
+    return set(json.loads(_verified(lineage_root, slug, "missing.json").read_text()))
 
 
 def _week(ts) -> str:
