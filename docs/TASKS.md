@@ -115,3 +115,10 @@ In scope, to fix with a regression test each:
 9. Sensitivity 3 matches nonce/validation-draw-only notes in common phrasings ("Changed only the nonce.", "Nonce-only change.", "Only change: new validation draw.", "Re-roll of the validation draw only.") and does not match unrelated uses of "draw" ("Only the draw-call batching changed in the kernel.").
 10. An empty restricted frame never crashes a driver: confirmatory lists the benchmark under excluded_benchmarks with a reason; secondary reports the test as unidentified.
 11. Spline knots are the quartiles of days_since_open over the benchmark's analysis rows (§5.1), passed to design.build, not recomputed on each fitted subset.
+
+### E-review round 2 (2026-10-18, review at b5c9cd0)
+
+All 11 round-1 findings verified FIXED (16 of 16 mutants killed). In scope, to fix with a regression test each:
+N1. dataset.build emits spline_knot_0..4 (min, quartiles, max of days_since_open over the benchmark's analysis rows), so the power gate and AT13/AT14 fit the same spline as the confirmatory model (§5.3 "fitted with the §5.1 conditional model and covariates").
+N2. A secondary test on a non-empty frame whose fit comes back "unidentified" keeps its real events count; if it passes the events gate it stays in the Holm family with p = 1 and method "unidentified" (§5.4 "One Holm family holds every secondary test that passes the minimum-events gate"). Only an empty frame is reported outside the family.
+N3. Sensitivity 3 does not match "Not only the nonce: the whole adder was rewritten." or "Rewrote the reducer; the nonce only seeds the validation draw."; it does match "Nonce change only.", "Bumped the nonce, nothing else." and "Same circuit, new validation draw." in addition to the round-1 phrasings.
