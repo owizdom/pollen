@@ -229,7 +229,8 @@ snapshot.benchmark_meta(benchmark: str) -> Benchmark
 snapshot.attribution(benchmark: str) -> dict[str, list[str]]     # submission id -> declared parent ids
 families.family_of(model_line: str | None) -> Family | Multi | Unknown
 families.harness_of(note: str) -> str | None
-lineage.parents.parents(child, earlier, attribution, trees, own_history) -> ParentResult
+lineage.parents.parents(child, earlier, attribution, trees, own_history, mirror, paths, ids=None, memo=None) -> ParentResult
+    # earlier and own_history are analysis rows; declared ids are checked against all snapshot rows
     # ParentResult(primary: ParentLink, tree: ParentLink, dropped_declared: tuple[str, ...])
     # ParentLink(parent_ids, method: "declared" | "multi" | "tree" | "novel" | "none", distance, child_side)
 lineage.build.run(benchmark) -> writes lineage/frozen/<slug>/{manifests,distances,parents}.json.gz, missing.json
