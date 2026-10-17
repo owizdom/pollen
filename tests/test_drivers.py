@@ -288,10 +288,21 @@ def test_strata_counts(pristine, done_factory, name):
 def test_estimate_matches_independent_primary_model(pristine, done_factory, name):
     root = done_factory()
     est = jload(root / "results" / "confirmatory.json")["benchmarks"][name]["estimate"]
-    d = fit_frame(truth_frame(pristine, name, root)).reset_index(drop=True)
+    full = truth_frame(pristine, name, root)
+    # spec v2.7: 4-df natural cubic spline on days_since_open, knots at quartiles of the
+    # modelled rows; patsy cr with explicit quartile knots (cr df=4 picks other knots)
+    from patsy import dmatrix
+    import numpy as np
+    x = fit_frame(full)["days_since_open"].to_numpy(float)
+    q = list(np.quantile(x, [0.25, 0.5, 0.75]))
+    spl = dmatrix('cr(x, knots=q, constraints="center")', {"x": x, "q": q},
+                  return_type="dataframe").drop(columns="Intercept")
+    spl.columns = [f"t{i}" for i in range(spl.shape[1])]
+    assert spl.shape[1] == 4
+    d = fit_frame(full).reset_index(drop=True)
     d["cross"] = d["cross_family"].astype(float)
     d["pib"] = d["parent_is_current_best"].astype(float)
-    cols = [pd.get_dummies(d["week"], prefix="w", drop_first=True, dtype=float),
+    cols = [spl,
             pd.get_dummies(d["child_family_folded"], prefix="c", drop_first=True, dtype=float),
             pd.get_dummies(d["parent_family_folded"], prefix="p", drop_first=True, dtype=float),
             d[["pib", "log_prior_rows"]]]
