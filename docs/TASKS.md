@@ -54,9 +54,34 @@ Owns: `outcomes/__init__.py`, `outcomes/denominator.yaml`, `outcomes/denominator
 - `annotate(subs, meta)` writes `outcomes/sealed/<slug>.json.gz` and returns nothing that splits outcomes by treatment.
 - AT5: recomputation agrees with `promotionStatus` on every analysis row except named exceptions, reported as pass or fail.
 
-## Wave 3
+## Wave 3 (analysis)
 
-- Track E analysis (AT6, AT9): `analysis/`, `docs/prereg.md`, `tests/test_analysis.py`.
+Blinding: until tag `prereg-v1`, no code path may join sealed outcomes to treatment. Tests use synthetic data only, except dataset tests, which may read real treatment fields.
+
+### Track E1: dataset, power, lock (AT6, AT15 consumer)
+
+Owns: `analysis/__init__.py`, `analysis/dataset.py`, `analysis/power.py`, `analysis/lock.py`, `docs/prereg-manifest.json`, `tests/test_dataset.py`, `tests/test_lock.py`, `tests/fixtures_analysis.py`.
+
+- `dataset.build(benchmark, *, snapshot, lineage_root) -> DataFrame`, one row per analysis row (outcomes.denominator.analysis_rows), with columns: id, solver, created_at, week (ISO year-week of created_at), child_model, child_family, multi_family, harness, parent_ids, parent_method (declared, multi, tree, novel, none), tree_parent_id, parent_solver, parent_family, cross_solver, cross_family (True or False only when both families are known single-family and a single parent exists, else None), cell (own_same, own_switch, other_same, other_switch, or None), parent_is_current_best (the parent is the best promoted row whose evaluation finished before the child was created), log_prior_rows (ln(1 + the solver's earlier analysis rows)), in_window (from lineage.window), child_family_folded and parent_family_folded (families with fewer than 30 analysis rows on the benchmark become "Other"). No outcome columns.
+- `power.equivalence_power(cells, base_rate, margin=(0.80, 1.25), alpha=0.05, icc=0.05, sims=2000, seed=...) -> float`. Power to declare equivalence at a true OR of 1, by simulation, with solver clusters taken from the real cell structure, a random solver intercept with the given intra-class correlation, and the per-benchmark marginal promotion rate (not split by treatment). Also `min_events(cells)`.
+- `lock.write_manifest()` hashes `docs/prereg.md`, every file under `analysis/`, `lineage/` (excluding cache and frozen data, which are covered by `lineage/frozen/SHA256SUMS`), `families/table.yaml`, `outcomes/denominator.yaml`, `snapshot/raw/SHA256SUMS` and `lineage/frozen/SHA256SUMS`. `lock.check()` raises `LockError` unless every hash matches the working tree and `git show prereg-v1:docs/prereg-manifest.json` equals the working copy.
+
+### Track E2: models and simulation (AT13, AT14)
+
+Owns: `analysis/models.py`, `analysis/simulate.py`, `tests/test_models.py`, `tests/fixtures_models.py`.
+
+- `models.cond_logit(df, outcome, treatment, covariates, group) -> Estimate(log_or, se, n, n_groups_informative, method)`: conditional logistic regression stratified by group (statsmodels ConditionalLogit). If separation or non-convergence is detected, fall back to Firth-penalised unconditional logistic regression with group fixed effects, and set method="firth".
+- `models.meta_hksj(estimates) -> Pooled(log_or, ci95, ci90, tau2, tau2_ci, k)`: DerSimonian-Laird tau², then the Hartung-Knapp-Sidik-Jonkman variance with a t distribution on k-1 df (untruncated q). tau2_ci by the Q-profile method.
+- `models.tost(log_or, ci90, margin) -> verdict` in {"effect detected", "equivalent to no effect", "inconclusive"}: "effect detected" when the 95% interval excludes 0; "equivalent" when the 90% interval lies inside log(margin); otherwise "inconclusive".
+- `models.holm(pvals: dict) -> dict` of adjusted p-values.
+- `models.permutation_share(df, label, flag, strata, draws=10000, seed=...) -> (observed, p_two_sided)` for H3.
+- `models.median_reg(df, outcome, treatment, covariates, cluster, boot=2000, seed=...) -> Estimate` (quantile regression at 0.5 with cluster bootstrap) for H4.
+- `simulate.plant(df_treatment, odds_ratio, base_rate, icc, seed) -> df with a synthetic outcome`, preserving the real treatment, solver and week structure.
+- AT13: across 100 seeds, a planted OR of 1.5 falls inside the 95% interval in at least 93 seeds; at OR 1.0 the equivalence decision behaves as simulated power predicts. AT14: shuffling family within solver gives an H1 interval covering 1 in at least 93 of 100 seeds.
+
+### Track E3 (after E1 and E2): confirmatory and secondary drivers, numbers
+
+Owns: `analysis/confirmatory.py`, `analysis/secondary.py`, `analysis/exploratory.py`, `analysis/figures.py`, `analysis/numbers.py`, `docs/prereg.md`, `tests/test_drivers.py`.
 
 ## Wave 4
 
