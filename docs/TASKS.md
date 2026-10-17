@@ -80,9 +80,18 @@ Owns: `analysis/models.py`, `analysis/simulate.py`, `tests/test_models.py`, `tes
 - `simulate.plant(df_treatment, odds_ratio, base_rate, icc, seed) -> df with a synthetic outcome`, preserving the real treatment, solver and week structure.
 - AT13: across 100 seeds, a planted OR of 1.5 falls inside the 95% interval in at least 90 seeds; at OR 1.0 the equivalence decision behaves as simulated power predicts. AT14: shuffling family within solver gives an H1 interval covering 1 in at least 90 of 100 seeds.
 
-### Track E3 (after E1 and E2): confirmatory and secondary drivers, numbers
+### Track E3 (after E1 and E2): drivers, results, numbers
 
-Owns: `analysis/confirmatory.py`, `analysis/secondary.py`, `analysis/exploratory.py`, `analysis/figures.py`, `analysis/numbers.py`, `docs/prereg.md`, `tests/test_drivers.py`.
+Owns: `analysis/run.py`, `analysis/confirmatory.py`, `analysis/secondary.py`, `analysis/sensitivity.py`, `analysis/exploratory.py`, `analysis/figures.py`, `analysis/numbers.py`, `analysis/study.py`, `results/`, `tests/test_drivers.py`, `tests/fixtures_drivers.py`.
+
+- `study.benchmarks(snapshot) -> list[str]`: applies the §5.6 rule to the frozen snapshot (analysis rows ≥ 500, promoted ≥ 100, ≥ 2 families each ≥ 10% of labelled rows, tree commits fetchable per lineage/frozen missing.json) and always includes gpsanant/ecdsafail-challenge.
+- `confirmatory.run(root) -> dict`: calls `lock.check(root)` first and refuses on failure. For each study benchmark: dataset.build; compute outcomes with the outcomes package into outcomes/sealed; join Y1; restrict to cross-solver, single-parent, both families known, in_window; fit `models.cond_logit(Y1 ~ cross_family + week dummies + child_family_folded + parent_family_folded dummies + parent_is_current_best + log_prior_rows, group=solver)`; pool with `models.meta_hksj`; verdict with `models.tost(pooled.log_or, pooled.ci95, pooled.ci90, margin)`; also the ecdsa.fail single-benchmark verdict. Writes `results/confirmatory.json` (sorted keys, floats rounded to 6 significant digits) with per-benchmark estimates, counts (rows, strata kept, strata with outcome but no treatment variation, Firth used), pooled result, tau², verdicts, margin used.
+- `secondary.run(root)`: H2, H3a, H3b, H4 and H5 per spec §5.4 with the minimum-events gate (outcome events in the smaller arm ≥ 20, else descriptive) and one Holm family over passing members; writes `results/secondary.json`.
+- `sensitivity.run(root)`: sensitivities 1 to 9 of §5.5, each re-running the primary pooled estimate with exactly one change; writes `results/sensitivity.json`.
+- `exploratory.run(root)`: E1 and E2, labelled exploratory; writes `results/exploratory.json`.
+- `figures.run(root)`: writes figure data as JSON plus deterministic PNG and PDF files (fixed matplotlib rcParams, no timestamps, `metadata={"CreationDate": None}` for PDF).
+- `numbers.write(root)`: reads results/*.json and writes `paper/numbers.tex` with one `\newcommand` per number, macro names letters only, deterministic order.
+- `run.main()`: `make reproduce` entry point: confirmatory, secondary, sensitivity, exploratory, figures, numbers, in that order, offline.
 
 ## Wave 4
 
