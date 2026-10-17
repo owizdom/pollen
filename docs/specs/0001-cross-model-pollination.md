@@ -59,7 +59,8 @@ Done means all of the following exist and pass their acceptance tests.
 - Declared model: the text after `Model:` on the first non-empty line of the note. The Yukon CLI writes it from the required `--model` flag.
 - Family: the vendor of the declared model, from the checked-in table `families/table.yaml` (exact string to family).
 - Multi-family: a `Model:` line naming two or more vendors (about 32 on ecdsa.fail, for example "Claude Opus 5.5 + GPT-6.1 Sol"). Multi-family rows are excluded from confirmatory tests and analysed in E1.
-- Unknown: missing line, an agent product with no model ("Devin", "Droid", "Composer"), a vendor-ambiguous name ("Astra"), or junk ("benchmark", "Scikit-learn", flags). Excluded from confirmatory tests; sensitivity 1 restores them.
+- Company-model rule: a model a company names as its own maps to that company, as `Other:<company>` when the company is not a listed vendor (SWE-2 Other:Cognition, Composer Other:Cursor, Doubao Other:ByteDance, Poolside Other:Poolside). A string naming a model family maps to that family's vendor ("Grok Bot" is xAI).
+- Unknown: missing line, an agent product or harness with no model ("Devin", "Droid", "Codex", "Codex CLI"), a vendor-ambiguous name ("Astra"), or junk ("benchmark", "Scikit-learn", flags). Excluded from confirmatory tests; sensitivity 1 restores them.
 - Sparse families: a family with fewer than 30 analysis rows on a benchmark folds into "Other" for that benchmark's models (review F14).
 - Harness: the `Harness:` line when present (480 rows on ecdsa.fail). Recorded for sensitivity 6, because harness and family are nearly collinear (Codex and OpenAI).
 
