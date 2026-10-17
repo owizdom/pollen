@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -29,18 +30,44 @@ def _sha(p: Path) -> str:
     return hashlib.sha256(p.read_bytes()).hexdigest()
 
 
+def _walk(root: Path, top: str):
+    """Yield (rel, is_symlink) for every entry under root/top; never follows links."""
+    base = root / top
+    if not base.is_dir():
+        return
+    for dp, dns, fns in os.walk(base, followlinks=False):
+        for n in dns + fns:
+            p = Path(dp) / n
+            if p.is_symlink():
+                yield p.relative_to(root), True
+            elif n in fns:
+                yield p.relative_to(root), False
+
+
+def _refuse_links(root: Path) -> None:
+    bad = []
+    for top in CODE_DIRS + SUMMED:
+        bad += [r.as_posix() for r, link in _walk(root, top) if link]
+    if bad:
+        raise LockError("symlinks are not allowed: " + ", ".join(sorted(set(bad))))
+
+
 def compute(root=ROOT) -> dict:
     """Hashes of the required files and every code file; raises if a required file is absent."""
     root = Path(root)
     missing = [r for r in REQUIRED if not (root / r).is_file()]
     if missing:
         raise LockError("required files missing: " + ", ".join(missing))
+    _refuse_links(root)
     out = set(REQUIRED)
     for top in CODE_DIRS:
-        for p in (root / top).rglob("*.py") if (root / top).is_dir() else []:
-            rel = p.relative_to(root)
-            if p.is_file() and not _is_data(rel):
+        for rel, _ in _walk(root, top):
+            if _is_data(rel):
+                continue
+            if rel.suffix == ".py":
                 out.add(rel.as_posix())
+            elif rel.suffix in (".pyc", ".so", ".pyd"):
+                raise LockError(f"importable non-.py file: {rel.as_posix()}")
     return {rel: _sha(root / rel) for rel in sorted(out)}
 
 
@@ -64,7 +91,8 @@ def verify_sums(base: Path) -> None:
             digest, _, rel = line.partition("  ")
             listed[rel.strip()] = digest.strip()
     present = {p.relative_to(base).as_posix() for p in base.rglob("*")
-               if p.is_file() and p.name != "SHA256SUMS" and "__pycache__" not in p.parts}
+               if (p.is_file() or p.is_symlink()) and p.name != "SHA256SUMS"
+               and "__pycache__" not in p.parts}
     bad = sorted((present ^ set(listed)) | {r for r in present & set(listed)
                                            if _sha(base / r) != listed[r]})
     if bad:
