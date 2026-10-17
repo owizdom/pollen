@@ -386,7 +386,8 @@ def test_secondary_minimum_events_gate(pristine, done_factory):
 def test_secondary_status_is_exactly_the_gate_and_holm_is_applied(done_factory):
     sec = jload(done_factory() / "results" / "secondary.json")
     hyps = {e["hypothesis"] for e in sec["tests"]}
-    assert hyps == {"H2", "H3a", "H3b", "H4", "H5"}
+    assert hyps == {"H1", "H2", "H3a", "H3b", "H4", "H5"}
+    assert {e["benchmark"] for e in sec["tests"] if e["hypothesis"] == "H1"} == {ECDSA}
     assert {e["benchmark"] for e in sec["tests"] if e["hypothesis"] == "H5"} == {ECDSA}
     assert all(e["status"] == "confirmatory" for e in sec["tests"]
                if e["min_arm_events"] >= 20)
