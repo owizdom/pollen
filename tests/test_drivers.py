@@ -289,13 +289,16 @@ def test_estimate_matches_independent_primary_model(pristine, done_factory, name
     root = done_factory()
     est = jload(root / "results" / "confirmatory.json")["benchmarks"][name]["estimate"]
     full = truth_frame(pristine, name, root)
-    # spec v2.7: 4-df natural cubic spline on days_since_open, knots at quartiles of the
-    # modelled rows; patsy cr with explicit quartile knots (cr df=4 picks other knots)
+    # spec 5.1: 4-df natural cubic spline on days_since_open, knots at the quartiles of the
+    # benchmark's analysis rows (all rows of the frame, not the modelled subset), evaluated on
+    # the modelled rows; patsy cr with explicit knots (cr df=4 picks other knots)
     from patsy import dmatrix
     import numpy as np
+    xall = full["days_since_open"].to_numpy(float)
+    q = list(np.quantile(xall, [0.25, 0.5, 0.75]))
     x = fit_frame(full)["days_since_open"].to_numpy(float)
-    q = list(np.quantile(x, [0.25, 0.5, 0.75]))
-    spl = dmatrix('cr(x, knots=q, constraints="center")', {"x": x, "q": q},
+    spl = dmatrix('cr(x, knots=q, lower_bound=lo, upper_bound=hi, constraints="center")',
+                  {"x": x, "q": q, "lo": float(xall.min()), "hi": float(xall.max())},
                   return_type="dataframe").drop(columns="Intercept")
     spl.columns = [f"t{i}" for i in range(spl.shape[1])]
     assert spl.shape[1] == 4
@@ -639,3 +642,471 @@ def test_run_main_refuses_without_the_lock(pristine, tmp_path):
         drv("run").main(root, **SMALL)
     assert no_files(root / "results")
     assert not (root / "paper" / "numbers.tex").exists()
+
+
+# ================================================================== E-review round regressions
+# (docs/TASKS.md "E-review round (2026-10-17, review at 4e680a6)", findings 1 to 11)
+
+import dataclasses
+import os
+import subprocess
+import sys
+
+import numpy as np
+
+from tests.fixtures_drivers import (OPEN_HOURS, T0, edit_notes, edit_parents)
+
+TAG = {n: "abc"[s["idx"]] for n, s in SPECS.items()}
+TIME_COLS = [f"time_s{i}" for i in range(1, 5)]
+_TF = {}
+
+
+def bench_of(ids):
+    return next(n for n, t in TAG.items() if str(next(iter(ids))).startswith(t))
+
+
+def cached_truth_frame(study, name, root):
+    key = (id(study), name)
+    if key not in _TF:
+        _TF[key] = truth_frame(study, name, root)
+    return _TF[key]
+
+
+def base_ids(study, root):
+    return {n: set(fit_frame(cached_truth_frame(study, n, root))["id"]) for n in SPECS}
+
+
+def facts(study, key):
+    return {r["id"] for n in SPECS for r in study.truth[n] if r[key]}
+
+
+# ---- 1: H4 time control
+
+def test_f1_h4_covariates_are_the_time_spline(fresh, monkeypatch):
+    real = models.median_reg
+    seen = []
+
+    def spy(df, outcome, treatment, covariates, cluster, *a, **k):
+        seen.append(list(covariates))
+        return real(df, outcome, treatment, covariates, cluster, *a, **k)
+
+    monkeypatch.setattr(models, "median_reg", spy)
+    drv("secondary").run(fresh, draws=20, boot=10)
+    assert len(seen) == len(SPECS)
+    for cov in seen:
+        assert cov == TIME_COLS
+
+
+# ---- 2 and 7: tau2 interval, strata and Firth counts, intervals in numbers.tex
+
+def macro_map(root):
+    return dict(read_macros(root / "paper" / "numbers.tex"))
+
+
+def test_f2_tau2_interval_in_json_and_numbers(done_factory):
+    root = done_factory()
+    pooled = jload(root / "results" / "confirmatory.json")["pooled"]
+    ci = pooled["tau2_ci"]
+    assert len(ci) == 2 and all(isinstance(v, (int, float)) for v in ci)
+    assert ci[0] <= ci[1]
+    macros = macro_map(root)
+    tau = {k: v for k, v in macros.items() if "Tau" in k}
+    assert len(tau) >= 3, sorted(macros)     # tau2 and the two interval ends
+    nums = [float(NUM.findall(v)[0]) for v in tau.values() if NUM.findall(v)]
+    for end in ci:
+        assert any(abs(x - end) < 6e-4 for x in nums), (end, tau)
+
+
+def test_f7_counts_in_json(pristine, done_factory):
+    root = done_factory()
+    out = jload(root / "results" / "confirmatory.json")["benchmarks"]
+    for name in SPECS:
+        fit = fit_frame(cached_truth_frame(pristine, name, root))
+        c = out[name]["counts"]
+        total = fit["solver"].nunique()
+        assert c["strata_dropped"] == total - c["strata_kept"] > 0     # the planted "dud"
+        assert isinstance(c["firth"], bool)
+
+
+def test_f7_numbers_tex_macros_for_counts_and_intervals(done_factory):
+    root = done_factory()
+    macros = macro_map(root)
+    conf = jload(root / "results" / "confirmatory.json")["benchmarks"]
+    for i, name in enumerate(sorted(conf)):
+        L = chr(65 + i)
+        mine = {k: v for k, v in macros.items() if k.startswith(f"Bench{L}")}
+        c = conf[name]["counts"]
+
+        def find(pat):
+            hit = {k: v for k, v in mine.items() if re.search(pat, k)}
+            assert hit, (name, pat, sorted(mine))
+            return hit
+
+        kept = find(r"Strata.*Kept|Kept.*Strata")
+        assert str(c["strata_kept"]) in kept.values()
+        nt = find(r"Strata.*(Treat|Variation)")
+        assert str(c["strata_no_treatment_variation"]) in nt.values()
+        dr = find(r"Strata.*Dropped|Dropped.*Strata")
+        assert str(c["strata_dropped"]) in dr.values()
+        find(r"Firth")
+        find(r"Low")
+        find(r"High")
+    assert any("Tau" in k and ("Low" in k or "Lower" in k) for k in macros)
+    assert any("Tau" in k and ("High" in k or "Upper" in k) for k in macros)
+
+
+# ---- 3: ecdsa.fail's H1 in the Holm family
+
+def test_f3_ecdsa_h1_is_a_secondary_test_in_the_family(pristine, done_factory):
+    root = done_factory()
+    sec = jload(root / "results" / "secondary.json")
+    h1 = entries(sec, "H1")
+    assert set(h1) == {ECDSA}
+    e = h1[ECDSA]
+    fit = fit_frame(cached_truth_frame(pristine, ECDSA, root))
+    cf = fit["cross_family"].astype(bool)
+    events = int(min(((fit["y"] > 0) & cf).sum(), ((fit["y"] > 0) & ~cf).sum()))
+    assert e["min_arm_events"] == events
+    assert events >= 20 and e["status"] == "confirmatory"
+    est = jload(root / "results" / "confirmatory.json")["benchmarks"][ECDSA]["estimate"]
+    from scipy import stats
+    assert e["p"] == pytest.approx(2 * stats.norm.sf(abs(est["log_or"] / est["se"])), rel=1e-3)
+    conf = {f"{t['hypothesis']}:{t['benchmark']}": t for t in sec["tests"]
+            if t["status"] == "confirmatory"}
+    assert f"H1:{ECDSA}" in conf
+    adj = models.holm({k: t["p"] for k, t in conf.items()})
+    assert e["p_holm"] == pytest.approx(adj[f"H1:{ECDSA}"], rel=1e-4, abs=1e-6)
+
+
+# ---- 4: a gate-passing test that fails stays in the family with p = 1
+
+@pytest.mark.parametrize("mode", ["failed", "raises"])
+def test_f4_failed_test_stays_in_holm_family(fresh, done_factory, monkeypatch, mode):
+    confirmatory = drv("confirmatory")
+    real = confirmatory.fit_rows
+
+    def fake(rows, outcome=None, extra=None):
+        own = len(rows) > 0 and bool((rows["cross_solver"] == False).all())  # noqa: E712
+        if own and str(rows["id"].iloc[0]).startswith(TAG[ECDSA]):
+            if mode == "raises":
+                raise RuntimeError("fit exploded")
+            e = real(rows, outcome=outcome, extra=extra)
+            return dataclasses.replace(e, log_or=float("nan"), se=float("nan"), method="failed")
+        return real(rows, outcome=outcome, extra=extra)
+
+    monkeypatch.setattr(confirmatory, "fit_rows", fake)
+    drv("secondary").run(fresh, draws=20, boot=10)
+    sec = jload(fresh / "results" / "secondary.json")
+    base = jload(done_factory() / "results" / "secondary.json")
+    h2 = entries(sec, "H2")[ECDSA]
+    assert h2["status"] == "confirmatory" and h2["min_arm_events"] >= 20
+    assert h2["p"] == 1.0
+    assert h2["method"] == "failed"
+    conf = {f"{t['hypothesis']}:{t['benchmark']}": t for t in sec["tests"]
+            if t["status"] == "confirmatory"}
+    assert len(conf) == sum(1 for t in base["tests"] if t["status"] == "confirmatory")
+    assert all(t["p"] is not None for t in conf.values())
+    adj = models.holm({k: t["p"] for k, t in conf.items()})
+    for k, t in conf.items():
+        assert t["p_holm"] == pytest.approx(adj[k], rel=1e-4, abs=1e-6), k
+    assert h2["p_holm"] == 1.0
+
+
+# ---- 5: every sensitivity changes the input of the primary fit in the stated way
+
+def run_sens_spy(root):
+    confirmatory = drv("confirmatory")
+    real_fit, real_pool = confirmatory.fit_rows, confirmatory.pool
+    events = []
+
+    def fit(rows, outcome=None, extra=None):
+        events.append(("fit", rows.copy(), None if extra is None else extra.copy()))
+        return real_fit(rows, outcome=outcome, extra=extra)
+
+    def pool(ests, margin):
+        events.append(("pool",))
+        return real_pool(ests, margin)
+
+    mp = pytest.MonkeyPatch()
+    mp.setattr(confirmatory, "fit_rows", fit)
+    mp.setattr(confirmatory, "pool", pool)
+    try:
+        out = drv("sensitivity").run(root)
+    finally:
+        mp.undo()
+    sens = out["sensitivities"]
+    applicable = [k for k in sorted(sens) if "pooled" in sens[k]]
+    groups = [[]]
+    for ev in events:
+        if ev[0] == "fit":
+            groups[-1].append(ev)
+        else:
+            groups.append([])
+    groups = groups[:-1]
+    assert len(groups) == len(applicable), (applicable, len(groups))
+    res = {}
+    for k, g in zip(applicable, groups):
+        rows = pd.concat([e[1] for e in g]) if g else pd.DataFrame()
+        res[k.split("_")[0]] = {"rows": rows, "extras": [e[2] for e in g],
+                                "ids": set(rows["id"]) if len(rows) else set()}
+    return res, sens
+
+
+@pytest.fixture(scope="module")
+def sens_run(pristine, tmp_path_factory):
+    cache = {}
+
+    def get():
+        if "v" not in cache:
+            root = copy_root(pristine.root, tmp_path_factory.mktemp("sens") / "repo")
+            cache["v"] = run_sens_spy(root) + (root,)
+        return cache["v"]
+
+    return get
+
+
+def test_f5_s1_unknown_family_rows_enter(pristine, sens_run):
+    res, _, root = sens_run()
+    base = base_ids(pristine, root)
+    unk = facts_kind(pristine, "unk")
+    assert "s1" in res
+    assert res["s1"]["ids"] == set().union(*base.values()) | unk
+    assert unk and not (unk & set().union(*base.values()))
+
+
+def facts_kind(study, kind):
+    return {r["id"] for n in SPECS for r in study.truth[n] if r["kind"] == kind}
+
+
+def test_f5_s2_uses_tree_distance_parents(pristine, sens_run):
+    res, _, root = sens_run()
+    assert "s2" in res
+    from families import mapper
+    want = {}
+    for name in SPECS:
+        b = pristine.benches[name]
+        raw = {r["id"]: r for r in b.raw}
+        fam = lambda i: mapper.family_of(raw[i]["note"].splitlines()[0].partition(":")[2].strip())  # noqa: E731
+        week0 = {r["id"] for r in pristine.truth[name] if r["week0"]}
+        for rid, (_, tree) in b.parents.items():
+            if rid in week0 or raw[rid]["status"] == "cancelled" or len(tree[0]) != 1:
+                continue
+            p = tree[0][0]
+            if raw[p]["solverUsername"] == raw[rid]["solverUsername"]:
+                continue
+            cf, pf = fam(rid), fam(p)
+            if "Unknown" in (cf, pf) or "Multi" in (cf, pf):
+                continue
+            want[rid] = cf != pf
+    got = dict(zip(res["s2"]["rows"]["id"], res["s2"]["rows"]["cross_family"].astype(bool)))
+    assert got == want
+    base = set().union(*base_ids(pristine, root).values())
+    assert set(got) != base                       # the stated change is visible in the row set
+
+
+def test_f5_s3_drops_nonce_rows(pristine, sens_run):
+    res, _, root = sens_run()
+    base = set().union(*base_ids(pristine, root).values())
+    nonce = facts(pristine, "nonce")
+    assert base & nonce
+    assert "s3" in res
+    assert res["s3"]["ids"] == base - nonce
+
+
+def test_f5_s5_drops_first_72_hours_after_opening(pristine, sens_run):
+    res, _, root = sens_run()
+    base = set().union(*base_ids(pristine, root).values())
+    hours = {r["id"]: r["hours"] for n in SPECS for r in pristine.truth[n]}
+    early = {i for i in base if hours[i] < OPEN_HOURS + 72}
+    assert early and early != base
+    assert "s5" in res
+    assert res["s5"]["ids"] == base - early
+
+
+def test_f5_s6_adds_harness_columns(pristine, sens_run):
+    res, _, root = sens_run()
+    assert "s6" in res
+    base = set().union(*base_ids(pristine, root).values())
+    assert res["s6"]["ids"] == base
+    extras = [e for e in res["s6"]["extras"] if e is not None]
+    assert len(extras) == len(SPECS)
+    for e in extras:
+        assert e.shape[1] >= 1
+        assert all(str(c).startswith("harness") for c in e.columns)
+
+
+def test_f5_s9_drops_ambiguous_failures(pristine, sens_run):
+    res, _, root = sens_run()
+    base = set().union(*base_ids(pristine, root).values())
+    failed = facts(pristine, "failed")
+    assert base & failed
+    assert "s9" in res
+    assert res["s9"]["ids"] == base - failed
+
+
+# ---- 6: study.margin refuses without exactly one canonical line
+
+@pytest.mark.parametrize("text", [
+    "prereg without a margin\n",
+    "Margin: [0.67, 1.50]\n",
+    "margin: [0.67, 1.50]\nmargin: [0.80, 1.25]\n",
+    "the margin is [0.67, 1.50]\n",
+])
+def test_f6_margin_refuses_without_one_canonical_line(tmp_path, text):
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "prereg.md").write_text(text)
+    with pytest.raises(Exception):
+        drv("study").margin(tmp_path)
+
+
+def test_f6_margin_refuses_without_prereg(tmp_path):
+    with pytest.raises(Exception):
+        drv("study").margin(tmp_path)
+
+
+def test_f6_margin_reads_the_one_canonical_line(tmp_path):
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "prereg.md").write_text("text\nmargin: [0.67, 1.50]\nmore\n")
+    assert drv("study").margin(tmp_path) == [0.67, 1.5]
+
+
+# ---- 8: python -m analysis.confirmatory checks the lock
+
+def run_module(root):
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(REPO_ROOT)
+    return subprocess.run([sys.executable, "-m", "analysis.confirmatory", "--root", str(root)],
+                          cwd=str(REPO_ROOT), env=env, capture_output=True, text=True, timeout=300)
+
+
+REPO_ROOT = __import__("pathlib").Path(__file__).resolve().parent.parent
+
+
+def test_f8_module_entry_exits_nonzero_without_manifest(fresh):
+    (fresh / "docs" / "prereg-manifest.json").unlink()
+    r = run_module(fresh)
+    assert r.returncode != 0, r.stdout + r.stderr
+    assert no_files(fresh / "results")
+    assert no_files(fresh / "outcomes" / "sealed")
+
+
+def test_f8_module_entry_exits_nonzero_after_tamper(fresh):
+    (fresh / "docs" / "prereg.md").write_text("edited\nmargin: [0.80, 1.25]\n")
+    r = run_module(fresh)
+    assert r.returncode != 0, r.stdout + r.stderr
+    assert no_files(fresh / "results")
+
+
+def test_f8_module_entry_runs_on_a_valid_lock(fresh):
+    r = run_module(fresh)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert (fresh / "results" / "confirmatory.json").is_file()
+
+
+# ---- 9: nonce phrasings
+
+NONCE_POS = {
+    "Changed only the nonce.": True,
+    "Nonce-only change.": True,
+    "Only change: new validation draw.": True,
+    "Re-roll of the validation draw only.": True,
+    "Only the draw-call batching changed in the kernel.": False,
+}
+
+
+def test_f9_nonce_phrasings(pristine, tmp_path):
+    root = copy_root(pristine.root, tmp_path / "repo")
+    base = base_ids(pristine, pristine.root)[ECDSA]
+    nonce = facts(pristine, "nonce")
+    pick = sorted(base - nonce - facts(pristine, "failed"))[:len(NONCE_POS)]
+    mapping = dict(zip(pick, NONCE_POS))
+    edit_notes(root, ECDSA, {i: ph for i, ph in mapping.items()})
+    res, _ = run_sens_spy(root)
+    assert "s3" in res
+    kept = res["s3"]["ids"]
+    for i, ph in mapping.items():
+        assert (i not in kept) == NONCE_POS[ph], ph
+    allbase = set().union(*base_ids(pristine, pristine.root).values())
+    dropped = {i for i, ph in mapping.items() if NONCE_POS[ph]} | nonce
+    assert kept == allbase - dropped
+
+
+# ---- 10: an empty restricted frame never crashes a driver
+
+def test_f10_empty_restricted_frame(pristine, tmp_path, monkeypatch):
+    root = copy_root(pristine.root, tmp_path / "repo")
+    edit_parents(root, BENCH_A, lambda d: [d.__setitem__(
+        k, {**v, "primary": [[], "none", None, None]}) for k, v in list(d.items())])
+    drv("run").main(root, **SMALL)
+    conf = jload(root / "results" / "confirmatory.json")
+    assert BENCH_A in conf["excluded_benchmarks"]
+    assert conf["excluded_benchmarks"][BENCH_A].strip()
+    assert conf["benchmarks"][BENCH_A]["counts"]["fit_rows"] == 0
+    assert set(conf["excluded_benchmarks"]) == {BENCH_A}
+    assert conf["pooled"]["k"] == len(SPECS) - 1
+    sec = jload(root / "results" / "secondary.json")
+    mine = [t for t in sec["tests"] if t["benchmark"] == BENCH_A]
+    assert mine
+    for t in mine:
+        assert "unidentified" in (t.get("status"), t.get("method")), t
+        assert t["p_holm"] is None
+    others = [t for t in sec["tests"] if t["benchmark"] != BENCH_A and t["hypothesis"] == "H2"]
+    assert others and all("unidentified" not in (t.get("status"), t.get("method"))
+                          for t in others)
+    assert (root / "paper" / "numbers.tex").is_file()
+
+
+# ---- 11: spline knots come from the benchmark's analysis rows
+
+def analysis_basis(x, xall):
+    from patsy import dmatrix
+    q = list(np.quantile(xall, [0.25, 0.5, 0.75]))
+    m = dmatrix('cr(x, knots=q, lower_bound=lo, upper_bound=hi, constraints="center")',
+                {"x": np.asarray(x, float), "q": q, "lo": float(np.min(xall)),
+                 "hi": float(np.max(xall))}, return_type="dataframe")
+    return m.drop(columns="Intercept").to_numpy()
+
+
+def span_gap(A, B):
+    """Largest distance of the columns of A from the span of [1, B]."""
+    M = np.column_stack([np.ones(len(B)), B])
+    c, *_ = np.linalg.lstsq(M, A, rcond=None)
+    return float(np.abs(A - M @ c).max())
+
+
+def test_f11_spline_knots_are_analysis_row_quartiles(pristine, fresh, monkeypatch):
+    design = importlib.import_module("analysis.design")
+    real = design.build
+    calls = []
+
+    def spy(frame, *a, **k):
+        out = real(frame, *a, **k)
+        calls.append((frame.copy(), out[0].copy()))
+        return out
+
+    monkeypatch.setattr(design, "build", spy)
+    drv("confirmatory").run(fresh)
+    drv("secondary").run(fresh, draws=20, boot=10)
+    assert len(calls) >= 2 * len(SPECS)
+    checked = 0
+    for frame, X in calls:
+        if len(frame) < 12:
+            continue
+        name = bench_of(frame["id"])
+        full = cached_truth_frame(pristine, name, fresh)
+        xall = full["days_since_open"].to_numpy(float)
+        x = frame["days_since_open"].to_numpy(float)
+        cols = X[[c for c in X.columns if c.startswith("time_s")]].to_numpy(float)
+        assert cols.shape[1] == 4
+        assert span_gap(cols, analysis_basis(x, xall)) < 1e-6 * max(1.0, np.abs(cols).max())
+        assert span_gap(analysis_basis(x, xall), cols) < 1e-6
+        checked += 1
+    assert checked >= 2 * len(SPECS)
+    # the case is not vacuous: knots from the modelled rows would give a different space
+    for name in SPECS:
+        full = cached_truth_frame(pristine, name, fresh)
+        fit = fit_frame(full)
+        xs = fit["days_since_open"].to_numpy(float)
+        other = analysis_basis(xs, xs)
+        mine = analysis_basis(xs, full["days_since_open"].to_numpy(float))
+        assert span_gap(other, mine) > 1e-3

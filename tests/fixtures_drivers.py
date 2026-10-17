@@ -38,6 +38,7 @@ T0 = dt.datetime(2026, 3, 2, 0, 0, tzinfo=dt.timezone.utc)  # a Monday
 GPT = "GPT 6"
 CLAUDE = "Claude Opus 5.5"
 DEVIN = "Devin"
+OPEN_HOURS = 120           # benchmarks open at T0 + 120 h; window rows start at 170 h
 BETA = 1.2                 # planted log odds ratio of a cross-family step
 N_WEEK0 = 30               # rows before the confirmatory window
 N_LATER = 530
@@ -260,13 +261,19 @@ def gen_bench(name: str, spec: dict) -> Bench:
                 metrics = {"qubits": maxrow["q"], "toffoli": maxrow["t"]}
             else:
                 metrics = {"qubits": 9500 + rng.randint(0, 50), "toffoli": 9500 + rng.randint(0, 50)}
-        harness = "Codex" if fam == "OpenAI" else "Claude Code" if fam == "Anthropic" else None
+        harness = ["Codex", "Claude Code", "Cursor"][i % 3]   # independent of family
         extra = " Only the validation nonce changed." if (i % 37 == 5) else ""
-        row = _raw(rid, f"id-{tag}", created, solver, child_model,
-                   "accepted" if prom else "rejected", promoted=prom, score=score, sha=sha,
-                   psha=psha, harness=harness, metrics=metrics,
-                   reason=None if prom else "score did not improve current best",
-                   note_extra=extra)
+        failed = (not prom) and kind == "normal" and not week0 and i % 41 == 7
+        if failed:      # a failed row with no reason is an ambiguous failure (sensitivity 9)
+            row = _raw(rid, f"id-{tag}", created, solver, child_model, "failed", promoted=False,
+                       score=None, sha=sha, psha=psha, harness=harness, metrics=None,
+                       reason=None, note_extra=extra)
+        else:
+            row = _raw(rid, f"id-{tag}", created, solver, child_model,
+                       "accepted" if prom else "rejected", promoted=prom, score=score, sha=sha,
+                       psha=psha, harness=harness, metrics=metrics,
+                       reason=None if prom else "score did not improve current best",
+                       note_extra=extra)
         rows.append(row)
         fam_of[rid] = fam
         solver_of[rid] = solver
@@ -276,7 +283,8 @@ def gen_bench(name: str, spec: dict) -> Bench:
         fact = {"id": rid, "solver": solver, "kind": kind, "week0": week0, "family": fam,
                 "promoted": bool(prom), "own_switch": own_arm,
                 "cross_family": (bool(cross) if kind == "normal" else None),
-                "parent": pid, "hours": h}
+                "parent": pid, "hours": h, "failed": failed,
+                "nonce": bool(extra)}
         truth.append(fact)
         earlier.append(fact)
     return Bench(name, rows, parents, sorted(set(missing)), truth)
@@ -288,7 +296,7 @@ def _write_bench(root: Path, b: Bench, bid_idx: int) -> None:
     meta = {"benchmark": {
         "id": f"id-{'abc'[bid_idx]}", "name": b.name, "direction": "-",
         "editablePaths": ["src/main.py"], "sourceUrl": f"https://example.invalid/{slug}",
-        "openedAt": iso(T0 - dt.timedelta(days=1)), "minScoreImprovementBips": None,
+        "openedAt": iso(T0 + dt.timedelta(hours=OPEN_HOURS)), "minScoreImprovementBips": None,
         "baselineScore": 1000.0 + 5}}
     _gz(raw / slug / "benchmark.json.gz", meta)
     _gz(raw / slug / "submissions.json.gz", {"submissions": b.raw})
@@ -329,7 +337,7 @@ def build_study(root: Path, specs=None) -> Study:
     shutil.copy(REPO / "families" / "table.yaml", root / "families" / "table.yaml")
     shutil.copy(REPO / "outcomes" / "denominator.yaml", root / "outcomes" / "denominator.yaml")
     (root / "docs").mkdir(parents=True, exist_ok=True)
-    (root / "docs" / "prereg.md").write_text("synthetic prereg\n")
+    (root / "docs" / "prereg.md").write_text("synthetic prereg\nmargin: [0.80, 1.25]\n")
     for c in CODE:
         p = root / c
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -413,3 +421,44 @@ def build_criteria_study(root: Path) -> Path:
         trees_mod.write_missing(fro / slug, miss)
     write_freeze(root, counts)
     return root
+
+
+# ---------------------------------------------------------------- edits that re-lock the tree
+
+def retag(root: Path) -> None:
+    """Re-sign the manifest and move prereg-v1 to a new commit, so the lock check still passes."""
+    from analysis import lock
+    lock.write_manifest(root)
+    git(root, "add", "-A")
+    git(root, "commit", "-qm", "edit")
+    git(root, "tag", "-f", "prereg-v1")
+
+
+def _read_gz(p: Path):
+    with gzip.open(p, "rb") as f:
+        return json.loads(f.read())
+
+
+def edit_notes(root: Path, name: str, notes: dict) -> None:
+    """Replace the free-text body (everything after the Harness line) of the given rows' notes."""
+    raw = Path(root) / "snapshot" / "raw"
+    p = raw / slug_of(name) / "submissions.json.gz"
+    data = _read_gz(p)
+    for r in data["submissions"]:
+        if r["id"] in notes:
+            head = [ln for ln in r["note"].splitlines() if ln.startswith(("Model:", "Harness:"))]
+            r["note"] = "\n".join(head + [notes[r["id"]]])
+    _gz(p, data)
+    write_snapshot_sums(raw)
+    retag(Path(root))
+
+
+def edit_parents(root: Path, name: str, fn) -> None:
+    """fn(dict id -> {"primary","tree","dropped"}) edits the frozen parent links in place."""
+    fro = Path(root) / "lineage" / "frozen"
+    p = fro / slug_of(name) / "parents.json.gz"
+    data = _read_gz(p)
+    fn(data)
+    trees_mod._gz(p, data)
+    lbuild.write_sha256sums(fro)
+    retag(Path(root))
