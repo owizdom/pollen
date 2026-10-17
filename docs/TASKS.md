@@ -62,7 +62,7 @@ Blinding: until tag `prereg-v1`, no code path may join sealed outcomes to treatm
 
 Owns: `analysis/__init__.py`, `analysis/dataset.py`, `analysis/design.py`, `analysis/power.py`, `analysis/lock.py`, `docs/prereg-manifest.json`, `tests/test_dataset.py`, `tests/test_lock.py`, `tests/test_design.py`, `tests/fixtures_analysis.py`.
 
-- `design.primary_rows(frame)` keeps cross_solver True, single-parent rows with cross_family not null and in_window True, and refuses frames missing those columns. `design.build(frame) -> (X, y_column_name, groups)` builds the §5.1 design (cross_family first, then week, child_family_folded and parent_family_folded dummies with drop_first, parent_is_current_best, log_prior_rows) and is the only design builder: power and confirmatory both import it.
+- `design.primary_rows(frame)` keeps cross_solver True, single-parent rows with cross_family not null and in_window True, and refuses frames missing those columns. `design.build(frame) -> (X, y_column_name, groups)` builds the §5.1 design (cross_family first, then `time_s1`..`time_s4` natural cubic spline basis on days since benchmark opening with knots at the quartiles, then child_family_folded and parent_family_folded dummies with drop_first, parent_is_current_best, log_prior_rows); dataset.build adds a `days_since_open` column and is the only design builder: power and confirmatory both import it.
 - Power counts a failed or non-converged fit as a non-equivalent run (never drops it, so k never silently changes) and reports the share of failed runs.
 - The lock refuses any symlink under the code directories, `snapshot/raw` and `lineage/frozen`, and any importable non-`.py` file (`.pyc` outside `__pycache__`, `.so`) under the code directories.
 

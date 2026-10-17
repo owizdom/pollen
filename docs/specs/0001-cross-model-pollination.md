@@ -118,7 +118,7 @@ Decided (D-A): the primary result is H1 pooled across all study benchmarks, ecds
 
 Per-benchmark model: conditional logistic regression of Y1 on the cross-family indicator, stratified by solver (solver fixed effects), among cross-solver single-parent rows with both families known, inside the confirmatory window. Covariates:
 
-- calendar-week fixed effects;
+- a natural cubic spline with 4 degrees of freedom on days since the benchmark opened (knots at the quartiles of the analysis rows), for frontier difficulty and model releases over time;
 - child-family and parent-family fixed effects (after sparse-family folding);
 - an indicator that the parent was the current best at the time of the row;
 - log of the solver's prior analysis rows.
@@ -141,7 +141,7 @@ Run from treatment counts only, never outcomes, before `prereg-v1`.
 
 - H2: the primary model restricted to own-lineage rows.
 - H3a, H3b: permutation tests, 10,000 draws, shuffling family labels among cross-solver promotions within calendar-week strata (review F4).
-- H4: median regression of Y3 on the cross-family indicator with week fixed effects; bootstrap interval clustered by solver.
+- H4: median regression of Y3 on the cross-family indicator with the same time spline; bootstrap interval clustered by solver.
 - H5: the primary model with Y2 as the outcome, ecdsa.fail only.
 - One Holm family holds every secondary test that passes the minimum-events gate, each benchmark's test as its own member (review F11).
 - E1 and E2 are reported without correction, labelled exploratory.
@@ -354,3 +354,5 @@ v2.4, 2026-10-17: AT13 and AT14 thresholds set to 90 of 100 fixed seeds, because
 v2.5, 2026-10-17, after the Track E2 review: TOST uses the actual 95% and 90% intervals of the estimate (the earlier normal-ratio derivation inflated type I error to 8.4% at k=2 under HKSJ); strata with outcome variation but no treatment variation are kept; the precedence of "effect detected" over "equivalent" is stated.
 
 v2.6, 2026-10-17, after the Track E1 review: the lock covers all rule code and verifies frozen lineage data; missing required files fail the lock; the power gate simulates the actual pooled conditional estimand; minimum events are outcome events counted after the lock.
+
+v2.7, 2026-10-17: the time control in §5.1 and H4 is a 4-df natural spline on days since opening instead of calendar-week fixed effects. On synthetic frames with the real structure (solvers active 1 to 3 weeks over about 20 weeks), week dummies separated the outcome and even a reference conditional fit failed to converge in 10 of 10 seeds. The H3 permutation strata remain calendar weeks.
