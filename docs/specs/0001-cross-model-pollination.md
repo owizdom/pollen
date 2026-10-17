@@ -133,9 +133,9 @@ Equivalence uses two one-sided tests at α = 0.05, which means checking whether 
 
 Run from treatment counts only, never outcomes, before `prereg-v1`.
 
-- Compute equivalence power at a true odds ratio of 1, with a design effect from solver clustering, for the primary estimand.
+- Compute equivalence power at a true odds ratio of 1 for the primary estimand by simulation: outcomes are simulated on each study benchmark's real treatment frame (solver random intercept, per-benchmark marginal promotion rate), fitted with the §5.1 conditional model and covariates, and pooled with HKSJ; power is the share of simulations whose pooled 90% interval lies inside the margin.
 - Decided (D-A): if that power is below 80%, widen the margin to [0.67, 1.50] and state the reason in `docs/prereg.md` before the tag. Review F1 showed that on ecdsa.fail alone, even before clustering, 1.645 × SE ≈ 0.226 exceeds log 1.25 ≈ 0.223, so a single-benchmark verdict there is close to guaranteed "inconclusive".
-- Minimum events (review F12): a secondary test runs as confirmatory only when its smaller arm has at least 20 events. Below that it is reported descriptively and leaves the Holm family. On ecdsa.fail H3b has about 5 plateau breaks, so it will likely be descriptive.
+- Minimum events (review F12): a secondary test runs as confirmatory only when its smaller arm has at least 20 outcome events, counted after the lock from sealed outcomes before the test's result is computed. Below that it is reported descriptively and leaves the Holm family. On ecdsa.fail H3b has about 5 plateau breaks, so it will likely be descriptive.
 
 ### 5.4 Secondary tests and corrections
 
@@ -184,7 +184,7 @@ These hint at no effect on ecdsa.fail. The paper repeats this disclosure.
 
 - `outcomes/` writes outcome columns to `outcomes/sealed/` only. `analysis.dataset()` joins them only inside `confirmatory.py`, after the lock check passes.
 - AT5 checks outcomes against the API and reports pass or fail, never the values split by treatment.
-- `prereg-v1` locks a manifest, `docs/prereg-manifest.json`, holding the SHA-256 of `docs/prereg.md`, every file under `analysis/`, `lineage/`, `families/table.yaml`, `outcomes/denominator.yaml`, `snapshot/raw/SHA256SUMS` and `lineage/frozen/SHA256SUMS`.
+- `prereg-v1` locks a manifest, `docs/prereg-manifest.json`, holding the SHA-256 of `docs/prereg.md`, every code file under `snapshot/`, `families/`, `lineage/`, `outcomes/` and `analysis/`, `families/table.yaml`, `outcomes/denominator.yaml`, `snapshot/raw/SHA256SUMS` and `lineage/frozen/SHA256SUMS`. Every listed file must exist when the manifest is written. The lock check also verifies every frozen data file against its SHA256SUMS and rejects unlisted files.
 - The tag's commit hash is stamped with OpenTimestamps on the day of the tag, and the `.ots` proof is committed. No account or upload of content is needed.
 
 ## 6. Threats the design cannot remove
@@ -350,3 +350,5 @@ v2.3, 2026-10-17, after the Track D re-review (architect rulings, pre-lock): fai
 v2.4, 2026-10-17: AT13 and AT14 thresholds set to 90 of 100 fixed seeds, because 93 of 100 fails a correct estimator about 12% of the time.
 
 v2.5, 2026-10-17, after the Track E2 review: TOST uses the actual 95% and 90% intervals of the estimate (the earlier normal-ratio derivation inflated type I error to 8.4% at k=2 under HKSJ); strata with outcome variation but no treatment variation are kept; the precedence of "effect detected" over "equivalent" is stated.
+
+v2.6, 2026-10-17, after the Track E1 review: the lock covers all rule code and verifies frozen lineage data; missing required files fail the lock; the power gate simulates the actual pooled conditional estimand; minimum events are outcome events counted after the lock.
