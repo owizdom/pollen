@@ -1,0 +1,25 @@
+[project]
+name = "pollen"
+version = "0.1.0"
+description = "Does cross-model pollination help open autoresearch? A pre-registered study of Yukon leaderboards."
+requires-python = ">=3.12,<3.13"
+license = "MIT"
+authors = [{ name = "Wisdom Okechukwu" }]
+dependencies = [
+    "pandas==2.2.3",
+    "numpy==2.1.3",
+    "statsmodels==0.14.4",
+    "scipy==1.14.1",
+    "matplotlib==3.9.2",
+    "pyyaml==6.0.2",
+]
+
+[dependency-groups]
+dev = ["pytest==8.3.3"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.uv]
+package = false
