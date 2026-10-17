@@ -1,51 +1,77 @@
-"""Line-diff distance between editable-path trees."""
+"""Distances between editable-path trees, measured by `git diff --numstat`."""
 from __future__ import annotations
 
-from difflib import SequenceMatcher
+import gzip
+import json
+import subprocess
+from pathlib import Path
+
+EMPTY_TREE = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 
 
-def _file_distance(x: list[str], y: list[str]) -> int:
-    if x == y:
-        return 0
-    if not x:
-        return len(y)
-    if not y:
-        return len(x)
-    # strip common prefix/suffix cheaply before diffing
-    lo = 0
-    n = min(len(x), len(y))
-    while lo < n and x[lo] == y[lo]:
-        lo += 1
-    hi = 0
-    while hi < n - lo and x[-1 - hi] == y[-1 - hi]:
-        hi += 1
-    x2, y2 = x[lo:len(x) - hi], y[lo:len(y) - hi]
-    if not x2:
-        return len(y2)
-    if not y2:
-        return len(x2)
-    sm = SequenceMatcher(None, x2, y2, autojunk=False)
-    return sum((i2 - i1) + (j2 - j1)
-               for tag, i1, i2, j1, j2 in sm.get_opcodes() if tag != "equal")
+def numstat(mirror, sha_a: str, sha_b: str, paths) -> tuple[int, int, int]:
+    """(added, removed, binary_changed) going from a to b over the editable paths."""
+    out = subprocess.run(
+        ["git", "-C", str(mirror), "diff", "--numstat", "--minimal", "--no-renames",
+         "--no-ext-diff", "--no-textconv", sha_a, sha_b, "--", *paths],
+        capture_output=True, check=True).stdout.decode("utf-8", "replace")
+    added = removed = binary = 0
+    for line in out.splitlines():
+        a, r, _ = line.split("\t", 2)
+        if a == "-" or r == "-":
+            binary += 1
+        else:
+            added += int(a)
+            removed += int(r)
+    return added, removed, binary
 
 
-def changed_lines(a: dict[str, list[str]], b: dict[str, list[str]]) -> int:
-    """Added plus removed lines over the union of paths (missing path = empty)."""
-    if a is b:
-        return 0
-    return sum(_file_distance(a.get(p, []), b.get(p, [])) for p in set(a) | set(b))
+def changed_lines(mirror, sha_a, sha_b, paths) -> int:
+    a, r, b = numstat(mirror, sha_a, sha_b, paths)
+    return a + r + b
 
 
-def size(tree: dict[str, list[str]]) -> int:
-    return sum(len(v) for v in tree.values())
+def child_side(mirror, parent_sha, child_sha, paths) -> int:
+    """Text lines present in the child but not the parent."""
+    return numstat(mirror, parent_sha, child_sha, paths)[0]
 
 
-def tree_hash(tree: dict[str, list[str]]) -> str:
-    import hashlib
-    h = hashlib.sha256()
-    for p in sorted(tree):
-        h.update(p.encode()); h.update(b"\0")
-        for ln in tree[p]:
-            h.update(ln.encode()); h.update(b"\n")
-        h.update(b"\1")
-    return h.hexdigest()
+def text_size(mirror, sha, paths) -> int:
+    """Text lines in the editable paths; binary files do not count."""
+    return numstat(mirror, EMPTY_TREE, sha, paths)[0]
+
+
+def ident(tree_ids) -> str:
+    """Stable string for a tree identity tuple."""
+    return ",".join(o or "-" for o in tree_ids)
+
+
+class Memo:
+    """Persistent memo keyed by tree identity: pairs (parent>child) and sizes."""
+
+    def __init__(self, dist=None, size=None):
+        self.dist: dict[str, list[int]] = dist or {}
+        self.size: dict[str, int] = size or {}
+
+    @classmethod
+    def load(cls, path) -> "Memo":
+        p = Path(path)
+        if not p.exists():
+            return cls()
+        d = json.loads(gzip.decompress(p.read_bytes()))
+        return cls(d.get("dist"), d.get("size"))
+
+    def pair(self, mirror, id_a, sha_a, id_b, sha_b, paths):
+        if id_a == id_b:
+            return (0, 0, 0)
+        k = f"{id_a}>{id_b}"
+        v = self.dist.get(k)
+        if v is None:
+            v = self.dist[k] = list(numstat(mirror, sha_a, sha_b, paths))
+        return tuple(v)
+
+    def text_size(self, mirror, id_c, sha, paths) -> int:
+        v = self.size.get(id_c)
+        if v is None:
+            v = self.size[id_c] = text_size(mirror, sha, paths)
+        return v

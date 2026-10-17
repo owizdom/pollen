@@ -1,4 +1,4 @@
-"""Bare-mirror tree reader for editable paths, fetched by SHA."""
+"""Bare-mirror reader: fetch by SHA into refs/pollen/<sha>, tree identities, manifests."""
 from __future__ import annotations
 
 import gzip
@@ -8,8 +8,8 @@ import subprocess
 from pathlib import Path
 
 
-def _git(mirror, *args, input=None, check=True):
-    return subprocess.run(["git", "-C", str(mirror), *args], input=input,
+def _git(repo, *args, input=None, check=True):
+    return subprocess.run(["git", "-C", str(repo), *args], input=input,
                           capture_output=True, check=check)
 
 
@@ -18,84 +18,79 @@ def mirror_path(repo: str, cache_dir) -> Path:
     return Path(cache_dir) / f"{key}.git"
 
 
-def _present(mirror, shas) -> set[str]:
-    if not shas:
-        return set()
-    inp = "".join(f"{s}^{{commit}}\n" for s in shas).encode()
-    out = _git(mirror, "cat-file", "--batch-check", input=inp).stdout.decode().splitlines()
-    return {s for s, line in zip(shas, out) if not line.endswith("missing")}
+def _have(mirror) -> set[str]:
+    out = _git(mirror, "for-each-ref", "--format=%(refname)", "refs/pollen/").stdout.decode()
+    return {r.rsplit("/", 1)[1] for r in out.split()}
 
 
-def ensure_mirror(repo: str, shas, cache_dir) -> tuple[Path, list[str]]:
-    """Create the mirror if needed and fetch each SHA. Returns (mirror, unfetchable)."""
+def _fetch(mirror, repo, chunk: list[str]) -> None:
+    """Fetch a chunk; on failure split in halves until bad SHAs are isolated."""
+    if not chunk:
+        return
+    specs = [f"+{s}:refs/pollen/{s}" for s in chunk]
+    r = _git(mirror, "fetch", "-q", "--no-tags", str(repo), *specs, check=False)
+    if r.returncode == 0 or len(chunk) == 1:
+        return
+    mid = len(chunk) // 2
+    _fetch(mirror, repo, chunk[:mid])
+    _fetch(mirror, repo, chunk[mid:])
+
+
+def ensure_mirror(repo: str, shas, cache_dir, chunk_size: int = 200):
+    """Create the mirror if needed and fetch each SHA. Returns (mirror, missing)."""
     mirror = mirror_path(repo, cache_dir)
     if not mirror.exists():
         mirror.parent.mkdir(parents=True, exist_ok=True)
         subprocess.run(["git", "init", "-q", "--bare", str(mirror)], check=True)
-    _git(mirror, "remote", "remove", "origin", check=False)
-    _git(mirror, "remote", "add", "origin", str(repo))
+    _git(mirror, "config", "gc.auto", "0")
     shas = sorted(set(shas))
-    todo = [s for s in shas if s not in _present(mirror, shas)]
-    if todo:
-        r = _git(mirror, "fetch", "-q", "--no-tags", "origin", *todo, check=False)
-        if r.returncode != 0:
-            for s in todo:
-                _git(mirror, "fetch", "-q", "--no-tags", "origin", s, check=False)
-    have = _present(mirror, shas)
+    have = _have(mirror)
+    todo = [s for s in shas if s not in have]
+    for i in range(0, len(todo), chunk_size):
+        _fetch(mirror, repo, todo[i:i + chunk_size])
+    have = _have(mirror)
     return mirror, [s for s in shas if s not in have]
 
 
-def _ls_tree(mirror, sha, paths) -> dict[str, str]:
-    out = _git(mirror, "ls-tree", "-r", "-z", sha, "--", *paths, check=False).stdout
-    res = {}
-    for rec in out.split(b"\0"):
-        if not rec:
-            continue
-        meta, _, name = rec.partition(b"\t")
-        mode, typ, blob = meta.decode().split()
-        if typ == "blob":
-            res[name.decode("utf-8", "surrogateescape")] = blob
+def tree_ids_many(repo, shas, paths) -> dict[str, tuple]:
+    """Tree identity per commit: the git object id of each editable path (None if absent)."""
+    shas = list(dict.fromkeys(shas))
+    paths = [p.rstrip("/") for p in paths]
+    if not shas:
+        return {}
+    inp = "".join(f"{s}:{p}\n" for s in shas for p in paths).encode()
+    out = _git(repo, "cat-file", "--batch-check", input=inp).stdout.decode().splitlines()
+    res, k = {}, 0
+    for s in shas:
+        ids = []
+        for _ in paths:
+            parts = out[k].split()
+            ids.append(None if parts[-1] == "missing" else parts[0])
+            k += 1
+        res[s] = tuple(ids)
     return res
 
 
-def read_manifests(repo: str, editable_paths, shas, cache_dir):
-    """Return ({sha: {path: blob_sha}}, missing)."""
-    mirror, missing = ensure_mirror(repo, shas, cache_dir)
-    paths = [p.rstrip("/") for p in editable_paths]
-    bad = set(missing)
-    manifests = {s: _ls_tree(mirror, s, paths) for s in sorted(set(shas)) if s not in bad}
-    return manifests, missing
+def tree_ids(repo, sha: str, paths) -> tuple:
+    return tree_ids_many(repo, [sha], paths)[sha]
 
 
-def read_blobs(mirror, blob_shas) -> dict[str, list[str]]:
-    """Read many blobs through one `git cat-file --batch` process."""
-    blob_shas = sorted(set(blob_shas))
-    if not blob_shas:
-        return {}
-    data = _git(mirror, "cat-file", "--batch",
-                input="".join(b + "\n" for b in blob_shas).encode()).stdout
-    out, pos = {}, 0
-    for b in blob_shas:
-        nl = data.index(b"\n", pos)
-        header = data[pos:nl].split()
-        if len(header) == 2:  # "<sha> missing"
-            pos = nl + 1
-            out[b] = []
-            continue
-        n = int(header[2])
-        body = data[nl + 1:nl + 1 + n]
-        out[b] = body.decode("utf-8", "replace").splitlines()
-        pos = nl + 1 + n + 1
-    return out
-
-
-def read_trees(repo: str, editable_paths, shas, cache_dir):
-    """Return ({sha: {path: lines}}, missing) for the editable paths only."""
-    manifests, missing = read_manifests(repo, editable_paths, shas, cache_dir)
-    mirror = mirror_path(repo, cache_dir)
-    blobs = read_blobs(mirror, (b for m in manifests.values() for b in m.values()))
-    trees = {s: {p: blobs[b] for p, b in m.items()} for s, m in manifests.items()}
-    return trees, missing
+def read_manifests(mirror, shas, paths) -> dict[str, dict[str, str]]:
+    """{sha: {path: blob_sha}} for files under the editable paths (dirs recurse)."""
+    paths = [p.rstrip("/") for p in paths]
+    res = {}
+    for sha in sorted(set(shas)):
+        out = _git(mirror, "ls-tree", "-r", "-z", sha, "--", *paths, check=False).stdout
+        m = {}
+        for rec in out.split(b"\0"):
+            if not rec:
+                continue
+            meta, _, name = rec.partition(b"\t")
+            _, typ, blob = meta.decode().split()
+            if typ == "blob":
+                m[name.decode("utf-8", "surrogateescape")] = blob
+        res[sha] = m
+    return res
 
 
 def _gz(path: Path, obj) -> Path:

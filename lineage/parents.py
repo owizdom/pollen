@@ -1,83 +1,95 @@
-"""Parent inference: declared attribution, then tree distance (spec 3.3)."""
+"""Parent inference: declared attribution plus an always-computed tree link (spec 3.3)."""
 from __future__ import annotations
 
-import gzip
-import hashlib
-import json
 from dataclasses import dataclass
-from pathlib import Path
 
-from lineage.distance import changed_lines, size, tree_hash
+from lineage import trees as trees_mod
+from lineage.distance import Memo, ident
 
-RECENT_PROMOTED = 50
+WINDOW = 50
 
 
 @dataclass(frozen=True)
 class ParentLink:
     parent_ids: tuple[str, ...]
     method: str  # declared | multi | tree | novel | none
-    distance: int | None
+    distance: int | None = None
+    child_side: int | None = None
 
 
-def parents(sub, earlier, attribution, trees, own_history) -> ParentLink:
-    declared = attribution.get(sub.id) or []
-    if len(declared) == 1:
-        return ParentLink(tuple(declared), "declared", None)
-    if len(declared) >= 2:
-        return ParentLink(tuple(declared), "multi", None)
+@dataclass(frozen=True)
+class ParentResult:
+    primary: ParentLink
+    tree: ParentLink
+    dropped_declared: tuple[str, ...] = ()
 
-    child = trees.get(sub.id)
-    if child is None:
-        return ParentLink((), "none", None)
 
-    before = [s for s in earlier if s.created_at < sub.created_at and s.id != sub.id]
-    before.sort(key=lambda s: s.created_at)
-    promoted = [s for s in before if s.promoted][-RECENT_PROMOTED:]
-    cands = {s.id: s for s in promoted}
-    for s in own_history:
-        if s.created_at < sub.created_at and s.id != sub.id:
-            cands[s.id] = s
+def _key(s):
+    return (s.created_at, s.id)
 
-    cache: dict[str, int] = {}
-    best_id, best_d = None, None
-    for s in sorted(cands.values(), key=lambda s: s.created_at, reverse=True):
-        t = trees.get(s.id)
-        if t is None:
+
+def candidates(child, earlier, trees, own_history, ids) -> list:
+    """Window: rows with trees, collapsed by tree identity (newest kept), then last 50."""
+    def pool(rows):
+        rows = sorted((s for s in rows if s.id in trees and s.id != child.id
+                       and s.created_at < child.created_at), key=_key)
+        kept = {}
+        for s in rows:
+            kept[ids[s.id]] = s
+        return sorted(kept.values(), key=_key)[-WINDOW:]
+
+    promoted = [s for s in earlier
+                if s.promoted and (s.finished_at or s.created_at) < child.created_at]
+    out = {s.id: s for s in pool(promoted)}
+    out.update({s.id: s for s in pool(own_history)})
+    return sorted(out.values(), key=_key)
+
+
+def _ids_for(rows, trees, mirror, paths, ids):
+    need = [s for s in rows if s.id in trees and s.id not in ids]
+    if need:
+        got = trees_mod.tree_ids_many(mirror, [trees[s.id] for s in need], paths)
+        for s in need:
+            ids[s.id] = got[trees[s.id]]
+    return ids
+
+
+def tree_link(child, earlier, trees, own_history, mirror, paths, ids, memo) -> ParentLink:
+    if child.id not in trees:
+        return ParentLink((), "none")
+    rows = list(earlier) + list(own_history) + [child]
+    _ids_for(rows, trees, mirror, paths, ids)
+    cands = candidates(child, earlier, trees, own_history, ids)
+    if not cands:
+        return ParentLink((), "none")
+    cid, csha = ident(ids[child.id]), trees[child.id]
+    best = None
+    for s in cands:  # ascending (created_at, id); later row wins ties
+        a, r, b = memo.pair(mirror, ident(ids[s.id]), trees[s.id], cid, csha, paths)
+        d = a + r + b
+        if best is None or d <= best[0]:
+            best = (d, a, s)
+    d, side, s = best
+    if side > memo.text_size(mirror, cid, csha, paths) / 2:
+        return ParentLink((), "novel", d, side)
+    return ParentLink((s.id,), "tree", d, side)
+
+
+def parents(child, earlier, attribution, trees, own_history, mirror, paths,
+            ids=None, memo=None) -> ParentResult:
+    """trees: row id -> commit sha. ids: optional cache of row id -> tree identity."""
+    ids = {} if ids is None else ids
+    memo = Memo() if memo is None else memo
+    earlier = [s for s in earlier if s.id != child.id and s.created_at < child.created_at]
+    link = tree_link(child, earlier, trees, [s for s in own_history if s.id != child.id],
+                     mirror, paths, ids, memo)
+    known = {s.id for s in earlier}
+    kept, dropped = [], []
+    for d in attribution.get(child.id) or []:
+        if d in kept or d in dropped:
             continue
-        h = tree_hash(t)
-        d = cache.get(h)
-        if d is None:
-            d = cache[h] = changed_lines(t, child)
-        if best_d is None or d < best_d:  # strict: ties keep the most recent
-            best_id, best_d = s.id, d
-    if best_id is None:
-        return ParentLink((), "none", None)
-    if best_d > size(child) / 2:
-        return ParentLink((), "novel", best_d)
-    return ParentLink((best_id,), "tree", best_d)
-
-
-def _gz(path: Path, obj) -> None:
-    data = json.dumps(obj, sort_keys=True, separators=(",", ":")).encode()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "wb") as raw, gzip.GzipFile(fileobj=raw, mode="wb", mtime=0, filename="") as f:
-        f.write(data)
-
-
-def write_parents(out_dir, links: dict[str, ParentLink]) -> Path:
-    """Write deterministic parents.json.gz: {sub_id: [parent_ids, method, distance]}."""
-    path = Path(out_dir) / "parents.json.gz"
-    _gz(path, {k: [list(v.parent_ids), v.method, v.distance] for k, v in links.items()})
-    return path
-
-
-def write_sha256sums(frozen_dir) -> Path:
-    """Write lineage/frozen/SHA256SUMS over every file below frozen_dir."""
-    root = Path(frozen_dir)
-    lines = []
-    for p in sorted(root.rglob("*")):
-        if p.is_file() and p.name != "SHA256SUMS":
-            lines.append(f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(root).as_posix()}")
-    out = root / "SHA256SUMS"
-    out.write_text("\n".join(lines) + ("\n" if lines else ""))
-    return out
+        (kept if d in known else dropped).append(d)
+    if not kept:
+        return ParentResult(link, link, tuple(dropped))
+    method = "declared" if len(kept) == 1 else "multi"
+    return ParentResult(ParentLink(tuple(kept), method), link, tuple(dropped))

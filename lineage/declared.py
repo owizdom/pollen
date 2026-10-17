@@ -37,7 +37,8 @@ def resolve(token: str, subs) -> str | None:
     hits: set[str] = set()
     exact: set[str] = set()
     for s in subs:
-        keys = [s.id, s.commit_sha, getattr(s, "promoted_source_ref", None)]
+        keys = [s.id, getattr(s, "commit_sha", None), getattr(s, "submission_sha", None),
+                getattr(s, "promoted_ref", None)]
         for k in keys:
             if not k:
                 continue
