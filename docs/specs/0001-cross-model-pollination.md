@@ -51,7 +51,7 @@ Done means all of the following exist and pass their acceptance tests.
 
 - Unit: one submission to one study benchmark.
 - Snapshot: for every benchmark the API lists, the benchmark object and its submissions, fetched once from `https://api.yukon.org` without credentials, stored as gzipped JSON with SHA-256 sums and a `FREEZE.json` of fetch time and row counts. For study benchmarks the snapshot also holds each submission's attribution record (`/api/submissions/{id}/attribution`). The tree manifests and distance table from §3.3 are frozen separately under `lineage/frozen/` with their own checksums.
-- Analysis rows: submissions that were evaluated. Dropped before any analysis: cancelled rows, and rejections never scored. On ecdsa.fail those reasons are "claimed score did not improve" (a pre-filter on the solver's own claim), "does not contain code change", and packaging errors. `families/` does not decide this list; `outcomes/denominator.yaml` holds the exact reason strings per benchmark, locked at `prereg-v1`.
+- Analysis rows: submissions that were evaluated. Dropped before any analysis: cancelled rows, rows not yet final (status `validating` or similar), rejections never scored, and failures caused by infrastructure rather than by the submission. Each failure reason is classed in `outcomes/denominator.yaml` as evaluated (kept), infrastructure (dropped, for example rate limits, interrupted validation jobs, dispatch or token errors, invalid state transitions) or ambiguous (kept; sensitivity 9 drops them). On ecdsa.fail those reasons are "claimed score did not improve" (a pre-filter on the solver's own claim), "does not contain code change", and packaging errors. `families/` does not decide this list; `outcomes/denominator.yaml` holds the exact reason strings per benchmark, locked at `prereg-v1`.
 - Confirmatory window (review F2): commit availability must not depend on outcome. On ecdsa.fail, 322 of 632 accepted rows lack `submissionCommitSha`, against 163 of 721 rejected, mostly in June. Every promoted row has `promotedSourceRef`, a commit on the benchmark's main history, so promoted trees are recoverable. The window for each benchmark starts at the first calendar week after which, through the freeze, the share of analysis rows with a recoverable tree differs by at most 5 percentage points between promoted and other rows. Rows before the window are reported descriptively only.
 
 ### 3.2 Model family and harness
@@ -87,11 +87,12 @@ Validation (AT4) compares the treatment cell, not the parent id. Two labelled se
 Outcome columns are sealed until `prereg-v1` exists (§5.8).
 
 - Y1, promotion: `promotionStatus == "promoted"`, per analysis row. The 4 ecdsa.fail rows with status `accepted` and promotion `failed` count as not promoted.
-- Y2, Pareto gain (ecdsa.fail only): the row has valid (Q, T) and no earlier valid row dominates it.
+- Y2, Pareto gain (ecdsa.fail only): the row has valid (Q, T), no earlier valid row dominates it, and no earlier valid row has the identical (Q, T).
+- Evaluation order: rows are ordered by the time their evaluation finished (`promotionFinishedAt`, else `updatedAt`), not by creation time, because promotions can finish out of creation order. The best score before a row is the best promoted score, seeded with the benchmark's `baselineScore`, among rows that finished earlier. Rows with `promotionStatus == "superseded"` are a named exception class.
 - Y3, gain size: for promoted rows, the log ratio of the best score before the row to its score, signed so larger is better under the benchmark's direction.
 - Large jump: a promotion in the top decile of Y3 within its benchmark.
-- Plateau break: a promotion gaining at least 1% after at least 72 hours with no promotion gaining 1% or more.
-- Promotion threshold: benchmarks differ (`flock-challenge-multi/x86` requires a 100 basis-point improvement; the others none). Thresholds are a benchmark-level covariate and are named in the replication table (review F10).
+- Plateau break: a promotion gaining at least 1% after at least 72 hours with no promotion gaining 1% or more. The window starts at the benchmark's opening time. "Gaining 1%" means the score improves by at least 1% of the best before it in the benchmark's direction (lower: score at most 0.99 times the best; higher: at least 1.01 times).
+- Promotion threshold: the API field `minScoreImprovementBips` differs between benchmarks (100 on `flock-challenge-multi/x86`, null elsewhere), but 144 of that benchmark's 187 promotions improved by less than 100 basis points on 17 Oct, so the field does not describe the rule as applied. The replication table names the field and states whether AT5 reproduces each benchmark's promotions.
 
 ## 4. Hypotheses (pre-registered)
 
@@ -149,6 +150,7 @@ Run from treatment counts only, never outcomes, before `prereg-v1`.
 3. Drop rows whose note says only a nonce or validation draw changed.
 4. Family coarsened to Anthropic, OpenAI and other.
 5. Drop the first 72 hours of each benchmark.
+9. Drop rows whose failure reason is classed ambiguous.
 6. Add harness fixed effects.
 7. Drop the author's own rows (solver `owizdom`, 5 rows on ecdsa.fail) (review F16).
 8. Sibling benchmarks: pooled result with each sibling pair reduced to one member (flock pair; eip8200 pair).
@@ -216,10 +218,11 @@ pollen/
 snapshot.load(benchmark: str) -> list[Submission]
     # Submission(id, benchmark, solver, created_at, status, promoted: bool, cancelled: bool,
     #   score: float | None, metrics: dict, note: str, model_line: str | None,
-    #   commit_sha: str | None, rejection_reason: str | None)
+    #   commit_sha: str | None, rejection_reason: str | None, submission_sha, promoted_ref,
+    #   promotion_status: str | None, finished_at: datetime | None)
 snapshot.benchmark_meta(benchmark: str) -> Benchmark
     # Benchmark(id, name, slug, direction: "lower" | "higher", editable_paths, source_url,
-    #   opened_at, min_improvement_bips: int | None)
+    #   opened_at, min_improvement_bips: int | None, baseline_score: float | None)
 snapshot.attribution(benchmark: str) -> dict[str, list[str]]     # submission id -> declared parent ids
 families.family_of(model_line: str | None) -> Family | Multi | Unknown
 families.harness_of(note: str) -> str | None
@@ -241,7 +244,7 @@ T means automated. L means a live run recorded in `docs/JOURNAL.md`.
 | AT2 | Family table complete | T | Every distinct `Model:` string maps to a family, Multi or Unknown. Golden cases pass: "GPT-5 Codex" OpenAI; "Claude Opus 4.8 (1M context)" Anthropic; "Kimi K3" Moonshot; "Devin" Unknown; "Astra" Unknown; "Claude Opus 5.5 + GPT-6.1 Sol" Multi; "Grok 4.6 + Kimi k3" Multi. |
 | AT3 | Label audit | L | A seeded sample of 200 notes is scored by a fresh-context reviewer as agree, contradict or silent. Among non-silent notes, agreement is at least 95%. Wisdom spot-checks 20. |
 | AT4 | Treatment validity | T | Against declared attribution edges and against text-declared bases separately, the inferred treatment cell (cross-solver by cross-family) agrees in at least 85% of rows. Agreement is reported for frontier and non-frontier parents. Golden tests cover all three `declared_base` id formats. |
-| AT5 | Outcome recomputation | T | Y1 recomputed from the running best score and the denominator rules agrees with `promotionStatus` on every row except named exceptions, which include the 4 ecdsa.fail accepted-but-failed rows. Reports pass or fail only. |
+| AT5 | Outcome recomputation | T | On every study benchmark, Y1 recomputed in evaluation order from the baseline-seeded running best agrees with `promotionStatus` on every analysis row except named exception classes (accepted-but-failed promotions, superseded). A benchmark above 1% disagreement is reported as "promotion rule not reproduced" in the paper; Y1 still comes from `promotionStatus`. Reports pass, fail and counts only. |
 | AT6 | Lock | T | `confirmatory.py` exits non-zero unless every hash in `docs/prereg-manifest.json` matches the working tree and the manifest is unchanged since tag `prereg-v1`. |
 | AT7 | No hand-typed results | T | The paper builds only if every number macro is defined in `numbers.tex`; a lint finds no numeric literals in results sections outside macros, citations and an allowlist. |
 | AT8 | Offline rebuild | L | A fresh clone with the network disabled runs `make reproduce` and regenerates `numbers.tex` and every figure-data file byte-identical. Figures render with fixed metadata and fonts. |
@@ -331,3 +334,5 @@ Made by Wisdom, 2026-10-17, after the v2 review:
 ## 16. Revision log
 
 v2, 2026-10-17, after a fresh-context Opus 5.5 review (18 findings, 17 in scope). Changes by finding: F1 power gate and 90% interval wording (§5.2, §5.3); F2 confirmatory window and promoted trees from `promotedSourceRef` (§3.1, AT15); F3 solver fixed effects and corrected §6; F4 H3 restricted to cross-solver promotions; F5 declared attribution, novel cutoff, multi-source rows (§3.3); F6 AT4 on the treatment cell with two labelled sets; F7 code lock, sealed outcomes, external timestamp (§5.8); F8 frozen trees and distances, offline rebuild; F9 Multi and harness (§3.2, sensitivity 6); F10 promotion thresholds and the eip8200 sibling pair; F11 Holm membership and HKSJ; F12 minimum events; F13 denominator and real recomputation in AT5; F14 sparse families and Firth; F15 AT11 allowlist; F16 conflict of interest; F17 AT13, AT14 and the three-way audit. F18 (scope trims, out of scope): the mechanism-census analysis is dropped; H5 and E2 stay subject to the minimum-events gate.
+
+v2.1, 2026-10-17, after the Track D review (architect decisions, pre-lock): evaluation-order frontier seeded with `baselineScore`; superseded rows as a named exception class; 1% defined as a relative score change; plateau window from opening; three-way failure classes with sensitivity 9; identical Pareto points are not gains; the false flock-multi threshold sentence corrected; AT5 across all study benchmarks.

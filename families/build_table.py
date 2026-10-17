@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import gzip
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -49,6 +50,14 @@ def propose(lines, existing: dict[str, str]) -> dict[str, str]:
     return out
 
 
+_SEP = re.compile(r"[+/&,]|\s(?:and|with|via)\s", re.IGNORECASE)
+
+
+def review_list(strings, table: dict[str, str]) -> list[str]:
+    """Strings with a separator that still resolve to fewer than two vendors."""
+    return [s for s in strings if _SEP.search(s) and len(vendors_in(s)) < 2]
+
+
 def snapshot_model_lines(root: Path = DEFAULT_ROOT) -> list[str]:
     """Distinct model lines in every benchmark directory present under root.
 
@@ -74,12 +83,21 @@ def main(root: Path = DEFAULT_ROOT, table: Path = TABLE_PATH) -> None:
         existing = (yaml.safe_load(table.read_text()) or {}).get("strings", {})
     merged = propose(SEED_LINES + snapshot_model_lines(root), existing)
     new = [k for k in merged if k not in existing]
-    table.write_text(yaml.safe_dump({"strings": merged}, sort_keys=False,
-                                    allow_unicode=True, width=1000))
+    # Append-only: the file's existing text, comments included, is left as is.
+    text = table.read_text() if table.exists() else "strings:\n"
+    if text and not text.endswith("\n"):
+        text += "\n"
+    add = {k: merged[k] for k in new}
+    if add:
+        dumped = yaml.safe_dump(add, sort_keys=False, allow_unicode=True, width=1000)
+        text += "".join("  " + ln + "\n" for ln in dumped.splitlines())
+    table.write_text(text)
     print(f"{len(existing)} existing kept, {len(new)} added, {len(merged)} total")
     for k in new:
         if merged[k] == "Unknown":
             print(f"unresolved (Unknown): {k!r}")
+    for k in review_list(merged, merged):
+        print(f"review (separator, under two vendors): {k!r} -> {merged[k]}")
 
 
 if __name__ == "__main__":

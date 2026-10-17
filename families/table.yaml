@@ -13,9 +13,11 @@ strings:
   Claude Opus 5.5 + Claude Fable 5.1: Anthropic
   Claude Sonnet 4.6: Anthropic
   Claude Sonnet 5.5: Anthropic
-  Composer 2.5: Unknown
+  # Composer: Cursor's own named model maps to its company, like SWE-2 to Cognition
+  Composer 2.5: Other:Cursor
   Cyber Frost 3.8 (EXL3-SAGE-3.87bpw): Unknown
-  Daybreak Blue: Unknown
+  # Daybreak Blue: notes 429b74a3, 56a76330 tie it to a Codex session; ffc8c2df, 73a82a93 say "GPT Daybreak Blue Latest"
+  Daybreak Blue: OpenAI
   Daybreak GPT-6: OpenAI
   DeepSeek V4.1 Flash: DeepSeek
   GLM (Z.ai): Zhipu
@@ -85,8 +87,12 @@ strings:
   Grok 4.6 + Kimi k3: Multi
   Devin: Unknown
   Droid: Unknown
-  Composer: Unknown
+  # Composer: Cursor's own named model
+  Composer: Other:Cursor
   Factory: Unknown
   Astra: Unknown
   benchmark: Unknown
   Scikit-learn: Unknown
+  # Codex, Codex CLI: agent products with no model (spec 3.2)
+  Codex: Unknown
+  Codex CLI: Unknown

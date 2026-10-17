@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import re
-from functools import lru_cache
 from pathlib import Path
 
 import yaml
@@ -18,7 +17,7 @@ class UnmappedModel(Exception):
 # inside a longer alphanumeric run, so "opus" does not match "opusx".
 _RULES: dict[str, tuple[str, ...]] = {
     "Anthropic": ("claude", "anthropic", "opus", "sonnet", "haiku", "fable"),
-    "OpenAI": ("gpt", "codex", "openai"),
+    "OpenAI": ("gpt", "openai"),
     "Google": ("gemini", "gemma", "google"),
     "xAI": ("grok",),
     "Moonshot": ("kimi", "moonshot"),
@@ -45,9 +44,34 @@ def vendors_in(model_line: str | None) -> frozenset[str]:
     return frozenset(f for f, p in _PATTERNS.items() if p.search(model_line))
 
 
-@lru_cache(maxsize=1)
+_ALLOWED = frozenset({"Anthropic", "OpenAI", "Google", "xAI", "Moonshot", "MiniMax",
+                      "Zhipu", "DeepSeek", "Alibaba", "Mistral", "Meta", "Multi",
+                      "Unknown"})
+_OTHER = re.compile(r"^Other:\S.*$")
+
+
+def validate_table(path: Path = TABLE_PATH) -> dict[str, str]:
+    """Load the table and raise ValueError on any value outside the family set."""
+    data = yaml.safe_load(Path(path).read_text())
+    strings = data.get("strings") if isinstance(data, dict) else None
+    if not isinstance(strings, dict):
+        raise ValueError(f"{path}: missing 'strings' mapping")
+    for k, v in strings.items():
+        if not isinstance(v, str) or not (v in _ALLOWED or _OTHER.match(v)):
+            raise ValueError(f"{path}: invalid family {v!r} for {k!r}")
+    return strings
+
+
+_cache: dict = {}
+
+
 def _table() -> dict[str, str]:
-    return yaml.safe_load(TABLE_PATH.read_text())["strings"]
+    st = TABLE_PATH.stat()
+    key = (st.st_mtime_ns, st.st_size)
+    if _cache.get("key") != key:
+        _cache["table"] = validate_table(TABLE_PATH)
+        _cache["key"] = key
+    return _cache["table"]
 
 
 def family_of(model_line: str | None) -> str:
