@@ -102,7 +102,7 @@ def test_cond_logit_keeps_outcome_varying_strata_without_treatment_variation(mod
         warnings.simplefilter("ignore")
         ref = ConditionalLogit(
             ov["y"].to_numpy(float), ov[["t", "x"]].to_numpy(float), groups=ov["g"].to_numpy()
-        ).fit(disp=False)
+        ).fit(method="newton", maxiter=2000, disp=False)
     r = models.cond_logit(df, "y", "t", ["x"], "g")
     assert r.method == "clogit"
     assert r.n_groups_informative == n_ov
@@ -473,6 +473,62 @@ def test_cond_logit_joint_separation_by_treatment_and_covariate_uses_firth(model
     assert r.method == "firth"
     assert math.isfinite(r.log_or) and abs(r.log_or) < 8
     assert math.isfinite(r.se)
+
+
+# ---------------------------------------------------------------- Firth quality
+
+def _penalised_score(X, y, beta):
+    eta = np.clip(X @ beta, -30, 30)
+    mu = 1 / (1 + np.exp(-eta))
+    W = mu * (1 - mu)
+    inv = np.linalg.pinv(X.T @ (X * W[:, None]), hermitian=True)
+    h = W * ((X @ inv) * X).sum(axis=1)
+    return X.T @ (y - mu + h * (0.5 - mu))
+
+
+def test_firth_on_small_power_frames_converges_with_moderate_coefficients(models, monkeypatch):
+    import fixtures_analysis as fa
+
+    power = importlib.import_module("analysis.power")
+    calls = []
+    orig = models._firth
+
+    def spy(X, y, *a, **k):
+        out = orig(X, y, *a, **k)
+        calls.append((np.asarray(X, float), np.asarray(y, float), out))
+        return out
+
+    monkeypatch.setattr(models, "_firth", spy)
+    frame = fa.cells_frame(12, 6, seed=1)
+    report = power.equivalence_power_report(frame, 0.3, sims=10, seed=2)
+    assert calls, "expected the small frame to exercise the Firth fallback"
+    for i, (X, y, (beta, cov, converged)) in enumerate(calls):
+        assert converged, f"fit {i} did not converge"
+        assert np.max(np.abs(beta)) < 15, (i, float(np.max(np.abs(beta))))
+        assert np.max(np.abs(_penalised_score(X, y, beta))) < 1e-6, i
+    assert report["failed_share"] == 0
+
+
+def test_firth_all_zero_stratum_dummy_stays_finite(models):
+    rng = np.random.default_rng(21)
+    rows = []
+    for g in range(10):
+        for j in range(6):
+            rows.append((g, j % 2, int(rng.random() < 0.4)))
+        rows[-1] = (g, 1, 1)  # guarantee variation
+        rows[-2] = (g, 0, 0)
+    for j in range(6):
+        rows.append((10, j % 2, 0))  # stratum with every y equal to 0
+    d = pd.DataFrame(rows, columns=["g", "t", "y"])
+    dummies = pd.get_dummies(d["g"], dtype=float).to_numpy()
+    X = np.column_stack([d["t"].to_numpy(float), dummies])
+    y = d["y"].to_numpy(float)
+    beta, cov, converged = models._firth(X, y)
+    assert converged
+    assert np.all(np.isfinite(beta))
+    assert abs(beta[1 + 10]) < 15
+    assert np.max(np.abs(beta)) < 15
+    assert np.max(np.abs(_penalised_score(X, y, beta))) < 1e-6
 
 
 # ---------------------------------------------------------------- AT13 / AT14 (realistic design)
