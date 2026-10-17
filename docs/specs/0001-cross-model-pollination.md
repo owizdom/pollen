@@ -123,11 +123,11 @@ Per-benchmark model: conditional logistic regression of Y1 on the cross-family i
 - an indicator that the parent was the current best at the time of the row;
 - log of the solver's prior analysis rows.
 
-Rows from solvers with no variation in treatment drop out of a conditional model by construction; the paper reports how many. If the model shows separation, Firth's penalised likelihood replaces it, and the paper says so.
+Strata (solvers) with no variation in the outcome carry no information in a conditional model and are dropped. Strata with outcome variation but no treatment variation are kept, because they inform the covariates; the paper reports both counts. If the model shows separation, Firth's penalised likelihood replaces it, and the paper says so.
 
 ### 5.2 Equivalence
 
-Equivalence uses two one-sided tests at α = 0.05, which means checking whether the 90% interval of the odds ratio lies inside the margin. The margin is [0.80, 1.25] (Wisdom, 17 Oct). The verdict is one of: effect detected, equivalent to no effect, or inconclusive. The paper uses those words.
+Equivalence uses two one-sided tests at α = 0.05, which means checking whether the 90% interval of the odds ratio lies inside the margin. The margin is [0.80, 1.25] (Wisdom, 17 Oct). The verdict is one of: effect detected (the 95% interval excludes 0), equivalent to no effect (the 90% interval lies inside the margin), or inconclusive. Both intervals come from the same distribution as the estimate (t with k-1 df for the pooled HKSJ estimate). When both conditions hold, the verdict is "effect detected" and the paper adds that the effect lies inside the margin. The paper uses those words.
 
 ### 5.3 Power gate before the lock
 
@@ -348,3 +348,5 @@ v2.2, 2026-10-17, after the Track C review (architect decisions, pre-lock): git 
 v2.3, 2026-10-17, after the Track D re-review (architect rulings, pre-lock): failed rows cannot promote; exception classes limited to promotion status failed or superseded; evaluation order applies to Y2 and plateaus; empty failure reasons are ambiguous; submission packaging failures are never-evaluated; the promotion-threshold sentence corrected (qwen38-cuda 10; flock-multi threshold began about 25 Aug).
 
 v2.4, 2026-10-17: AT13 and AT14 thresholds set to 90 of 100 fixed seeds, because 93 of 100 fails a correct estimator about 12% of the time.
+
+v2.5, 2026-10-17, after the Track E2 review: TOST uses the actual 95% and 90% intervals of the estimate (the earlier normal-ratio derivation inflated type I error to 8.4% at k=2 under HKSJ); strata with outcome variation but no treatment variation are kept; the precedence of "effect detected" over "equivalent" is stated.

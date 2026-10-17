@@ -72,12 +72,12 @@ Owns: `analysis/models.py`, `analysis/simulate.py`, `tests/test_models.py`, `tes
 
 - `models.cond_logit(df, outcome, treatment, covariates, group) -> Estimate(log_or, se, n, n_groups_informative, method)`: conditional logistic regression stratified by group (statsmodels ConditionalLogit). If separation or non-convergence is detected, fall back to Firth-penalised unconditional logistic regression with group fixed effects, and set method="firth".
 - `models.meta_hksj(estimates) -> Pooled(log_or, ci95, ci90, tau2, tau2_ci, k)`: DerSimonian-Laird tau², then the Hartung-Knapp-Sidik-Jonkman variance with a t distribution on k-1 df (untruncated q). tau2_ci by the Q-profile method.
-- `models.tost(log_or, ci90, margin) -> verdict` in {"effect detected", "equivalent to no effect", "inconclusive"}: "effect detected" when the 95% interval excludes 0; "equivalent" when the 90% interval lies inside log(margin); otherwise "inconclusive".
+- `models.tost(log_or, ci95, ci90, margin) -> verdict` in {"effect detected", "equivalent to no effect", "inconclusive"}: "effect detected" when ci95 excludes 0 (takes precedence); "equivalent" when ci90 lies inside log(margin); otherwise "inconclusive". Intervals are passed, never derived.
 - `models.holm(pvals: dict) -> dict` of adjusted p-values.
 - `models.permutation_share(df, label, flag, strata, draws=10000, seed=...) -> (observed, p_two_sided)` for H3.
 - `models.median_reg(df, outcome, treatment, covariates, cluster, boot=2000, seed=...) -> Estimate` (quantile regression at 0.5 with cluster bootstrap) for H4.
 - `simulate.plant(df_treatment, odds_ratio, base_rate, icc, seed) -> df with a synthetic outcome`, preserving the real treatment, solver and week structure.
-- AT13: across 100 seeds, a planted OR of 1.5 falls inside the 95% interval in at least 93 seeds; at OR 1.0 the equivalence decision behaves as simulated power predicts. AT14: shuffling family within solver gives an H1 interval covering 1 in at least 93 of 100 seeds.
+- AT13: across 100 seeds, a planted OR of 1.5 falls inside the 95% interval in at least 90 seeds; at OR 1.0 the equivalence decision behaves as simulated power predicts. AT14: shuffling family within solver gives an H1 interval covering 1 in at least 90 of 100 seeds.
 
 ### Track E3 (after E1 and E2): confirmatory and secondary drivers, numbers
 
