@@ -257,8 +257,8 @@ T means automated. L means a live run recorded in `docs/JOURNAL.md`.
 | AT10 | Independent review | L | A fresh Opus 5.5 reviewer and a separate verifier trace every claim in the abstract and conclusion to `numbers.tex` or a cited source, with no in-scope confirmed finding. |
 | AT11 | Byline | T | The paper's author block is exactly "Wisdom Okechukwu", with no affiliation. "Free Systems" and "Stanford" appear nowhere in `paper/`. The repo URL is allowlisted. |
 | AT12 | Prose | T | `prose-check.py` passes on README.md and the paper's extracted text. |
-| AT13 | Planted effect | T | On simulated data with the real treatment structure, the pipeline recovers a planted odds ratio of 1.5 inside its 95% interval in at least 93 of 100 seeds. At an odds ratio of 1.0 the equivalence test behaves as designed (review F17). |
-| AT14 | Placebo | T | Shuffling family within solver gives an H1 interval covering 1 in at least 93 of 100 seeds. |
+| AT13 | Planted effect | T | On simulated data with the real treatment structure, the pipeline recovers a planted odds ratio of 1.5 inside its 95% interval in at least 90 of 100 fixed seeds (a correct 95% interval falls below 93 of 100 with probability about 0.12 and below 90 with probability about 0.03, Binomial(100, 0.95)). At an odds ratio of 1.0 the equivalence test behaves as designed (review F17). |
+| AT14 | Placebo | T | Shuffling family within solver gives an H1 interval covering 1 in at least 90 of 100 fixed seeds. |
 | AT15 | Window balance | T | Inside each confirmatory window, recoverable-tree share differs by at most 5 points between promoted and other rows (review F2). |
 
 GitHub Actions is billing-blocked on this account. `make check` is the gate, run locally and recorded with its commit SHA in the JOURNAL.
@@ -345,3 +345,5 @@ v2.1, 2026-10-17, after the Track D review (architect decisions, pre-lock): eval
 v2.2, 2026-10-17, after the Track C review (architect decisions, pre-lock): git minimal numstat as the distance, binary files as one changed line and excluded from size; the novel test uses child-side lines; tree parents computed for every row; candidate window filtered and collapsed before slicing, promotions counted only if finished before the child was created, own history capped at 50; declared dependencies de-duplicated and validated; seam renamed to `lineage.parents.parents` returning both links; a build driver writes the frozen lineage outputs.
 
 v2.3, 2026-10-17, after the Track D re-review (architect rulings, pre-lock): failed rows cannot promote; exception classes limited to promotion status failed or superseded; evaluation order applies to Y2 and plateaus; empty failure reasons are ambiguous; submission packaging failures are never-evaluated; the promotion-threshold sentence corrected (qwen38-cuda 10; flock-multi threshold began about 25 Aug).
+
+v2.4, 2026-10-17: AT13 and AT14 thresholds set to 90 of 100 fixed seeds, because 93 of 100 fails a correct estimator about 12% of the time.
