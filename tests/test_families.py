@@ -13,7 +13,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import yaml  # noqa: E402
 
 from families import build_table, mapper  # noqa: E402
-from fixtures_families import (ALLOWED_FAMILIES, GOLDEN, GOLDEN_EXTRA, NO_VENDOR,  # noqa: E402
+from fixtures_families import (ALLOWED_FAMILIES, GOLDEN, COMPANY_MODEL, GOLDEN_EXTRA, LONG_MARK, LONG_NOTE, NO_VENDOR,  # noqa: E402
                                REVIEW_NO, REVIEW_YES, SINGLE_VENDOR, VENDORS)
 
 TABLE = REPO / "families" / "table.yaml"
@@ -94,6 +94,20 @@ def test_vendors_in_detects_vendors(line, expected):
 @pytest.mark.parametrize("line,vendor", SINGLE_VENDOR)
 def test_vendors_in_single_vendor_stays_single(line, vendor):
     assert mapper.vendors_in(line) == frozenset({vendor})
+
+
+@pytest.mark.parametrize("line,expected", COMPANY_MODEL)
+def test_vendors_in_company_model_rule(line, expected):
+    assert mapper.vendors_in(line) == frozenset(expected)
+
+
+def test_composer_plus_claude_is_multi_in_propose():
+    out = build_table.propose(["Composer 2.5 + Claude Opus 5.5", "Doubao", "Poolside Preview",
+                               "Grok Bot"], {})
+    assert out["Composer 2.5 + Claude Opus 5.5"] == "Multi"
+    assert out["Doubao"] == "Other:ByteDance"
+    assert out["Poolside Preview"] == "Other:Poolside"
+    assert out["Grok Bot"] == "xAI"
 
 
 @pytest.mark.parametrize("line", NO_VENDOR)
@@ -213,3 +227,34 @@ def test_at2_every_model_line_maps_in_large_benchmarks():
                 bad.append((bench, line))
     assert checked > 0, "no benchmark with >= 500 rows in the snapshot"
     assert not bad, f"unmapped model lines: {bad[:20]} ({len(bad)} total)"
+
+
+# AT3 sample keeps the whole note
+
+def test_at3_sample_writes_full_note_and_note_chars(tmp_path, monkeypatch):
+    import json
+
+    import conftest
+    from families.audit import sample as sample_mod
+
+    bench = "yukon/big-bench"
+    subs = [conftest._sub(f"p{i:04d}", "b9", "rejected", f"2026-03-01T10:{i % 60:02d}:00.000Z",
+                          note="Model: Kimi K3\nshort") for i in range(520)]
+    subs.append(conftest._sub("long", "b9", "rejected", "2026-03-02T10:00:00.000Z",
+                              note=LONG_NOTE))
+    assert len(LONG_NOTE) == 9000 and LONG_NOTE.index(LONG_MARK) > 6000
+    monkeypatch.setattr(conftest, "BENCHES", {bench: ("-", subs, "b9")})
+    monkeypatch.setattr(conftest, "ATTRIBUTION", {})
+    root = conftest.build_snapshot(tmp_path / "raw")
+    from snapshot import load
+    monkeypatch.setattr(load, "DEFAULT_ROOT", root)
+
+    out = tmp_path / "sample.jsonl"
+    recs = sample_mod.sample(n=10_000, out=out)
+    written = [json.loads(line) for line in out.read_text().splitlines()]
+    assert len(written) == len(recs) == 521
+    long_rec = next(r for r in written if r["id"] == "long")
+    assert LONG_MARK in long_rec["note"]
+    assert long_rec["note"] == LONG_NOTE
+    assert long_rec["note_chars"] == 9000
+    assert all(r["note_chars"] == len(r["note"]) for r in written)

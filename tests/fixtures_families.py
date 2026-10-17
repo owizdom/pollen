@@ -37,8 +37,22 @@ SINGLE_VENDOR = [
 ]
 
 # No vendor keyword at all.
-NO_VENDOR = ["Devin", "Droid", "Composer", "Factory", "Astra", "benchmark",
-             "Scikit-learn"]
+NO_VENDOR = ["Devin", "Droid", "Factory", "Astra", "benchmark",
+             "Scikit-learn", "Codex", "Codex CLI"]
+
+# Company-model rule (spec 3.2): (model line, expected vendors).
+COMPANY_MODEL = [
+    ("Doubao", {"Other:ByteDance"}),
+    ("Poolside Preview", {"Other:Poolside"}),
+    ("Composer 2.5", {"Other:Cursor"}),
+    ("SWE-2 Max", {"Other:Cognition"}),
+    ("Grok Bot", {"xAI"}),
+    ("Composer 2.5 + Claude Opus 5.5", {"Other:Cursor", "Anthropic"}),
+]
+
+# AT3 sample: model mention sits after character 6000 of a 9000-char note.
+LONG_MARK = "SWITCHED-TO-KIMI-K3-HERE"
+LONG_NOTE = ("Model: GPT-5 Codex\n" + "x" * 6100 + LONG_MARK + "y" * (9000 - 6100 - len(LONG_MARK) - 19))
 
 # Review-driven golden labels (checked-in table).
 GOLDEN_EXTRA = [
