@@ -246,3 +246,26 @@ def test_nonnull_next_cursor_raises_unless_partial(snap):
         mod().attribution(LOWER, root=snap)
     edit_freeze(snap, lambda f: f.update(attribution_partial={LOWER: [sid]}))
     mod().attribution(LOWER, root=snap)  # no raise
+
+
+def test_baseline_score(snap):
+    assert mod().benchmark_meta(LOWER, root=snap).baseline_score == 1000.0
+    assert mod().benchmark_meta(HIGHER, root=snap).baseline_score is None
+
+
+def test_promotion_status_is_raw(snap):
+    rows = by_id(mod().load(LOWER, root=snap))
+    assert rows["s1"].promotion_status == "promoted"
+    assert rows["s2"].promotion_status == "failed"
+    assert rows["s3"].promotion_status == "superseded"
+    assert rows["s3"].promoted is False
+    assert rows["s4"].promotion_status is None
+
+
+def test_finished_at_prefers_promotion_finished_then_updated(snap):
+    rows = by_id(mod().load(LOWER, root=snap))
+    utc = dt.timezone.utc
+    assert rows["s1"].finished_at == dt.datetime(2026, 3, 1, 11, tzinfo=utc)
+    assert rows["s2"].finished_at == dt.datetime(2026, 3, 2, 10, 30, tzinfo=utc)  # updatedAt
+    assert rows["s3"].finished_at is None
+    assert rows["s1"].finished_at.tzinfo is not None

@@ -120,6 +120,7 @@ def benchmark_meta(benchmark: str, root=None) -> Benchmark:
         source_url=b.get("sourceUrl"),
         opened_at=_ts(b.get("openedAt")),
         min_improvement_bips=b.get("minScoreImprovementBips"),
+        baseline_score=b.get("baselineScore"),
     )
 
 
@@ -150,6 +151,8 @@ def load(benchmark: str, root=None) -> list[Submission]:
             rejection_reason=r.get("rejectionReason"),
             submission_sha=r.get("submissionCommitSha"),
             promoted_ref=r.get("promotedSourceRef"),
+            promotion_status=r.get("promotionStatus"),
+            finished_at=_ts(r.get("promotionFinishedAt") or r.get("updatedAt")),
         ))
     rows.sort(key=lambda s: (s.created_at, s.id))
     return rows

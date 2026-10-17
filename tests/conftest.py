@@ -25,6 +25,8 @@ def _sub(i, bench, status, created, **kw):
         "submissionCommitSha": kw.pop("submissionCommitSha", None),
         "createdAt": created,
         "rejectionReason": kw.pop("rejectionReason", None),
+        "promotionFinishedAt": kw.pop("promotionFinishedAt", None),
+        "updatedAt": kw.pop("updatedAt", None),
     }
     row.update(kw)
     return row
@@ -35,14 +37,18 @@ LOWER_SUBS = [
     _sub("s3", "b1", "rejected", "2026-03-03T10:00:00.000Z", solver="bob",
          note="Model: Claude Opus 4.8 (1M context)\nregressed", officialScore=105.0,
          rejectionReason="did not improve on best score",
+         promotionStatus="superseded",
          submissionCommitSha="cccc333"),
     _sub("s1", "b1", "accepted", "2026-03-01T10:00:00.000Z",
          officialScore=100.0, officialMetrics={"size": 100, "time": 1.5},
          promotionStatus="promoted", promotedSourceRef="aaaa111",
-         submissionCommitSha="zzzz000"),
+         submissionCommitSha="zzzz000",
+         promotionFinishedAt="2026-03-01T11:00:00.000Z",
+         updatedAt="2026-03-01T12:00:00.000Z"),
     _sub("s2", "b1", "accepted", "2026-03-02T10:00:00.000Z", solver="bob",
          note="\n  Model:   Kimi K3  \nbody", officialScore=95.0,
-         promotionStatus="failed", submissionCommitSha="bbbb222"),
+         promotionStatus="failed", submissionCommitSha="bbbb222",
+         promotionFinishedAt=None, updatedAt="2026-03-02T10:30:00.000Z"),
     _sub("s4", "b1", "failed", "2026-03-04T10:00:00.000Z",
          note="no model line here, just prose", officialScore=None),
     _sub("s5", "b1", "cancelled", "2026-03-05T10:00:00.000Z",
@@ -94,6 +100,8 @@ def build_snapshot(root: Path) -> Path:
             "openedAt": "2026-02-01T00:00:00.000Z",
             "minScoreImprovementBips": 50 if direction == "-" else None,
         }}
+        if direction == "-":  # higher-bench omits baselineScore entirely
+            meta["benchmark"]["baselineScore"] = 1000.0
         _gz(root / slug / "benchmark.json.gz", meta)
         _gz(root / slug / "submissions.json.gz", {"submissions": subs})
         counts[name] = len(subs)

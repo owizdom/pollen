@@ -23,6 +23,8 @@ class Submission:
     rejection_reason: str | None = None
     submission_sha: str | None = None
     promoted_ref: str | None = None
+    promotion_status: str | None = None
+    finished_at: dt.datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -35,3 +37,4 @@ class Benchmark:
     source_url: str
     opened_at: dt.datetime | None
     min_improvement_bips: int | None
+    baseline_score: float | None = None
