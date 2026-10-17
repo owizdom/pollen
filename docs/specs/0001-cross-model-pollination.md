@@ -355,4 +355,4 @@ v2.5, 2026-10-17, after the Track E2 review: TOST uses the actual 95% and 90% in
 
 v2.6, 2026-10-17, after the Track E1 review: the lock covers all rule code and verifies frozen lineage data; missing required files fail the lock; the power gate simulates the actual pooled conditional estimand; minimum events are outcome events counted after the lock.
 
-v2.7, 2026-10-17: the time control in §5.1 and H4 is a 4-df natural spline on days since opening instead of calendar-week fixed effects. On synthetic frames with the real structure (solvers active 1 to 3 weeks over about 20 weeks), week dummies separated the outcome and even a reference conditional fit failed to converge in 10 of 10 seeds. The H3 permutation strata remain calendar weeks.
+v2.7, 2026-10-17: the time control in §5.1 and H4 is a 4-df natural spline on days since opening instead of calendar-week fixed effects. On synthetic frames with the real structure (solvers active 1 to 3 weeks over about 20 weeks), week dummies separated the outcome and even a reference conditional fit failed to converge in 10 of 10 seeds. The H3 permutation strata remain calendar weeks. Approved by the author on 2026-10-17.
