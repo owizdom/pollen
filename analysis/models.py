@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 from scipy import stats
+from scipy.special import expit
 from scipy.optimize import brentq
 from statsmodels.discrete.conditional_models import ConditionalLogit
 
@@ -20,6 +21,7 @@ class Estimate:
     n: int
     n_groups_informative: int
     method: str
+    dropped_covariates: tuple = ()
 
 
 @dataclass(frozen=True)
@@ -34,58 +36,126 @@ class Pooled:
 
 # ------------------------------------------------------------------ cond_logit
 
-def _sym_inv(A):
-    try:
-        return np.linalg.solve(A, np.eye(len(A)))
-    except np.linalg.LinAlgError:
-        return np.linalg.pinv(A, hermitian=True)
+FIRTH_MAX_ITER = 1000
+CLOGIT_MAX_ITER = 2000
+_NAN = float("nan")
 
 
-def _firth(X: np.ndarray, y: np.ndarray, max_iter: int = 200, tol: float = 1e-8):
-    """Jeffreys-penalised logistic regression by Newton-Raphson.
+def _penalised_ll(X, y, beta):
+    eta = X @ beta
+    mu = expit(eta)
+    W = mu * (1 - mu)
+    info = X.T @ (X * W[:, None])
+    sign, logdet = np.linalg.slogdet(info)
+    if sign <= 0:
+        logdet = -1e10
+    return float((y * eta - np.logaddexp(0, eta)).sum() + 0.5 * logdet)
 
-    Returns (beta, covariance, converged)."""
+
+def _solve(info, rhs):
+    """Solve info @ x = rhs; least squares when ill-conditioned (cond > 1e12)."""
+    if np.linalg.cond(info) > 1e12:
+        return np.linalg.lstsq(info, rhs, rcond=None)[0]
+    return np.linalg.solve(info, rhs)
+
+
+def _penalised_score(X, y, beta):
+    mu = expit(X @ beta)
+    W = mu * (1 - mu)
+    info = X.T @ (X * W[:, None])
+    inv = np.linalg.pinv(info, hermitian=True)
+    h = W * ((X @ inv) * X).sum(axis=1)
+    return X.T @ (y - mu + h * (0.5 - mu)), info
+
+
+def _firth(X: np.ndarray, y: np.ndarray, max_iter=None, tol: float = 1e-9):
+    """Jeffreys-penalised logistic regression.
+
+    The penalised likelihood is invariant to invertible linear maps of the columns, so the
+    fit runs on an orthonormal basis of X (QR) and maps back. Returns (beta, cov, converged)."""
+    X = np.asarray(X, float)
+    Q, R = np.linalg.qr(X)
+    if np.min(np.abs(np.diag(R))) < 1e-10 * max(np.max(np.abs(np.diag(R))), 1e-300):
+        return _firth_core(X, y, max_iter, tol)  # rank-deficient: fit as given
+    gamma, cov_g, ok = _firth_core(Q * np.sqrt(len(y)), y, max_iter, tol)
+    Rinv = np.linalg.inv(R / np.sqrt(len(y)))
+    return Rinv @ gamma, Rinv @ cov_g @ Rinv.T, ok
+
+
+def _firth_core(X: np.ndarray, y: np.ndarray, max_iter=None, tol: float = 1e-9):
+    """Newton with step-halving on the penalised log-likelihood. Converged means the
+    penalised score is below tol."""
+    max_iter = FIRTH_MAX_ITER if max_iter is None else max_iter
     n, p = X.shape
     beta = np.zeros(p)
+    ll = _penalised_ll(X, y, beta)
     converged = False
     for _ in range(max_iter):
-        eta = np.clip(X @ beta, -30, 30)
-        mu = 1 / (1 + np.exp(-eta))
-        W = mu * (1 - mu)
-        inv = _sym_inv(X.T @ (X * W[:, None]))
-        h = W * np.einsum("ij,jk,ik->i", X, inv, X)
-        score = X.T @ (y - mu + h * (0.5 - mu))
-        step = inv @ score
-        mx = np.max(np.abs(step))
-        if mx > 5:
-            step *= 5 / mx
-        beta = beta + step
-        if np.max(np.abs(step)) < tol:
+        score, info = _penalised_score(X, y, beta)
+        if np.max(np.abs(score)) < tol:
             converged = True
             break
-    eta = np.clip(X @ beta, -30, 30)
-    mu = 1 / (1 + np.exp(-eta))
+        step = _solve(info, score)
+        mx = np.max(np.abs(step))
+        if not np.isfinite(mx):
+            break
+        if mx > 5:
+            step = step * (5 / mx)
+        t = 1.0
+        for _ in range(40):
+            new = beta + t * step
+            new_ll = _penalised_ll(X, y, new)
+            if new_ll >= ll - 1e-10 * (1 + abs(ll)):
+                break
+            t /= 2
+        else:
+            break  # no improving step found
+        beta, ll = new, new_ll
+    else:
+        score, info = _penalised_score(X, y, beta)
+        converged = bool(np.max(np.abs(score)) < tol)
+    mu = expit(X @ beta)
     W = mu * (1 - mu)
-    cov = _sym_inv(X.T @ (X * W[:, None]))
+    cov = np.linalg.pinv(X.T @ (X * W[:, None]), hermitian=True)
     return beta, cov, converged
 
 
-def _firth_fit(d: pd.DataFrame, outcome, treatment, covariates, group) -> Estimate:
+def _firth_fit(d, outcome, treatment, keep, group, dropped) -> Estimate:
     dummies = pd.get_dummies(d[group].astype(str), dtype=float)
-    X = np.column_stack(
-        [d[treatment].to_numpy(float)]
-        + [d[c].to_numpy(float) for c in covariates]
-        + [dummies.to_numpy()]
-    )
+    X = np.column_stack([d[c].to_numpy(float) for c in [treatment] + keep] + [dummies.to_numpy()])
     y = d[outcome].to_numpy(float)
+    n_g = int(d[group].nunique())
     beta, cov, ok = _firth(X, y)
-    return Estimate(
-        log_or=float(beta[0]),
-        se=float(math.sqrt(max(cov[0, 0], 0.0))),
-        n=int(len(d)),
-        n_groups_informative=int(d[group].nunique()),
-        method="firth" if ok else "firth-nonconverged",
-    )
+    if not ok or not np.all(np.isfinite(beta)) or not np.isfinite(cov[0, 0]) or cov[0, 0] < 0:
+        return Estimate(_NAN, _NAN, int(len(d)), n_g, "failed", tuple(dropped))
+    return Estimate(float(beta[0]), float(math.sqrt(cov[0, 0])), int(len(d)), n_g, "firth", tuple(dropped))
+
+
+def _independent_columns(d, treatment, covariates, group):
+    """Greedy pivoted QR on the stratum-demeaned design, treatment first.
+    Returns (kept covariates, dropped covariates, treatment_identified)."""
+    cols = [treatment] + list(covariates)
+    X = d[cols].to_numpy(float)
+    Xd = X - pd.DataFrame(X).groupby(d[group].to_numpy()).transform("mean").to_numpy()
+    basis = []
+    kept = []
+    for j, c in enumerate(cols):
+        v = Xd[:, j].copy()
+        for q in basis:
+            v -= q * (q @ v)
+        for q in basis:  # second pass for stability
+            v -= q * (q @ v)
+        nv = np.linalg.norm(v)
+        scale = max(np.linalg.norm(X[:, j]), 1e-12)
+        if nv <= 1e-8 * scale or nv <= 1e-10:
+            if j == 0:
+                return [], list(covariates), False
+            continue
+        basis.append(v / nv)
+        if j > 0:
+            kept.append(c)
+    dropped = [c for c in covariates if c not in kept]
+    return kept, dropped, True
 
 
 def _quasi_separated(d, outcome, treatment, group) -> bool:
@@ -111,18 +181,21 @@ def cond_logit(df, outcome, treatment, covariates, group) -> Estimate:
     d = d[d.groupby(group)[outcome].transform("nunique") > 1]
     n_inf = int(d[group].nunique())
     if n_inf == 0:
-        return Estimate(float("nan"), float("nan"), 0, 0, "clogit")
+        return Estimate(_NAN, _NAN, 0, 0, "unidentified")
+    keep, dropped, ident = _independent_columns(d, treatment, covariates, group)
+    if not ident:
+        return Estimate(_NAN, _NAN, int(len(d)), n_inf, "unidentified", tuple(dropped))
     if _quasi_separated(d, outcome, treatment, group):
-        return _firth_fit(d, outcome, treatment, covariates, group)
+        return _firth_fit(d, outcome, treatment, keep, group, dropped)
 
-    exog = d[[treatment] + covariates].to_numpy(float)
+    exog = d[[treatment] + keep].to_numpy(float)
     endog = d[outcome].to_numpy(float)
     bad = True
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
         try:
             model = ConditionalLogit(endog, exog, groups=d[group].to_numpy())
-            res = model.fit(disp=False)
+            res = model.fit(method="newton", maxiter=CLOGIT_MAX_ITER, disp=False)
             params = np.asarray(res.params, float)
             bse = np.asarray(res.bse, float)
             bad = (
@@ -131,17 +204,18 @@ def cond_logit(df, outcome, treatment, covariates, group) -> Estimate:
                 or np.max(np.abs(params)) > 15
                 or np.max(bse) > 15
                 or np.min(bse) <= 0
-                or any("onverge" in str(w.message) or "ingular" in str(w.message) for w in caught)
-                or not bool(getattr(res, "mle_retvals", {}).get("converged", True))
             )
+            if not bad:
+                # the wrapper hides statsmodels' convergence flag, so check the score directly
+                bad = bool(np.max(np.abs(model.score(params))) > 1e-5)
             if not bad:
                 # likelihood still rising along the fitted direction means no finite MLE
                 bad = bool(model.loglike(2 * params) > model.loglike(params) + 1e-8)
         except Exception:
             bad = True
     if bad:
-        return _firth_fit(d, outcome, treatment, covariates, group)
-    return Estimate(float(params[0]), float(bse[0]), int(len(d)), n_inf, "clogit")
+        return _firth_fit(d, outcome, treatment, keep, group, dropped)
+    return Estimate(float(params[0]), float(bse[0]), int(len(d)), n_inf, "clogit", tuple(dropped))
 
 
 # ------------------------------------------------------------------ meta_hksj
