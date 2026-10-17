@@ -164,7 +164,9 @@ Decided (D-B): ecdsa.fail plus every benchmark, open or closed, that meets all o
 
 - at least 500 analysis rows and at least 100 promoted;
 - at least two families, each with at least 10% of labelled rows;
-- tree commits fetchable from a public repository.
+- tree commits fetchable from a public repository: a confirmatory window exists (§3.1) and at least half of the benchmark's promoted analysis rows have a tree commit not listed in `lineage/frozen/<slug>/missing.json`.
+
+The margin used by the confirmatory scripts is read from the line `margin: [lo, hi]` in `docs/prereg.md`, written by `tools/make_prereg.py` from the values fixed at lock.
 
 At the 17 Oct probe of open benchmarks, five qualified: `eigenlabs/sig-golf/full`, `eigenlabs/flock-challenge`, `eigenlabs/flock-challenge-multi/x86`, `eigenlabs/eip8200-challenges/modexp`, `eigenlabs/eip8200-challenges/ripemd160`. Counting closed benchmarks on 17 Oct, four more qualified: `eigenlabs/lighter-prover-challenge`, `davidtai/qwen38-125b-a6b-cuda-v1`, `davidtai/mlxfast-gemma4-26b-a4b`, `eigenlabs/mlxfast-challenge`. The freeze re-applies the rule; these lists are not binding.
 

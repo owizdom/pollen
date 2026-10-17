@@ -35,7 +35,11 @@ def main(values_path: str | None) -> None:
     ]
     if values:
         for k in sorted(values):
-            lines.append(f"- {k}: {values[k]}")
+            if k == "margin":
+                lo, hi = values[k]
+                lines.append(f"margin: [{lo:.2f}, {hi:.2f}]")
+            else:
+                lines.append(f"- {k}: {values[k]}")
     else:
         lines.append("- PENDING: snapshot freeze time, study benchmarks, power gate result, margin.")
     lines.append("")
