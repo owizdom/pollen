@@ -14,19 +14,24 @@ def at(hours: float) -> dt.datetime:
 
 
 def sub(i, hours, score=None, promoted=False, status=None, cancelled=False,
-        reason=None, metrics=None, bench="yukon/b") -> Submission:
+        reason=None, metrics=None, bench="yukon/b", finished=None,
+        promotion_status=None) -> Submission:
+    """finished: hours offset for finished_at (None leaves finished_at unset)."""
     if status is None:
         status = "cancelled" if cancelled else ("accepted" if promoted else "rejected")
     return Submission(
         id=i, benchmark=bench, solver="alice", created_at=at(hours), status=status,
         promoted=promoted, cancelled=cancelled, score=score,
-        metrics=metrics or {}, rejection_reason=reason)
+        metrics=metrics or {}, rejection_reason=reason,
+        promotion_status=promotion_status,
+        finished_at=None if finished is None else at(finished))
 
 
-def meta(direction="lower", bips=None, slug="b") -> Benchmark:
+def meta(direction="lower", bips=None, slug="b", baseline=None, opened=None) -> Benchmark:
     return Benchmark(id="b1", name="yukon/b", slug=slug, direction=direction,
                      editable_paths=[], source_url="https://example.invalid",
-                     opened_at=None, min_improvement_bips=bips)
+                     opened_at=None if opened is None else at(opened),
+                     min_improvement_bips=bips, baseline_score=baseline)
 
 
 @dataclass(frozen=True)
@@ -36,14 +41,22 @@ class Row:
     created_at: dt.datetime
     promoted: bool = True
     gain_log: float | None = None
+    score: float | None = None
+    best_before: float | None = None
     metrics: dict = field(default_factory=dict)
 
 
-def row(i, hours, gain=None, promoted=True, metrics=None) -> Row:
-    return Row(i, at(hours), promoted, gain, metrics or {})
+def row(i, hours, gain=None, promoted=True, metrics=None, score=None, best_before=None) -> Row:
+    return Row(i, at(hours), promoted, gain, score, best_before, metrics or {})
 
 
 DENOM_CONFIG = {
     "default": ["never scored default"],
     "benchmarks": {"yukon/b": ["never scored specific"]},
+    "failure_classes": {
+        "ordinary failure": "evaluated",
+        "rate limited": "infrastructure",
+        "^validation job interrupted.*": "infrastructure",
+        "unclear failure": "ambiguous",
+    },
 }

@@ -9,7 +9,16 @@ API chosen where the spec is silent (implementers must match):
   promotion.disagreements(subs, meta, exceptions=()) -> list[str] of ids whose
       recomputed value differs from sub.promoted, minus exceptions
   frontier.best_before(subs, meta) -> list[float | None] aligned with input,
-      best score among promoted rows strictly earlier by created_at
+      best score among promoted rows strictly earlier in evaluation order
+      (finished_at, else created_at); meta.baseline_score seeds it when set
+  promotion.at5_report({name: (rows, meta)}) -> {"counts": {name: {"rows": int,
+      "disagreements": int, "exceptions": int}}, "not_reproduced": [names above 1%]};
+      exceptions are accepted-but-failed (status accepted, not promoted) and
+      promotion_status == "superseded" rows, found automatically
+  jumps.plateau_breaks(rows, hours=72, threshold=0.01, opened_at=None, direction="lower")
+      uses row.score and row.best_before (relative 1%), not gain_log
+  denominator: config["failure_classes"] maps reason (exact or regex search) to
+      evaluated | infrastructure | ambiguous; analysis_rows(..., drop_ambiguous=False)
   frontier.gain_log(sub, best_before, meta) -> float | None
   jumps.large_jumps(rows) -> list of rows; jumps.plateau_breaks(rows, hours, threshold)
       -> list of rows (rows carry created_at, promoted, gain_log)
@@ -212,37 +221,71 @@ def test_large_jumps_ceil_for_small_n_and_ignores_non_promoted():
     assert [r.id for r in out] == ["b"]  # ceil(2/10) = 1
 
 
-def test_plateau_break_flags_gain_after_quiet_window():
+def _p(i, hours, score, best):
+    return row(i, hours, score=score, best_before=best)
+
+
+def test_plateau_first_qualifying_promotion_after_72h_from_opening_is_break():
     from outcomes import jumps
-    rows = [row("a", 0, gain=0.02), row("b", 100, gain=0.02)]
-    out = jumps.plateau_breaks(rows, hours=72, threshold=0.01)
-    assert "b" in [r.id for r in out]
+    rows = [_p("a", 100, 98.0, 100.0)]
+    out = jumps.plateau_breaks(rows, 72, 0.01, opened_at=at(0), direction="lower")
+    assert [r.id for r in out] == ["a"]
 
 
-def test_plateau_break_not_flagged_when_recent_big_promotion():
+def test_plateau_first_promotion_within_72h_of_opening_is_not_break():
     from outcomes import jumps
-    rows = [row("a", 0, gain=0.02), row("b", 50, gain=0.02)]
-    assert "b" not in [r.id for r in jumps.plateau_breaks(rows, 72, 0.01)]
+    rows = [_p("a", 50, 98.0, 100.0)]
+    assert jumps.plateau_breaks(rows, 72, 0.01, opened_at=at(0), direction="lower") == []
 
 
-def test_plateau_break_small_recent_promotion_does_not_count_as_activity():
+def test_plateau_break_after_quiet_window_following_earlier_promotion():
     from outcomes import jumps
-    rows = [row("a", 0, gain=0.02), row("tiny", 90, gain=0.001),
-            row("b", 100, gain=0.02)]
-    ids = [r.id for r in jumps.plateau_breaks(rows, 72, 0.01)]
-    assert "b" in ids and "tiny" not in ids
+    rows = [_p("a", 100, 98.0, 100.0), _p("b", 200, 95.0, 98.0)]
+    out = jumps.plateau_breaks(rows, 72, 0.01, opened_at=at(0), direction="lower")
+    assert [r.id for r in out] == ["a", "b"]
 
 
-def test_plateau_break_requires_gain_at_least_threshold():
+def test_plateau_not_break_when_recent_qualifying_promotion():
     from outcomes import jumps
-    rows = [row("a", 0, gain=0.02), row("small", 200, gain=0.005)]
-    assert "small" not in [r.id for r in jumps.plateau_breaks(rows, 72, 0.01)]
+    rows = [_p("a", 100, 98.0, 100.0), _p("b", 150, 95.0, 98.0)]
+    out = jumps.plateau_breaks(rows, 72, 0.01, opened_at=at(0), direction="lower")
+    assert [r.id for r in out] == ["a"]
 
 
-def test_plateau_break_boundary_gain_equal_threshold_counts():
+def test_plateau_small_recent_promotion_does_not_count_as_activity():
     from outcomes import jumps
-    rows = [row("a", 0, gain=0.01), row("b", 100, gain=0.01)]
-    assert "b" in [r.id for r in jumps.plateau_breaks(rows, 72, 0.01)]
+    rows = [_p("tiny", 90, 99.5, 100.0), _p("b", 100, 98.0, 99.5)]
+    out = jumps.plateau_breaks(rows, 72, 0.01, opened_at=at(0), direction="lower")
+    assert [r.id for r in out] == ["b"]
+
+
+def test_plateau_lower_boundary_exactly_1pct_counts_and_just_under_does_not():
+    from outcomes import jumps
+    exact = jumps.plateau_breaks([_p("x", 100, 99.0, 100.0)], 72, 0.01,
+                                 opened_at=at(0), direction="lower")
+    under = jumps.plateau_breaks([_p("y", 100, 99.01, 100.0)], 72, 0.01,
+                                 opened_at=at(0), direction="lower")
+    assert [r.id for r in exact] == ["x"]
+    assert under == []
+
+
+def test_plateau_higher_boundary_exactly_1pct_counts_and_just_under_does_not():
+    from outcomes import jumps
+    exact = jumps.plateau_breaks([_p("x", 100, 101.0, 100.0)], 72, 0.01,
+                                 opened_at=at(0), direction="higher")
+    exact2 = jumps.plateau_breaks([_p("z", 100, 202.0, 200.0)], 72, 0.01,
+                                  opened_at=at(0), direction="higher")
+    under = jumps.plateau_breaks([_p("y", 100, 100.99, 100.0)], 72, 0.01,
+                                 opened_at=at(0), direction="higher")
+    assert [r.id for r in exact] == ["x"]
+    assert [r.id for r in exact2] == ["z"]
+    assert under == []
+
+
+def test_plateau_window_boundary_exactly_72h_is_not_a_break():
+    from outcomes import jumps
+    rows = [_p("a", 72, 98.0, 100.0)]
+    assert jumps.plateau_breaks(rows, 72, 0.01, opened_at=at(0), direction="lower") == []
 
 
 # --------------------------------------------------------------------- pareto
@@ -265,12 +308,18 @@ def test_pareto_dominated_and_nondominated():
     assert pareto.pareto_gain(rows) == [True, False, True, True]
 
 
-def test_pareto_equal_point_is_dominated_only_with_one_strict():
+def test_pareto_equal_point_not_gain_and_one_strict_dominates():
     from outcomes import pareto
     rows = [row("a", 1, metrics=_m(10, 10)),
-            row("b", 2, metrics=_m(10, 10)),   # equal, no strict -> not dominated
+            row("b", 2, metrics=_m(10, 10)),   # identical to a -> not a gain
             row("c", 3, metrics=_m(10, 11))]   # a weakly better, one strict -> dominated
-    assert pareto.pareto_gain(rows) == [True, True, False]
+    assert pareto.pareto_gain(rows) == [True, False, False]
+
+
+def test_pareto_identical_point_to_earlier_valid_row_is_not_a_gain():
+    from outcomes import pareto
+    rows = [row("a", 1, metrics=_m(10, 10)), row("b", 2, metrics=_m(10, 10))]
+    assert pareto.pareto_gain(rows) == [True, False]
 
 
 def test_pareto_rows_without_metrics_false_and_do_not_dominate():
@@ -303,15 +352,199 @@ def test_annotate_writes_sealed_gz_and_returns_none(tmp_path):
     assert "a" in json.dumps(data) and "b" in json.dumps(data)
 
 
+# ----------------------------------------------------- v2.1 evaluation order
+
+def _finish_order_subs():
+    # X created first but finished last; Y created later but finished first.
+    return [sub("X", 1, 95.0, promoted=True, finished=10),
+            sub("Y", 5, 100.0, promoted=True, finished=3)]
+
+
+def test_recompute_uses_finished_at_not_created_at():
+    from outcomes import promotion
+    # finish order: Y(100) promotes, X(95) beats it. Creation order would
+    # give [True, False].
+    assert promotion.recompute(_finish_order_subs(), meta("lower")) == [True, True]
+
+
+def test_best_before_uses_finished_at_reference():
+    from outcomes import frontier
+    assert frontier.best_before(_finish_order_subs(), meta("lower")) == [100.0, None]
+
+
+def test_gain_log_positive_when_finish_order_differs_from_creation_order():
+    from outcomes import frontier
+    subs = _finish_order_subs()
+    m = meta("lower")
+    bb = frontier.best_before(subs, m)
+    gains = [frontier.gain_log(s, b, m) for s, b in zip(subs, bb)]
+    assert gains[0] == pytest.approx(math.log(100 / 95))
+    assert gains[1] is None  # no prior best, no baseline
+    assert all(g is None or g > 0 for g in gains)
+
+
+def test_missing_finished_at_falls_back_to_created_at():
+    from outcomes import promotion
+    subs = [sub("a", 1, 100.0), sub("b", 2, 95.0, finished=3), sub("c", 4, 90.0)]
+    # a: created 1 (no finish) -> 1; b: finished 3; c: created 4.
+    assert promotion.recompute(subs, meta("lower")) == [True, True, True]
+    subs2 = [sub("a", 1, 100.0), sub("b", 9, 95.0, finished=0.5)]
+    # b finished before a's created_at: b first (promote), a (100) does not beat 95.
+    assert promotion.recompute(subs2, meta("lower")) == [False, True]
+
+
+# ------------------------------------------------------------ v2.1 seeding
+
+def test_recompute_baseline_seed_lower_first_row_worse_not_promoted():
+    from outcomes import promotion
+    subs = [sub("a", 1, 120.0), sub("b", 2, 90.0), sub("c", 3, 95.0)]
+    assert promotion.recompute(subs, meta("lower", baseline=100.0)) == [False, True, False]
+
+
+def test_recompute_baseline_seed_higher_first_row_worse_not_promoted():
+    from outcomes import promotion
+    subs = [sub("a", 1, 0.4), sub("b", 2, 0.7)]
+    assert promotion.recompute(subs, meta("higher", baseline=0.5)) == [False, True]
+
+
+def test_first_promotion_gain_log_is_against_baseline_lower():
+    from outcomes import frontier
+    subs = [sub("a", 1, 90.0, promoted=True)]
+    m = meta("lower", baseline=100.0)
+    bb = frontier.best_before(subs, m)
+    assert bb == [100.0]
+    assert frontier.gain_log(subs[0], bb[0], m) == pytest.approx(math.log(100 / 90))
+
+
+def test_first_promotion_gain_log_is_against_baseline_higher():
+    from outcomes import frontier
+    subs = [sub("a", 1, 0.66, promoted=True)]
+    m = meta("higher", baseline=0.6)
+    bb = frontier.best_before(subs, m)
+    assert bb == [0.6]
+    assert frontier.gain_log(subs[0], bb[0], m) == pytest.approx(math.log(0.66 / 0.6))
+
+
+def test_best_before_after_promotion_overrides_baseline():
+    from outcomes import frontier
+    subs = [sub("a", 1, 90.0, promoted=True), sub("b", 2, 80.0, promoted=True)]
+    assert frontier.best_before(subs, meta("lower", baseline=100.0)) == [100.0, 90.0]
+
+
+# ----------------------------------------------------- v2.1 named exceptions
+
+def test_superseded_rows_are_a_named_exception_class():
+    from outcomes import promotion
+    subs = [
+        sub("a", 1, 100.0, promoted=True),
+        sub("s", 2, 90.0, promoted=False, status="accepted", promotion_status="superseded"),
+        sub("z", 3, 105.0, promoted=True),   # genuine disagreement
+    ]
+    assert promotion.disagreements(subs, meta("lower")) == ["z"]
+
+
+def test_non_superseded_non_promoted_better_row_is_still_a_disagreement():
+    from outcomes import promotion
+    subs = [
+        sub("a", 1, 100.0, promoted=True),
+        sub("n", 2, 90.0, promoted=False, status="rejected", promotion_status=None),
+    ]
+    assert promotion.disagreements(subs, meta("lower")) == ["n"]
+
+
+def test_at5_report_counts_exceptions_and_not_reproduced_list():
+    from outcomes import promotion
+    good = [sub("g1", 1, 100.0, promoted=True), sub("g2", 2, 90.0, promoted=True)]
+    exc = [sub("e1", 1, 100.0, promoted=True),
+           sub("e2", 2, 90.0, status="accepted", promoted=False, promotion_status="failed"),
+           sub("e3", 3, 80.0, status="accepted", promoted=False, promotion_status="superseded")]
+    bad = [sub(f"b{i}", i, 100.0 - i, promoted=False) for i in range(1, 6)]
+    rep = promotion.at5_report({
+        "good": (good, meta("lower")), "exc": (exc, meta("lower")),
+        "bad": (bad, meta("lower"))})
+    assert rep["counts"]["good"]["disagreements"] == 0
+    assert rep["counts"]["exc"]["disagreements"] == 0
+    assert rep["counts"]["exc"]["exceptions"] == 2
+    assert rep["counts"]["bad"]["rows"] == 5
+    assert rep["counts"]["bad"]["disagreements"] > 0
+    assert rep["not_reproduced"] == ["bad"]
+
+
+def test_at5_report_threshold_is_one_percent():
+    from outcomes import promotion
+    # 100 rows, 1 disagreement = exactly 1%: reproduced; 2 = 2%: not.
+    def build(n_bad):
+        rows = [sub(f"r{i}", i, 1000.0 - i, promoted=True) for i in range(100)]
+        for k in range(n_bad):
+            rows[k * 2] = sub(f"r{k * 2}", k * 2, 1000.0 - k * 2, promoted=False)
+        return rows
+    rep = promotion.at5_report({"one": (build(1), meta("lower")),
+                                "two": (build(2), meta("lower"))})
+    assert rep["not_reproduced"] == ["two"]
+
+
+# --------------------------------------------------- v2.1 denominator classes
+
+def test_analysis_rows_drops_infrastructure_failures_exact_and_regex():
+    from outcomes import denominator
+    subs = [
+        sub("i1", 1, status="failed", reason="rate limited"),
+        sub("i2", 2, status="failed", reason="validation job interrupted by host"),
+        sub("e", 3, status="failed", reason="ordinary failure"),
+    ]
+    out = denominator.analysis_rows(subs, "yukon/b", config=DENOM_CONFIG)
+    assert [s.id for s in out] == ["e"]
+
+
+def test_analysis_rows_keeps_ambiguous_by_default_drops_with_flag():
+    from outcomes import denominator
+    subs = [sub("amb", 1, status="failed", reason="unclear failure"),
+            sub("e", 2, status="failed", reason="ordinary failure")]
+    kept = denominator.analysis_rows(subs, "yukon/b", config=DENOM_CONFIG)
+    assert [s.id for s in kept] == ["amb", "e"]
+    dropped = denominator.analysis_rows(subs, "yukon/b", config=DENOM_CONFIG,
+                                        drop_ambiguous=True)
+    assert [s.id for s in dropped] == ["e"]
+
+
+def test_analysis_rows_drops_non_final_statuses():
+    from outcomes import denominator
+    subs = [sub("v", 1, status="validating"), sub("q", 2, status="queued"),
+            sub("r", 3, status="running"), sub("ok", 4, score=1.0, status="accepted"),
+            sub("f", 5, status="failed")]
+    out = denominator.analysis_rows(subs, "yukon/b", config=DENOM_CONFIG)
+    assert [s.id for s in out] == ["ok", "f"]
+
+
 # ------------------------------------------------------------------------ AT5
 
-def test_at5_recompute_agrees_with_promotion_status_on_real_snapshot():
+STUDY_MARKERS = [
+    "ecdsafail", "sig-golf", "flock-challenge", "flock-challenge-multi",
+    "eip8200", "lighter-prover", "qwen38-125b-a6b-cuda-v1",
+    "mlxfast-gemma4-26b-a4b", "mlxfast-challenge",
+]
+
+
+def test_at5_all_study_benchmarks_in_snapshot_report_counts():
     from outcomes import denominator, promotion
     from snapshot import load as snap
-    name = "gpsanant/ecdsafail-challenge"
-    subs = snap.load(name)
-    m = snap.benchmark_meta(name)
-    rows = denominator.analysis_rows(subs, name)
-    exceptions = [s.id for s in rows if s.status == "accepted" and not s.promoted]
-    assert len(exceptions) == 4
-    assert promotion.disagreements(rows, m, exceptions=exceptions) == []
+    names = snap.benchmarks()
+    study = [n for n in names if any(m in n for m in STUDY_MARKERS)]
+    ecdsa = [n for n in study if "ecdsafail" in n]
+    assert ecdsa == ["gpsanant/ecdsafail-challenge"], "ecdsa.fail must be in the snapshot"
+    items = {}
+    for n in study:
+        rows = denominator.analysis_rows(snap.load(n), n)
+        items[n] = (rows, snap.benchmark_meta(n))
+    rep = promotion.at5_report(items)
+    assert set(rep["counts"]) == set(study)
+    for n in study:
+        c = rep["counts"][n]
+        assert isinstance(c["disagreements"], int) and c["rows"] == len(items[n][0])
+    assert isinstance(rep["not_reproduced"], list)
+    e = "gpsanant/ecdsafail-challenge"
+    assert rep["counts"][e]["disagreements"] == 0
+    assert e not in rep["not_reproduced"]
+    accepted_failed = [s for s in items[e][0]
+                       if s.status == "accepted" and not s.promoted]
+    assert len(accepted_failed) == 4
