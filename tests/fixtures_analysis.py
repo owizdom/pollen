@@ -117,6 +117,7 @@ def cells_frame(n_solvers, rows_per, p_cross=0.5, purity=0.9, seed=0) -> pd.Data
                          "cross_solver": True, "in_window": True,
                          "parent_method": "declared",
                          "week": f"2026-W{1 + int(rng.integers(0, 4)):02d}",
+                         "days_since_open": float(rng.choice([1.0, 3.5, 8.0, 15.5, 30.0, 52.5])),
                          "child_family_folded": "OpenAI" if rng.random() < 0.5 else "Anthropic",
                          "parent_family_folded": "OpenAI" if rng.random() < 0.5 else "Anthropic",
                          "parent_is_current_best": bool(rng.random() < 0.2),
@@ -167,6 +168,7 @@ def add_non_primary_rows(frame, n_solvers=6, rows_per=5, seed=99):
             row = {"solver": f"x{s}", "cross_family": bool(rng.random() < 0.5),
                    "cell": "own_same", "cross_solver": True, "in_window": True,
                    "parent_method": "declared", "week": "2026-W01",
+                   "days_since_open": float(rng.uniform(0, 60)),
                    "child_family_folded": "OpenAI", "parent_family_folded": "Anthropic",
                    "parent_is_current_best": False, "log_prior_rows": 1.0}
             row.update(kinds[(s + r) % len(kinds)])

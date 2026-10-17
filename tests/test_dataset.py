@@ -181,6 +181,16 @@ def test_week_is_iso_year_week(tmp_path):
     assert df.loc["w4", "week"] == "2026-W53"
 
 
+def test_days_since_open_is_float_days_from_benchmark_opening(tmp_path):
+    rows = [sub("d0", 0), sub("d1", 12), sub("d2", 36), sub("d3", 24 * 10 + 6)]
+    df = build(rows, {}, tmp_path)   # meta().opened_at is at(0)
+    assert df.loc["d0", "days_since_open"] == pytest.approx(0.0)
+    assert df.loc["d1", "days_since_open"] == pytest.approx(0.5)
+    assert df.loc["d2", "days_since_open"] == pytest.approx(1.5)
+    assert df.loc["d3", "days_since_open"] == pytest.approx(10.25)
+    assert df["days_since_open"].dtype.kind == "f"
+
+
 def test_sparse_families_fold_below_thirty_rows(tmp_path):
     rows = ([sub(f"g{i}", i, "alice", GPT) for i in range(30)]      # exactly 30: kept
             + [sub(f"c{i}", 100 + i, "bob", CLAUDE) for i in range(29)]  # 29: folded
@@ -217,7 +227,7 @@ def test_no_outcome_columns(tmp_path):
     bad = re.compile(r"(^y\d|promot|score|gain|pareto|jump|plateau|accept|reject)", re.I)
     assert [c for c in df.columns if bad.search(c)] == []
     expected = {"id", "solver", "created_at", "week", "child_model", "child_family",
-                "multi_family", "harness", "parent_ids", "parent_method", "tree_parent_id",
+                "multi_family", "harness", "parent_ids", "parent_method", "tree_parent_id", "days_since_open",
                 "parent_solver", "parent_family", "cross_solver", "cross_family", "cell",
                 "parent_is_current_best", "log_prior_rows", "in_window",
                 "child_family_folded", "parent_family_folded"}
