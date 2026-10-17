@@ -15,11 +15,12 @@ def at(minutes):
 
 
 def sub(i, minutes, solver="alice", promoted=False, finished=None, **kw):
+    kw.setdefault("cancelled", False)
     kw.setdefault("finished_at", at(minutes) if finished is None else finished)
     return Submission(
         id=i, benchmark="b1", solver=solver, created_at=at(minutes),
         status="accepted" if promoted else "rejected", promoted=promoted,
-        cancelled=False, score=None, **kw)
+        score=None, **kw)
 
 
 def lines(prefix, n):

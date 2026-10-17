@@ -547,3 +547,108 @@ def test_window_start_first_week_when_balanced_throughout():
     start = window.start(rows, has)
     start = start.date() if isinstance(start, dt.datetime) else start
     assert start == dt.date(2026, 3, 2)
+
+
+# ------------------------------------------- build: denominator, offline, resume
+
+NEVER_EVAL = "claimed score did not improve current best"
+
+
+def mixed_benchmark(tmp_path):
+    remote = Repo(tmp_path / "remote")
+    c0 = remote.commit({"src/main.py": lines("l", 10), "README.md": ["a"]})
+    c_nae = remote.commit({"src/main.py": variant(1), "README.md": ["nae"]})
+    c_kid = remote.commit({"src/main.py": variant(1), "README.md": ["kid"]})
+    c_dec = remote.commit({"src/main.py": variant(2), "README.md": ["dec"]})
+    c_can = remote.commit({"src/main.py": variant(1), "README.md": ["can"]})
+    subs = [
+        sub("s1", 1, solver="alice", promoted=True, promoted_ref=c0),
+        sub("nae", 5, solver="bob", submission_sha=c_nae, rejection_reason=NEVER_EVAL),
+        sub("can", 5, solver="bob", submission_sha=c_can, cancelled=True),
+        sub("kid", 6, solver="bob", submission_sha=c_kid),
+        sub("dec", 7, solver="carol", submission_sha=c_dec),
+    ]
+    meta = Benchmark(id="b1", name="mixed", slug="mixed", direction="lower",
+                     editable_paths=["src/main.py"], source_url=str(remote.path),
+                     opened_at=None, min_improvement_bips=None)
+    return StubSnapshot(subs, meta, {"dec": ["nae"]})
+
+
+def test_build_uses_analysis_rows_only(tmp_path):
+    stub = mixed_benchmark(tmp_path)
+    root = tmp_path / "f"
+    build.run("yukon/mixed", snapshot=stub, frozen_root=root, cache_dir=tmp_path / "cache")
+    pj = json.loads(gzip.decompress((root / "mixed" / "parents.json.gz").read_bytes()))
+    # identical-tree never-evaluated row is not chosen as the tree parent
+    assert pj["kid"]["tree"][0] == ["s1"]
+    assert "nae" not in pj and "can" not in pj
+    assert {"s1", "kid", "dec"} <= set(pj)
+
+
+def test_declared_dependency_checked_against_all_snapshot_rows(tmp_path):
+    stub = mixed_benchmark(tmp_path)
+    root = tmp_path / "f"
+    build.run("yukon/mixed", snapshot=stub, frozen_root=root, cache_dir=tmp_path / "cache")
+    pj = json.loads(gzip.decompress((root / "mixed" / "parents.json.gz").read_bytes()))
+    assert pj["dec"]["primary"][0] == ["nae"]
+    assert pj["dec"]["primary"][1] == "declared"
+    assert pj["dec"]["dropped"] == []
+
+
+def test_offline_rerun_never_overwrites_a_good_freeze(tmp_path):
+    stub, _ = tiny_benchmark(tmp_path)
+    root = tmp_path / "f"
+    build.run("yukon/tiny", snapshot=stub, frozen_root=root, cache_dir=tmp_path / "cache")
+    before = frozen_files(root)
+    gone = Benchmark(**{**stub._meta.__dict__, "source_url": str(tmp_path / "does-not-exist")})
+    offline = StubSnapshot(stub._subs, gone, stub._attr)
+    try:
+        build.run("yukon/tiny", snapshot=offline, frozen_root=root,
+                  cache_dir=tmp_path / "empty-cache")
+    except Exception as e:  # a clear refusal is allowed
+        assert str(e).strip()
+    assert frozen_files(root) == before
+
+
+def many_row_benchmark(tmp_path, n=12):
+    remote = Repo(tmp_path / "remote")
+    subs = []
+    for i in range(n):
+        sha = remote.commit({"src/main.py": lines(f"t{i}_", 10)})
+        subs.append(sub(f"r{i:02d}", i + 1, solver="alice", submission_sha=sha))
+    meta = Benchmark(id="b1", name="many", slug="many", direction="lower",
+                     editable_paths=["src/main.py"], source_url=str(remote.path),
+                     opened_at=None, min_improvement_bips=None)
+    return StubSnapshot(subs, meta, {})
+
+
+def test_build_resumes_from_flushed_memo_after_crash(tmp_path, monkeypatch):
+    stub = many_row_benchmark(tmp_path)
+    monkeypatch.setattr(build, "FLUSH_EVERY", 1)
+    calls = Calls(monkeypatch)
+
+    cold_root = tmp_path / "cold"
+    build.run("yukon/many", snapshot=stub, frozen_root=cold_root, cache_dir=tmp_path / "cache")
+    cold = calls.diffs
+    assert cold > 0
+
+    real = parents.parents
+    seen = {"n": 0}
+
+    def crashing(*a, **k):
+        seen["n"] += 1
+        if seen["n"] > 9:
+            raise RuntimeError("simulated crash")
+        return real(*a, **k)
+
+    root = tmp_path / "crash"
+    monkeypatch.setattr(parents, "parents", crashing)
+    with pytest.raises(RuntimeError, match="simulated crash"):
+        build.run("yukon/many", snapshot=stub, frozen_root=root, cache_dir=tmp_path / "cache")
+    monkeypatch.setattr(parents, "parents", real)
+    assert (root / "many" / "distances.json.gz").exists()
+
+    calls.diffs = 0
+    build.run("yukon/many", snapshot=stub, frozen_root=root, cache_dir=tmp_path / "cache")
+    assert 0 < calls.diffs < cold
+    assert frozen_files(root) == frozen_files(cold_root)
