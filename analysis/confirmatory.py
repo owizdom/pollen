@@ -10,6 +10,7 @@ from scipy import stats
 
 from analysis import design, models, study
 
+Z95 = 1.959964
 EXCLUDED_METHODS = ("failed", "unidentified")
 
 
@@ -36,6 +37,8 @@ def valid(e) -> bool:
 def est_dict(e) -> dict:
     out = {"log_or": e.log_or, "se": e.se, "n": e.n,
            "n_groups_informative": e.n_groups_informative, "method": e.method}
+    if math.isfinite(e.log_or) and math.isfinite(e.se):
+        out["ci95"] = [e.log_or - Z95 * e.se, e.log_or + Z95 * e.se]
     if hasattr(e, "dropped_covariates"):
         out["dropped_covariates"] = sorted(getattr(e, "dropped_covariates") or [])
     return out
@@ -57,7 +60,7 @@ def pool(ests, margin) -> dict | None:
         return None
     p = models.meta_hksj(good)
     out = study.clean({"log_or": p.log_or, "ci95": list(p.ci95), "ci90": list(p.ci90),
-                       "tau2": p.tau2, "k": p.k})
+                       "tau2": p.tau2, "tau2_ci": list(p.tau2_ci), "k": p.k})
     out["verdict"] = models.tost(out["log_or"], out["ci95"], out["ci90"], margin)
     return out
 
@@ -86,18 +89,23 @@ def strata_counts(fit) -> tuple:
     varies = by["y"].nunique() > 1
     kept = list(varies[varies].index)
     no_treat = [s for s in kept if fit[fit["solver"] == s]["cross_family"].astype(bool).nunique() == 1]
-    return len(kept), len(no_treat)
+    return len(kept), len(no_treat), int(fit["solver"].nunique()) - len(kept)
 
 
 def benchmark_result(b) -> tuple:
     """(Estimate, result dict, fit rows) for one study benchmark."""
     fit = design.primary_rows(b.df)
-    est = fit_rows(fit)
-    kept, no_treat = strata_counts(fit)
+    if len(fit) == 0:
+        est = models.Estimate(float("nan"), float("nan"), 0, 0, "unidentified")
+        kept = no_treat = dropped = 0
+    else:
+        est = fit_rows(fit)
+        kept, no_treat, dropped = strata_counts(fit)
     res = {"name": b.name,
            "estimate": est_dict(est),
            "counts": {"analysis_rows": len(b.df), "fit_rows": len(fit), "strata_kept": kept,
                       "strata_no_treatment_variation": no_treat,
+                      "strata_dropped": dropped,
                       "firth": bool(est.method.startswith("firth")),
                       "excluded": exclusion_counts(b.df)}}
     return est, res, fit
@@ -135,3 +143,17 @@ def run(root=None) -> dict:
         "excluded_benchmarks": excluded,
     }
     return study.dump(out, Path(root) / "results" / "confirmatory.json")
+
+
+if __name__ == "__main__":
+    import argparse
+    import sys
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--root", default=None)
+    args = ap.parse_args()
+    try:
+        run(args.root)
+    except Exception as exc:  # the lock refusing, or any failure, is a non-zero exit
+        print(f"confirmatory refused: {type(exc).__name__}: {exc}", file=sys.stderr)
+        sys.exit(1)

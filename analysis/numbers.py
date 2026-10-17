@@ -8,6 +8,7 @@ from pathlib import Path
 
 from analysis import study
 
+Z95 = 1.959964
 _WORDS = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"]
 
 
@@ -61,6 +62,9 @@ def collect(root) -> dict:
         orr("PooledORNinetyLow", p["ci90"][0])
         orr("PooledORNinetyHigh", p["ci90"][1])
         num("PooledTauSquared", p["tau2"])
+        ci = p.get("tau2_ci") or [None, None]
+        num("PooledTauSquaredLow", ci[0])
+        num("PooledTauSquaredHigh", ci[1])
         m["PooledK"] = str(p["k"])
     if conf:
         m["PooledVerdict"] = esc(conf["verdict"])
@@ -79,7 +83,15 @@ def collect(root) -> dict:
         num(f"Bench{L}LogOR", b["estimate"]["log_or"])
         m[f"Bench{L}AnalysisRows"] = str(b["counts"]["analysis_rows"])
         m[f"Bench{L}FitRows"] = str(b["counts"]["fit_rows"])
-        m[f"Bench{L}StrataKept"] = str(b["counts"]["strata_kept"])
+        c = b["counts"]
+        m[f"Bench{L}StrataKept"] = str(c["strata_kept"])
+        m[f"Bench{L}StrataNoTreatmentVariation"] = str(c["strata_no_treatment_variation"])
+        m[f"Bench{L}StrataDropped"] = str(c.get("strata_dropped", 0))
+        m[f"Bench{L}FirthMethod"] = esc(b["estimate"]["method"])  # "firth" when the fallback ran
+        ci = b["estimate"].get("ci95")
+        if ci:
+            orr(f"Bench{L}ORLow", ci[0])
+            orr(f"Bench{L}ORHigh", ci[1])
     for t in sec.get("tests", []):
         base = f"Sec{camel(t['hypothesis'])}{letters.get(t['benchmark'], camel(t['benchmark']))}"
         m[f"{base}Events"] = str(t["min_arm_events"])

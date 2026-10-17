@@ -9,6 +9,7 @@ CATEGORICAL = ("child_family_folded", "parent_family_folded")
 TIME = "days_since_open"
 NUMERIC = ("parent_is_current_best", "log_prior_rows")
 Y_NAME = "y_sim"
+KNOT_COLS = tuple(f"spline_knot_{i}" for i in range(5))
 
 
 def primary_rows(frame) -> pd.DataFrame:
@@ -23,11 +24,13 @@ def primary_rows(frame) -> pd.DataFrame:
     return frame[keep].reset_index(drop=True)
 
 
-def time_spline(x) -> pd.DataFrame:
-    """Natural (restricted) cubic spline basis, 4 df: x itself plus three nonlinear terms, with
-    knots at the minimum, the three quartiles and the maximum of x (Harrell's form)."""
+def time_spline(x, knots=None) -> pd.DataFrame:
+    """Natural (restricted) cubic spline basis, 4 df: x itself plus three nonlinear terms
+    (Harrell's form). knots are the five knot positions: the boundary minimum, the three
+    interior quartiles and the boundary maximum of days_since_open over the benchmark's
+    analysis rows. When omitted they come from x itself."""
     x = np.asarray(x, float)
-    t = np.quantile(x, [0, 0.25, 0.5, 0.75, 1.0])
+    t = np.quantile(x, [0, 0.25, 0.5, 0.75, 1.0]) if knots is None else np.asarray(knots, float)
     k = len(t)
     pos = lambda v: np.clip(v, 0, None) ** 3  # noqa: E731
     span = t[-1] - t[-2]
@@ -42,12 +45,19 @@ def time_spline(x) -> pd.DataFrame:
     return pd.DataFrame(np.column_stack(cols), columns=[f"time_s{i}" for i in range(1, k)])
 
 
-def build(frame):
+def knots_of(frame):
+    """The knots carried by the frame's spline_knot_* columns, else None."""
+    if len(frame) and all(c in frame.columns for c in KNOT_COLS):
+        return [float(frame[c].iloc[0]) for c in KNOT_COLS]
+    return None
+
+
+def build(frame, knots=None):
     """(X, y_column_name, groups). X holds cross_family first, then time_s1..time_s4 (spline on days_since_open), child_family_folded
     and parent_family_folded dummies (drop_first), parent_is_current_best, log_prior_rows.
     The outcome is not part of X; callers add a column named y_column_name."""
     parts = [frame["cross_family"].astype(bool).astype(float).rename("cross_family"),
-             time_spline(frame[TIME]).set_index(frame.index)]
+             time_spline(frame[TIME], knots if knots is not None else knots_of(frame)).set_index(frame.index)]
     for c in CATEGORICAL:
         parts.append(pd.get_dummies(frame[c].astype(str), prefix=c, drop_first=True,
                                     dtype=float))

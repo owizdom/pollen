@@ -14,7 +14,10 @@ from outcomes import denominator
 OWN_SOLVER = "owizdom"
 SIBLINGS = (("eigenlabs/flock-challenge", "eigenlabs/flock-challenge-multi/x86"),
             ("eigenlabs/eip8200-challenges/modexp", "eigenlabs/eip8200-challenges/ripemd160"))
-NONCE = re.compile(r"\bonly\b[^.\n]{0,40}\b(?:nonce|validation draw|draw)\b[^.\n]{0,30}\bchang", re.I)
+_ART = r"(?:(?:the|a|an|new|fresh|another|different)\s+)*"
+_TERM = r"(?:validation\s+nonce|validation\s+draw|nonce)"
+NONCE = re.compile(rf"\bonly(?:\s+change[sd]?)?\s*:?\s*{_ART}{_TERM}\b"
+                   rf"|\b{_TERM}(?:\s+|-)only\b", re.I)
 NAMES = {1: "s1_unknown_family", 2: "s2_tree_parents", 3: "s3_drop_nonce_rows",
          4: "s4_coarse_family", 5: "s5_drop_first_72h", 6: "s6_harness_effects",
          7: "s7_drop_author_rows", 8: "s8_one_per_sibling_pair", 9: "s9_drop_ambiguous_failures"}

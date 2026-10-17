@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 
 from analysis import dataset, lock
+from analysis.design import KNOT_COLS
 from families import mapper
 from lineage.build import tree_sha
 from lineage.window import start as window_start
@@ -101,14 +102,19 @@ def benchmarks(snapshot=None, lineage_root=None) -> list:
 
 # ------------------------------------------------------------------ margin
 
+MARGIN_LINE = re.compile(r"^margin:\s*\[\s*([0-9.]+)\s*,\s*([0-9.]+)\s*\]\s*$", re.M)
+
+
 def margin(root) -> list:
-    """[0.80, 1.25] unless docs/prereg.md records a widened margin as a line 'margin: [lo, hi]'."""
+    """The equivalence margin from the one canonical line 'margin: [lo, hi]' of docs/prereg.md.
+    Raises when the file is missing or the line is absent or repeated."""
     p = Path(root) / "docs" / "prereg.md"
-    if p.is_file():
-        m = re.search(r"^margin:\s*\[\s*([0-9.]+)\s*,\s*([0-9.]+)\s*\]", p.read_text(), re.M)
-        if m:
-            return [float(m.group(1)), float(m.group(2))]
-    return list(DEFAULT_MARGIN)
+    if not p.is_file():
+        raise FileNotFoundError(f"{p} is missing; the margin is read from it")
+    found = MARGIN_LINE.findall(p.read_text())
+    if len(found) != 1:
+        raise ValueError(f"{p} must hold exactly one 'margin: [lo, hi]' line, found {len(found)}")
+    return [float(found[0][0]), float(found[0][1])]
 
 
 # ------------------------------------------------------------------ per-benchmark bundle
@@ -153,6 +159,10 @@ def load_bench(root, name, snap=None) -> Bench:
 
 def attach_outcomes(df, sealed) -> pd.DataFrame:
     df = df.copy()
+    x = df["days_since_open"].dropna().to_numpy(float)
+    knots = np.quantile(x, [0, 0.25, 0.5, 0.75, 1.0]) if len(x) else [float("nan")] * 5
+    for c, v in zip(KNOT_COLS, knots):  # spline knots of the benchmark's analysis rows
+        df[c] = float(v)
     df["y"] = df["id"].map(lambda i: float(bool(sealed[i]["y1"])))
     df["gain_log"] = df["id"].map(lambda i: sealed[i]["gain_log"]).astype(float)
     for c in ("large_jump", "plateau_break", "pareto_gain"):
