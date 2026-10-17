@@ -104,6 +104,7 @@ def build(benchmark, *, snapshot=None, lineage_root=None) -> pd.DataFrame:
     counts = Counter(fam[s.id] for s in rows)
     fold = lambda f: None if f is None else (f if counts[f] >= FOLD_BELOW else "Other")  # noqa: E731
 
+    opened = meta.opened_at or (rows[0].created_at if rows else None)
     prior = Counter()
     recs = []
     for s in rows:
@@ -123,6 +124,7 @@ def build(benchmark, *, snapshot=None, lineage_root=None) -> pd.DataFrame:
             cell = ("other_" if cross_solver else "own_") + ("switch" if cross_family else "same")
         recs.append({
             "id": s.id, "solver": s.solver, "created_at": s.created_at, "week": _week(s.created_at),
+            "days_since_open": (s.created_at - opened).total_seconds() / 86400.0,
             "child_model": s.model_line, "child_family": cf, "multi_family": cf == "Multi",
             "harness": mapper.harness_of(s.note), "parent_ids": pids, "parent_method": method,
             "tree_parent_id": tree[0][0] if tree[0] else None,
