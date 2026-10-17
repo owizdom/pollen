@@ -74,7 +74,7 @@ A submission's parents are the earlier submissions it built on. Sources, in orde
 
 The tree-distance parent is computed for every row, including rows with declared attribution, so that AT4 and sensitivity 2 can compare the two. The primary parent is the declared one when it exists. Declared dependencies are de-duplicated in order; ids that are unknown or not earlier are dropped and the drop is recorded.
 
-Trees come from `promotedSourceRef` for promoted rows and `submissionCommitSha` otherwise, fetched by SHA, never by branch name. On ecdsa.fail all 1,012 non-null `submissionCommitSha` values match a branch tip under `refs/heads/submissions/*`. `lineage/frozen/` holds the tree manifests (path to blob hash) and the computed distance table with SHA-256 sums, so the rebuild runs offline (review F8). The eip8200 pair shares one repository; trees are split by benchmark id.
+Trees come from `promotedSourceRef` for promoted rows and `submissionCommitSha` otherwise, fetched by SHA, never by branch name. On ecdsa.fail all 1,012 non-null `submissionCommitSha` values match a branch tip under `refs/heads/submissions/*`. `lineage/frozen/` holds the tree manifests (path to blob hash), the computed distance table and the parent links with SHA-256 sums, so the analysis rebuilds offline from them (review F8). Regenerating lineage itself needs the public repositories; `lineage.build` refuses rather than overwrite a good freeze when commits it already holds cannot be fetched. The eip8200 pair shares one repository; trees are split by benchmark id.
 
 Validation (AT4) compares the treatment cell, not the parent id. Two labelled sets exist: declared attribution edges, and the notes that name a base in text (142 on ecdsa.fail, five solvers write most of them).
 

@@ -1,6 +1,7 @@
 """Build lineage/frozen/<slug>/ for one benchmark (resumable from the distance memo)."""
 from __future__ import annotations
 
+import gzip
 import hashlib
 import json
 from concurrent.futures import ThreadPoolExecutor
@@ -10,6 +11,7 @@ from lineage import distance, parents as parents_mod, trees as trees_mod
 
 HERE = Path(__file__).resolve().parent
 WORKERS = 8
+FLUSH_EVERY = 200
 
 
 def tree_sha(s) -> str | None:
@@ -31,12 +33,18 @@ def _link(l):
     return [list(l.parent_ids), l.method, l.distance, l.child_side]
 
 
+def _flush(out_dir, memo) -> None:
+    trees_mod._gz(out_dir / "distances.json.gz", {"dist": memo.dist, "size": memo.size})
+
+
 def run(benchmark: str, snapshot=None, frozen_root=None, cache_dir=None) -> None:
     if snapshot is None:
         from snapshot import load as snapshot
     frozen_root = Path(frozen_root or HERE / "frozen")
     cache_dir = Path(cache_dir or HERE / "cache")
-    subs = [s for s in snapshot.load(benchmark) if not s.cancelled]
+    all_subs = sorted(snapshot.load(benchmark), key=lambda s: (s.created_at, s.id))
+    from outcomes import denominator
+    subs = denominator.analysis_rows(all_subs, benchmark)
     subs.sort(key=lambda s: (s.created_at, s.id))
     meta = snapshot.benchmark_meta(benchmark)
     attr = snapshot.attribution(benchmark)
@@ -47,6 +55,15 @@ def run(benchmark: str, snapshot=None, frozen_root=None, cache_dir=None) -> None
     mirror, missing = trees_mod.ensure_mirror(meta.source_url, set(want.values()),
                                               cache_dir)
     bad = set(missing)
+    frozen = out_dir / "manifests.json.gz"
+    if frozen.exists() and bad:
+        held = set(json.loads(gzip.decompress(frozen.read_bytes())))
+        lost = sorted(bad & held)
+        if lost:
+            raise RuntimeError(
+                f"{benchmark}: refusing to rebuild; {len(lost)} commits in the frozen "
+                f"manifests are not available in the mirror (first: {lost[0]}). "
+                f"Restore the mirror before rebuilding.")
     trees = {i: sha for i, sha in want.items() if sha not in bad}
     ids = {}
     tid = trees_mod.tree_ids_many(mirror, set(trees.values()), paths)
@@ -74,13 +91,15 @@ def run(benchmark: str, snapshot=None, frozen_root=None, cache_dir=None) -> None
                 for (a, b), f in futs.items():
                     memo.dist[f"{a}>{b}"] = list(f.result())
             results[child.id] = parents_mod.parents(
-                child, earlier, attr, trees, own, mirror, paths, ids=ids, memo=memo)
+                child, earlier, attr, trees, own, mirror, paths, ids=ids, memo=memo, all_rows=all_subs)
             own.append(child)
+            if (k + 1) % FLUSH_EVERY == 0:
+                _flush(out_dir, memo)
 
     manifests = trees_mod.read_manifests(mirror, set(trees.values()), paths)
     trees_mod.write_manifests(out_dir, manifests)
     trees_mod.write_missing(out_dir, missing)
-    trees_mod._gz(out_dir / "distances.json.gz", {"dist": memo.dist, "size": memo.size})
+    _flush(out_dir, memo)
     trees_mod._gz(out_dir / "parents.json.gz", {
         i: {"primary": _link(r.primary), "tree": _link(r.tree),
             "dropped": list(r.dropped_declared)} for i, r in results.items()})

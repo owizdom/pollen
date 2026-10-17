@@ -76,14 +76,15 @@ def tree_link(child, earlier, trees, own_history, mirror, paths, ids, memo) -> P
 
 
 def parents(child, earlier, attribution, trees, own_history, mirror, paths,
-            ids=None, memo=None) -> ParentResult:
+            ids=None, memo=None, all_rows=None) -> ParentResult:
     """trees: row id -> commit sha. ids: optional cache of row id -> tree identity."""
     ids = {} if ids is None else ids
     memo = Memo() if memo is None else memo
     earlier = [s for s in earlier if s.id != child.id and s.created_at < child.created_at]
     link = tree_link(child, earlier, trees, [s for s in own_history if s.id != child.id],
                      mirror, paths, ids, memo)
-    known = {s.id for s in earlier}
+    pool = earlier if all_rows is None else all_rows
+    known = {s.id for s in pool if s.id != child.id and s.created_at < child.created_at}
     kept, dropped = [], []
     for d in attribution.get(child.id) or []:
         if d in kept or d in dropped:

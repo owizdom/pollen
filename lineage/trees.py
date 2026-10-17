@@ -4,6 +4,7 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -96,8 +97,10 @@ def read_manifests(mirror, shas, paths) -> dict[str, dict[str, str]]:
 def _gz(path: Path, obj) -> Path:
     data = json.dumps(obj, sort_keys=True, separators=(",", ":")).encode()
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "wb") as raw, gzip.GzipFile(fileobj=raw, mode="wb", mtime=0, filename="") as f:
+    tmp = path.with_name(path.name + ".tmp")
+    with open(tmp, "wb") as raw, gzip.GzipFile(fileobj=raw, mode="wb", mtime=0, filename="") as f:
         f.write(data)
+    os.replace(tmp, path)
     return path
 
 
