@@ -19,10 +19,10 @@ def annotate(subs, meta, out_dir=None) -> None:
     out.mkdir(parents=True, exist_ok=True)
     ordered = sorted(subs, key=lambda s: (s.created_at, s.id))
     bb = frontier.best_before(ordered, meta)
-    rec = promotion.recompute_excluding(ordered, meta, _accepted_not_promoted(ordered))
+    rec = promotion.recompute_excluding(ordered, meta)
     rows = [
         _Row(s.id, s.created_at, s.promoted, frontier.gain_log(s, b, meta), s.metrics,
-             s.score, b)
+             s.score, b, s.finished_at)
         for s, b in zip(ordered, bb)
     ]
     big = {r.id for r in jumps.large_jumps(rows)}
@@ -49,14 +49,11 @@ def annotate(subs, meta, out_dir=None) -> None:
             f.write(payload)
 
 
-def _accepted_not_promoted(subs):
-    return [s.id for s in subs if s.status == "accepted" and not s.promoted]
-
-
 class _Row:
-    __slots__ = ("id", "created_at", "promoted", "gain_log", "metrics", "score", "best_before")
+    __slots__ = ("id", "created_at", "promoted", "gain_log", "metrics", "score", "best_before", "finished_at")
 
-    def __init__(self, id, created_at, promoted, gain_log, metrics, score=None, best_before=None):
+    def __init__(self, id, created_at, promoted, gain_log, metrics, score=None, best_before=None, finished_at=None):
+        self.finished_at = finished_at
         self.score = score
         self.best_before = best_before
         self.id = id

@@ -1,6 +1,8 @@
 """Pareto-frontier gain for ecdsa.fail (qubits, toffoli), both minimised."""
 from __future__ import annotations
 
+from ._order import eval_time
+
 
 def _point(row):
     m = row.metrics or {}
@@ -16,13 +18,13 @@ def _blocks(a, b) -> bool:
 
 
 def pareto_gain(rows) -> list[bool]:
-    order = sorted(range(len(rows)), key=lambda i: (rows[i].created_at, i))
+    order = sorted(range(len(rows)), key=lambda i: (eval_time(rows[i]), i))
     out = [False] * len(rows)
     seen: list[tuple] = []
     k = 0
     while k < len(order):
         j = k
-        while j < len(order) and rows[order[j]].created_at == rows[order[k]].created_at:
+        while j < len(order) and eval_time(rows[order[j]]) == eval_time(rows[order[k]]):
             j += 1
         group = order[k:j]
         pts = {}

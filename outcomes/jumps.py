@@ -4,6 +4,8 @@ from __future__ import annotations
 import datetime as dt
 import math
 
+from ._order import eval_time
+
 _EPS = 1e-12
 
 
@@ -29,17 +31,17 @@ def _gains_enough(row, threshold, direction) -> bool:
 
 
 def plateau_breaks(rows, hours=72, threshold=0.01, opened_at=None, direction="lower") -> list:
-    """Promotions gaining >= threshold (relative) after more than `hours` with no
+    """Promotions gaining >= threshold (relative) after at least `hours` with no
     such promotion. The window starts at opened_at; without it the first
     qualifying promotion has no window and is not flagged.
     """
     q = sorted((r for r in rows if _gains_enough(r, threshold, direction)),
-               key=lambda r: r.created_at)
+               key=eval_time)
     window = dt.timedelta(hours=hours)
     out = []
     prev = opened_at
     for r in q:
-        if prev is not None and r.created_at - prev > window:
+        if prev is not None and eval_time(r) - prev >= window:
             out.append(r)
-        prev = r.created_at
+        prev = eval_time(r)
     return out

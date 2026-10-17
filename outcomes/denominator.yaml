@@ -4,8 +4,8 @@
 # snapshot/raw and the public ecdsa.fail submissions API; no outcome was split
 # by treatment to choose them. Ordinary "score did not improve current best" and
 # "score improved but fell short of ... bips" rows were scored, so they stay in.
-# Status "failed" rows (infrastructure and workflow failures) stay in, as the
-# denominator spec lists only the three categories below.
+# Failed rows are classed by failure_classes at the end of this file:
+# infrastructure failures are dropped, evaluated and ambiguous ones stay in.
 
 # Exact strings applied to every benchmark.
 default:
@@ -26,6 +26,8 @@ default_regex:
   - '^Submission rejected: .*tar entry type .* is not allowed'
   # Packaging error: archive could not be fetched.
   - '^submission archive download failed'
+  # Submission packaging: the GitHub PR body for the submission was too long.
+  - '^GitHub pull request for .* body is too long'
   # Queued under a round count the benchmark had stopped accepting.
   - '^Round count \d+ was not accepted when this submission was queued$'
 
@@ -56,7 +58,8 @@ failure_classes:
   '^workflow run concluded failure at step "(Review submitted code|Submission static review|Verify submitted commit)': evaluated  # static review or surface check rejected the submission
   '^workflow run concluded failure at step "(Build and stage candidate artifact|Build participant worker)': evaluated  # the submission's code failed to build
   # --- infrastructure: failed before or around evaluation, not caused by the submission
-  '^workflow run concluded failure at step "(Set up job|Setup \(|Run actions/checkout|Host preflight|Wait for quiescence|Stage the organizer heads|Prepare hidden correctness golden|Select pinned prior judgment|Prepare isolated experiment runtime)': infrastructure  # runner, checkout or organizer setup
+  '^workflow run concluded failure at step "Setup \(': ambiguous  # toolchain or engine setup builds submission code (seen on qwen)
+  '^workflow run concluded failure at step "(Set up job|Run actions/checkout|Host preflight|Wait for quiescence|Stage the organizer heads|Prepare hidden correctness golden|Select pinned prior judgment|Prepare isolated experiment runtime)': infrastructure  # runner, checkout or organizer setup
   '^workflow run concluded (failure|cancelled) at step "(Upload|Download) ': infrastructure  # artifact transfer
   '^workflow run concluded cancelled at step "Upload score': infrastructure  # cancelled while uploading the score
   '^workflow run concluded failure at step "Overlay paired timing': ambiguous  # post-timing merge step, cause not stated

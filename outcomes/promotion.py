@@ -20,7 +20,7 @@ def recompute(subs, meta) -> list[bool]:
     out = [False] * len(subs)
     for i in eval_order(subs):
         score = subs[i].score
-        if score is None:
+        if score is None or subs[i].status not in ("accepted", "rejected"):
             continue
         if unbounded:
             ok = score < best if lower else score > best
@@ -36,9 +36,10 @@ def recompute(subs, meta) -> list[bool]:
 
 
 def exception_ids(subs, explicit=()) -> set:
-    """Named exceptions: explicit ids and superseded rows."""
+    """Named exceptions: explicit ids and rows with promotion status failed or superseded."""
     ids = set(explicit)
-    ids.update(s.id for s in subs if getattr(s, "promotion_status", None) == "superseded")
+    ids.update(s.id for s in subs
+               if getattr(s, "promotion_status", None) in ("failed", "superseded"))
     return ids
 
 
@@ -65,8 +66,7 @@ def at5_report(items) -> dict:
     counts = {}
     not_reproduced = []
     for name, (rows, meta) in items.items():
-        exc = {s.id for s in rows if s.status == "accepted" and not s.promoted}
-        exc |= exception_ids(rows)
+        exc = exception_ids(rows)
         dis = disagreements(rows, meta, exc)
         counts[name] = {"rows": len(rows), "disagreements": len(dis),
                         "exceptions": len(exc)}
