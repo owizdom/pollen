@@ -80,17 +80,23 @@ def declared(*ids):
     return link(ids, "declared" if len(ids) == 1 else "multi")
 
 
-def write_parents(lineage_root, mapping, slug=SLUG):
+def write_parents(lineage_root, mapping, slug=SLUG, *, missing=True, sign=True):
     """mapping: id -> primary link (see link()) or (primary, tree) pair.
 
-    Writes <lineage_root>/<slug>/parents.json.gz in lineage.build.run's layout and returns
-    lineage_root. Ids absent from the mapping get method "none".
+    Writes <lineage_root>/<slug>/parents.json.gz (lineage.build.run's layout), missing.json and
+    <lineage_root>/SHA256SUMS, and returns lineage_root. Ids absent from the mapping get
+    method "none".
     """
+    from lineage import build as lbuild
     out = {}
     for sid, val in mapping.items():
         primary, tree = val if isinstance(val, tuple) else (val, link())
         out[sid] = {"primary": primary, "tree": tree, "dropped": []}
     trees_mod._gz(lineage_root / slug / "parents.json.gz", out)
+    if missing:
+        trees_mod.write_missing(lineage_root / slug, [])
+    if sign:
+        lbuild.write_sha256sums(lineage_root)
     return lineage_root
 
 
@@ -107,24 +113,42 @@ def cells_frame(n_solvers, rows_per, p_cross=0.5, purity=0.9, seed=0) -> pd.Data
         for _ in range(rows_per):
             cf = bool(lean if rng.random() < purity else not lean)
             rows.append({"solver": f"s{s}", "cross_family": cf,
-                         "cell": "other_switch" if cf else "other_same"})
+                         "cell": "other_switch" if cf else "other_same",
+                         "week": f"2026-W{1 + int(rng.integers(0, 4)):02d}",
+                         "child_family_folded": "OpenAI" if rng.random() < 0.5 else "Anthropic",
+                         "parent_family_folded": "OpenAI" if rng.random() < 0.5 else "Anthropic",
+                         "parent_is_current_best": bool(rng.random() < 0.2),
+                         "log_prior_rows": float(np.log1p(rng.integers(0, 20)))})
     return pd.DataFrame(rows)
 
 
-FAKE_TREE = {
-    "docs/prereg.md": "prereg text\n",
-    "analysis/__init__.py": "",
-    "analysis/dataset.py": "x = 1\n",
-    "analysis/sub/deep.py": "y = 2\n",
-    "lineage/parents.py": "z = 3\n",
-    "lineage/cache/blob.bin": "cache bytes\n",
-    "lineage/frozen/SHA256SUMS": "abc  slug/parents.json.gz\n",
-    "lineage/frozen/slug/parents.json.gz": "frozen data\n",
-    "families/table.yaml": "strings: {}\n",
-    "outcomes/denominator.yaml": "default: []\n",
-    "snapshot/raw/SHA256SUMS": "def  file\n",
-}
-HASHED = ["docs/prereg.md", "analysis/__init__.py", "analysis/dataset.py",
-          "analysis/sub/deep.py", "lineage/parents.py", "lineage/frozen/SHA256SUMS",
-          "families/table.yaml", "outcomes/denominator.yaml", "snapshot/raw/SHA256SUMS"]
-NOT_HASHED = ["lineage/cache/blob.bin", "lineage/frozen/slug/parents.json.gz"]
+CODE = ["snapshot/load.py", "families/mapper.py", "lineage/parents.py", "outcomes/promotion.py",
+        "analysis/__init__.py", "analysis/dataset.py", "analysis/sub/deep.py"]
+REQUIRED = ["docs/prereg.md", "families/table.yaml", "outcomes/denominator.yaml",
+            "snapshot/raw/SHA256SUMS", "lineage/frozen/SHA256SUMS"]
+HASHED = REQUIRED + CODE
+FROZEN_DATA = ["lineage/frozen/slug/parents.json.gz", "lineage/frozen/slug/missing.json",
+               "snapshot/raw/slug/submissions.json.gz"]
+NOT_HASHED = ["lineage/cache/blob.bin"] + FROZEN_DATA  # data is covered by SHA256SUMS instead
+
+
+def make_tree(root):
+    """Write a fake repo tree with signed frozen lineage and raw snapshot data."""
+    import hashlib
+    files = {
+        "docs/prereg.md": "prereg text\n",
+        "families/table.yaml": "strings: {}\n",
+        "outcomes/denominator.yaml": "default: []\n",
+        "lineage/cache/blob.bin": "cache bytes\n",
+        **{c: f"# {c}\n" for c in CODE},
+        **{d: f"data {d}\n" for d in FROZEN_DATA},
+    }
+    for rel, text in files.items():
+        p = root / rel
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(text)
+    for base in ("lineage/frozen", "snapshot/raw"):
+        b = root / base
+        lines = [f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(b).as_posix()}"
+                 for p in sorted(b.rglob("*")) if p.is_file()]
+        (b / "SHA256SUMS").write_text("\n".join(lines) + "\n")

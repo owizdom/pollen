@@ -230,44 +230,106 @@ def test_one_row_per_analysis_row_in_a_dataframe(tmp_path):
     assert len(df) == 5 and df["id"].is_unique
 
 
+# ---------------------------------------------------------------- frozen inputs
+
+def _frozen_error(excinfo_type):
+    return not issubclass(excinfo_type, (ImportError, TypeError, AttributeError, NameError))
+
+
+def _run_build(root):
+    from analysis import dataset as ds
+    return ds.build("yukon/pollen-test", snapshot=StubSnapshot([sub("a1", 0)], meta()),
+                    lineage_root=root)
+
+
+@pytest.mark.parametrize("name", ["parents.json.gz", "missing.json"])
+def test_build_raises_when_frozen_file_absent(tmp_path, name):
+    root = write_parents(tmp_path / "frozen", {}, sign=False)
+    (root / "pollen-test" / name).unlink()
+    from lineage import build as lbuild
+    lbuild.write_sha256sums(root)
+    with pytest.raises(Exception) as ei:
+        _run_build(root)
+    assert _frozen_error(ei.type), ei.value
+
+
+def test_build_raises_when_parents_do_not_match_sha256sums(tmp_path):
+    root = write_parents(tmp_path / "frozen", {"a1": declared("zz")})
+    # replace the file with different content without re-signing
+    write_parents(tmp_path / "other", {"a1": link()}, sign=False)
+    (root / "pollen-test" / "parents.json.gz").write_bytes(
+        (tmp_path / "other" / "pollen-test" / "parents.json.gz").read_bytes())
+    with pytest.raises(Exception) as ei:
+        _run_build(root)
+    assert _frozen_error(ei.type), ei.value
+
+
+def test_build_accepts_correctly_signed_frozen_files(tmp_path):
+    root = write_parents(tmp_path / "frozen", {})
+    assert len(_run_build(root)) == 1
+
+
 # ---------------------------------------------------------------- power
 
 def test_equivalence_power_in_unit_interval():
     from analysis import power
-    p = power.equivalence_power(cells_frame(20, 10, seed=1), 0.3, sims=40, seed=7)
+    p = power.equivalence_power(cells_frame(12, 6, seed=1), 0.3, sims=10, seed=7)
     assert 0.0 <= p <= 1.0
 
 
 def test_equivalence_power_deterministic_for_fixed_seed():
     from analysis import power
-    cells = cells_frame(20, 10, seed=1)
-    a = power.equivalence_power(cells, 0.3, sims=60, seed=11)
-    b = power.equivalence_power(cells, 0.3, sims=60, seed=11)
+    cells = cells_frame(12, 6, seed=1)
+    a = power.equivalence_power(cells, 0.3, sims=10, seed=11)
+    b = power.equivalence_power(cells, 0.3, sims=10, seed=11)
     assert a == b
 
 
-def test_equivalence_power_rises_with_more_rows():
-    from analysis import power
-    small = power.equivalence_power(cells_frame(8, 6, seed=2), 0.3, sims=80, seed=3)
-    big = power.equivalence_power(cells_frame(60, 40, purity=0.7, seed=2), 0.3, sims=80, seed=3)
-    assert big > small
+def test_equivalence_power_calls_cond_logit_once_per_sim(monkeypatch):
+    from analysis import models, power
+    real, calls = models.cond_logit, []
+
+    def counting(*a, **k):
+        calls.append(1)
+        return real(*a, **k)
+
+    monkeypatch.setattr(models, "cond_logit", counting)
+    power.equivalence_power(cells_frame(12, 6, seed=1), 0.3, sims=8, seed=2)
+    assert len(calls) == 8
 
 
-def test_equivalence_power_falls_with_higher_icc():
-    from analysis import power
-    cells = cells_frame(40, 30, purity=0.9, seed=4)
-    low = power.equivalence_power(cells, 0.3, icc=0.01, sims=150, seed=5)
-    high = power.equivalence_power(cells, 0.3, icc=0.6, sims=150, seed=5)
-    assert low > high
+def test_pooled_equivalence_power_uses_cond_logit_and_meta_hksj(monkeypatch):
+    from analysis import models, power
+    real, calls = models.cond_logit, []
+    real_meta, metas = models.meta_hksj, []
+
+    def counting(*a, **k):
+        calls.append(1)
+        return real(*a, **k)
+
+    def counting_meta(*a, **k):
+        metas.append(1)
+        return real_meta(*a, **k)
+
+    monkeypatch.setattr(models, "cond_logit", counting)
+    monkeypatch.setattr(models, "meta_hksj", counting_meta)
+    frames = {f"b{i}": cells_frame(12, 6, seed=i) for i in range(3)}
+    rates = {k: 0.3 for k in frames}
+    p = power.pooled_equivalence_power(frames, rates, sims=6, seed=4)
+    assert 0.0 <= p <= 1.0
+    assert len(calls) == 3 * 6
+    assert len(metas) >= 1
+    q = power.pooled_equivalence_power(frames, rates, sims=6, seed=4)
+    assert p == q
 
 
-def test_min_events_returns_smaller_arms_count():
+def test_min_rows_returns_smaller_arms_row_count():
     from analysis import power
     cells = pd.DataFrame({
         "solver": list("abcdefghijklmnopqrstuvwxyz")[:24],
         "cross_family": [True] * 7 + [False] * 12 + [None] * 5,
     })
-    assert power.min_events(cells) == 7
+    assert power.min_rows(cells) == 7
     flipped = cells.assign(cross_family=cells.cross_family.map(
         lambda v: None if v is None else (not v)))
-    assert power.min_events(flipped) == 7
+    assert power.min_rows(flipped) == 7

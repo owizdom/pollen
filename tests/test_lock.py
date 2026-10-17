@@ -7,7 +7,7 @@ import subprocess
 
 import pytest
 
-from tests.fixtures_analysis import FAKE_TREE, HASHED, NOT_HASHED
+from tests.fixtures_analysis import CODE, FROZEN_DATA, HASHED, NOT_HASHED, REQUIRED, make_tree
 
 GIT = ["git", "-c", "user.name=t", "-c", "user.email=t@example.invalid",
        "-c", "commit.gpgsign=false", "-c", "tag.gpgsign=false"]
@@ -21,10 +21,7 @@ def git(root, *args):
 @pytest.fixture
 def repo(tmp_path):
     root = tmp_path / "repo"
-    for rel, text in FAKE_TREE.items():
-        p = root / rel
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(text)
+    make_tree(root)
     git(root, "init", "-q")
     return root
 
@@ -77,12 +74,74 @@ def test_check_passes_when_unchanged_and_manifest_matches_tag(repo):
     lock.check(repo)  # does not raise
 
 
-def test_check_ignores_cache_and_frozen_data(repo):
+def test_check_ignores_lineage_cache(repo):
     from analysis import lock
     lock_and_tag(repo)
     (repo / "lineage/cache/blob.bin").write_text("changed\n")
-    (repo / "lineage/frozen/slug/parents.json.gz").write_text("changed\n")
+    (repo / "lineage/cache/new.bin").write_text("new\n")
     lock.check(repo)
+
+
+@pytest.mark.parametrize("rel", FROZEN_DATA)
+def test_check_raises_when_frozen_data_edited_without_resigning(repo, rel):
+    from analysis import lock
+    lock_and_tag(repo)
+    (repo / rel).write_text("tampered\n")
+    with pytest.raises(lock.LockError):
+        lock.check(repo)
+
+
+@pytest.mark.parametrize("rel", ["lineage/frozen/slug/extra.json",
+                                 "snapshot/raw/slug/extra.json.gz"])
+def test_check_raises_on_unlisted_extra_frozen_file(repo, rel):
+    from analysis import lock
+    lock_and_tag(repo)
+    (repo / rel).write_text("surprise\n")
+    with pytest.raises(lock.LockError):
+        lock.check(repo)
+
+
+@pytest.mark.parametrize("rel", ["families/mapper.py", "outcomes/promotion.py",
+                                 "snapshot/load.py", "lineage/parents.py",
+                                 "analysis/dataset.py"])
+def test_check_raises_when_rule_code_changes_after_tag(repo, rel):
+    from analysis import lock
+    lock_and_tag(repo)
+    (repo / rel).write_text("# edited after the tag\n")
+    with pytest.raises(lock.LockError):
+        lock.check(repo)
+
+
+def test_manifest_covers_code_in_every_rule_package(repo):
+    from analysis import lock
+    lock.write_manifest(repo)
+    files = manifest_files(repo)
+    for rel in CODE:
+        assert rel in files, rel
+
+
+@pytest.mark.parametrize("rel", REQUIRED)
+def test_write_manifest_raises_when_a_required_file_is_missing(repo, rel):
+    from analysis import lock
+    (repo / rel).unlink()
+    with pytest.raises(lock.LockError):
+        lock.write_manifest(repo)
+
+
+@pytest.mark.parametrize("rel", REQUIRED)
+def test_check_raises_when_tagged_manifest_lacks_a_required_key(repo, rel):
+    from analysis import lock
+    lock.write_manifest(repo)
+    p = repo / "docs/prereg-manifest.json"
+    m = json.loads(p.read_text())
+    files = m.get("files", m)
+    del files[rel]
+    p.write_text(json.dumps(m, indent=2, sort_keys=True) + "\n")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "lock")
+    git(repo, "tag", "prereg-v1")
+    with pytest.raises(lock.LockError):
+        lock.check(repo)
 
 
 @pytest.mark.parametrize("rel", ["docs/prereg.md", "analysis/sub/deep.py",
