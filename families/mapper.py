@@ -28,6 +28,9 @@ _RULES: dict[str, tuple[str, ...]] = {
     "Mistral": ("mistral", "codestral", "devstral"),
     "Meta": ("muse", "llama"),
     "Other:Cognition": ("swe-1", "swe-2", "swe-3"),
+    "Other:Cursor": ("composer",),
+    "Other:ByteDance": ("doubao",),
+    "Other:Poolside": ("poolside",),
 }
 _PATTERNS = {
     fam: re.compile(r"(?<![a-z0-9])(?:%s)(?![a-z0-9])|(?<![a-z0-9])(?:%s)(?=\d)" % (
