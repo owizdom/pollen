@@ -17,16 +17,17 @@ def annotate(subs, meta, out_dir=None) -> None:
 
     out = Path(out_dir) if out_dir is not None else SEALED_DIR
     out.mkdir(parents=True, exist_ok=True)
-    order = sorted(range(len(subs)), key=lambda i: (subs[i].created_at, subs[i].id))
-    ordered = [subs[i] for i in order]
+    ordered = sorted(subs, key=lambda s: (s.created_at, s.id))
     bb = frontier.best_before(ordered, meta)
-    rec = promotion.recompute(ordered, meta)
+    rec = promotion.recompute_excluding(ordered, meta, _accepted_not_promoted(ordered))
     rows = [
-        _Row(s.id, s.created_at, s.promoted, frontier.gain_log(s, b, meta), s.metrics)
+        _Row(s.id, s.created_at, s.promoted, frontier.gain_log(s, b, meta), s.metrics,
+             s.score, b)
         for s, b in zip(ordered, bb)
     ]
     big = {r.id for r in jumps.large_jumps(rows)}
-    plateau = {r.id for r in jumps.plateau_breaks(rows)}
+    plateau = {r.id for r in jumps.plateau_breaks(
+        rows, opened_at=meta.opened_at, direction=meta.direction)}
     pg = pareto.pareto_gain(rows)
     data = [
         {
@@ -48,10 +49,16 @@ def annotate(subs, meta, out_dir=None) -> None:
             f.write(payload)
 
 
-class _Row:
-    __slots__ = ("id", "created_at", "promoted", "gain_log", "metrics")
+def _accepted_not_promoted(subs):
+    return [s.id for s in subs if s.status == "accepted" and not s.promoted]
 
-    def __init__(self, id, created_at, promoted, gain_log, metrics):
+
+class _Row:
+    __slots__ = ("id", "created_at", "promoted", "gain_log", "metrics", "score", "best_before")
+
+    def __init__(self, id, created_at, promoted, gain_log, metrics, score=None, best_before=None):
+        self.score = score
+        self.best_before = best_before
         self.id = id
         self.created_at = created_at
         self.promoted = promoted

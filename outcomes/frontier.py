@@ -3,17 +3,23 @@ from __future__ import annotations
 
 import math
 
+from ._order import eval_order, eval_time
+
 
 def best_before(subs, meta) -> list:
-    """Best score among promoted rows strictly earlier by created_at."""
+    """Best promoted score among rows that finished strictly earlier.
+
+    Seeded with meta.baseline_score when set.
+    """
     lower = meta.direction == "lower"
-    order = sorted(range(len(subs)), key=lambda i: (subs[i].created_at, i))
+    order = eval_order(subs)
     out = [None] * len(subs)
-    best = None
+    best = getattr(meta, "baseline_score", None)
     k = 0
     while k < len(order):
         j = k
-        while j < len(order) and subs[order[j]].created_at == subs[order[k]].created_at:
+        t = eval_time(subs[order[k]])
+        while j < len(order) and eval_time(subs[order[j]]) == t:
             j += 1
         for i in order[k:j]:
             out[i] = best

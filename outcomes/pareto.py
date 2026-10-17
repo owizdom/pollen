@@ -10,8 +10,9 @@ def _point(row):
     return (q, t)
 
 
-def _dominates(a, b) -> bool:
-    return a[0] <= b[0] and a[1] <= b[1] and (a[0] < b[0] or a[1] < b[1])
+def _blocks(a, b) -> bool:
+    """Earlier point a blocks b if it dominates b or is identical to it."""
+    return a[0] <= b[0] and a[1] <= b[1]
 
 
 def pareto_gain(rows) -> list[bool]:
@@ -28,7 +29,7 @@ def pareto_gain(rows) -> list[bool]:
         for i in group:
             p = _point(rows[i])
             pts[i] = p
-            out[i] = p is not None and not any(_dominates(e, p) for e in seen)
+            out[i] = p is not None and not any(_blocks(e, p) for e in seen)
         seen.extend(p for p in pts.values() if p is not None)
         k = j
     return out

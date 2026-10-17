@@ -40,3 +40,42 @@ benchmarks:
 benchmarks_regex:
   gpsanant/ecdsafail-challenge:
     - '^Submission rejected: submission archive path: must be inside one of the editable paths'
+
+# Failure classes (spec 0001 section 3.1), applied to rows with status "failed"
+# and a reason. Value is evaluated (kept), infrastructure (dropped) or ambiguous
+# (kept; sensitivity 9 drops them via analysis_rows(drop_ambiguous=True)).
+# A key matches by exact string first, then by re.search in file order, so the
+# specific step patterns precede the generic ones. A failed row matching no key
+# raises UnclassifiedFailure. Built from every distinct failed reason in the
+# frozen benchmarks plus the public API for the study benchmarks (17 Oct 2026).
+failure_classes:
+  # --- evaluated: the benchmark ran or the submission's own code failed a gate
+  "benchmark command failed": evaluated  # the scoring command ran and exited nonzero
+  '^workflow run concluded failure at step "Benchmark': evaluated  # benchmark step (also "Benchmark submission", "Benchmark OpenAI paired review", ...) failed
+  '^workflow run concluded failure at step "(GPU-exclusive measurement|Timed paired benchmark|Correctness and gates|Public behavior gate|Semantic GPQA gate)': evaluated  # measurement or correctness gate failed on the submission
+  '^workflow run concluded failure at step "(Review submitted code|Submission static review|Verify submitted commit)': evaluated  # static review or surface check rejected the submission
+  '^workflow run concluded failure at step "(Build and stage candidate artifact|Build participant worker)': evaluated  # the submission's code failed to build
+  # --- infrastructure: failed before or around evaluation, not caused by the submission
+  '^workflow run concluded failure at step "(Set up job|Setup \(|Run actions/checkout|Host preflight|Wait for quiescence|Stage the organizer heads|Prepare hidden correctness golden|Select pinned prior judgment|Prepare isolated experiment runtime)': infrastructure  # runner, checkout or organizer setup
+  '^workflow run concluded (failure|cancelled) at step "(Upload|Download) ': infrastructure  # artifact transfer
+  '^workflow run concluded cancelled at step "Upload score': infrastructure  # cancelled while uploading the score
+  '^workflow run concluded failure at step "Overlay paired timing': ambiguous  # post-timing merge step, cause not stated
+  '^workflow run concluded failure at step "Setup': ambiguous  # "Setup", "Setup benchmark": may build or run submission code
+  '^GitHub ': infrastructure  # GitHub API: PR, branch, token, artifact, commit or repo errors, rate limits
+  '^workflow .* could not be dispatched': infrastructure  # dispatch error
+  '^no benchmark\.yml run appeared': infrastructure  # dispatch produced no run
+  '^submission candidate branch could not be pushed': infrastructure  # git push to the candidate branch failed
+  '^submission (archive )?download failed': infrastructure  # fetching the submission failed
+  '^ENOSPC': infrastructure  # host out of disk
+  "server shutting down": infrastructure  # platform restart
+  '^write CONNECTION_CLOSED': infrastructure  # database connection dropped
+  "Too many requests (team)": infrastructure  # platform rate limit
+  '^validation job was interrupted': infrastructure  # validation job killed before or during the run
+  '^Invalid submission state transition': infrastructure  # platform state-machine error
+  '^Invalid benchmark manifest': infrastructure  # organizer repo problem
+  # --- ambiguous: the text does not say whether the submission caused it
+  '^workflow run concluded failure: ': ambiguous  # failure with no step named
+  '^workflow run concluded cancelled': ambiguous  # cancelled by runner or by hand, cause not stated
+  '^workflow run timed out after ': ambiguous  # slow submission or stuck runner
+  '^agent-compose run .* finished with status failed': ambiguous  # agent run failed, cause not stated
+  '^invokeAndWait: run .* did not settle': ambiguous  # run never settled, cause not stated
