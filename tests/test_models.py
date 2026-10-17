@@ -230,13 +230,9 @@ def test_permutation_share_deterministic(models):
 
 
 def test_permutation_share_independent_gives_large_p(models):
-    rng = np.random.default_rng(11)
-    n = 600
-    df = pd.DataFrame(
-        {"stratum": rng.choice(["a", "b", "c"], n), "label": rng.random(n) < 0.4, "flag": rng.random(n) < 0.3}
-    )
-    _, p = models.permutation_share(df, "label", "flag", "stratum", draws=500, seed=1)
-    assert p > 0.1
+    df = fx.exactly_independent_flag_data()
+    obs, p = models.permutation_share(df, "label", "flag", "stratum", draws=500, seed=1)
+    assert p > 0.5
 
 
 def test_permutation_share_strong_association_gives_small_p(models):

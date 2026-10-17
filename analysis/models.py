@@ -1,0 +1,265 @@
+"""Statistical models for the pollination study (spec 0001 s5.1-5.4)."""
+from __future__ import annotations
+
+import math
+import warnings
+from dataclasses import dataclass
+
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+from scipy import stats
+from scipy.optimize import brentq
+from statsmodels.discrete.conditional_models import ConditionalLogit
+
+
+@dataclass(frozen=True)
+class Estimate:
+    log_or: float
+    se: float
+    n: int
+    n_groups_informative: int
+    method: str
+
+
+@dataclass(frozen=True)
+class Pooled:
+    log_or: float
+    ci95: tuple
+    ci90: tuple
+    tau2: float
+    tau2_ci: tuple
+    k: int
+
+
+# ------------------------------------------------------------------ cond_logit
+
+def _firth(X: np.ndarray, y: np.ndarray, max_iter: int = 200, tol: float = 1e-8):
+    """Jeffreys-penalised logistic regression by Newton-Raphson with step halving.
+
+    Returns (beta, covariance)."""
+    n, p = X.shape
+    beta = np.zeros(p)
+    for _ in range(max_iter):
+        eta = np.clip(X @ beta, -30, 30)
+        mu = 1 / (1 + np.exp(-eta))
+        W = mu * (1 - mu)
+        info = X.T @ (X * W[:, None])
+        inv = np.linalg.pinv(info)
+        # hat diagonal of W^1/2 X (X'WX)^-1 X' W^1/2
+        h = W * np.einsum("ij,jk,ik->i", X, inv, X)
+        score = X.T @ (y - mu + h * (0.5 - mu))
+        step = inv @ score
+        mx = np.max(np.abs(step))
+        if mx > 5:  # cap the step length
+            step *= 5 / mx
+        beta = beta + step
+        if np.max(np.abs(step)) < tol:
+            break
+    eta = np.clip(X @ beta, -30, 30)
+    mu = 1 / (1 + np.exp(-eta))
+    W = mu * (1 - mu)
+    cov = np.linalg.pinv(X.T @ (X * W[:, None]))
+    return beta, cov
+
+
+def _firth_fit(d: pd.DataFrame, outcome, treatment, covariates, group) -> Estimate:
+    dummies = pd.get_dummies(d[group].astype(str), dtype=float)
+    X = np.column_stack(
+        [d[treatment].to_numpy(float)]
+        + [d[c].to_numpy(float) for c in covariates]
+        + [dummies.to_numpy()]
+    )
+    y = d[outcome].to_numpy(float)
+    beta, cov = _firth(X, y)
+    return Estimate(
+        log_or=float(beta[0]),
+        se=float(math.sqrt(cov[0, 0])),
+        n=int(len(d)),
+        n_groups_informative=int(d[group].nunique()),
+        method="firth",
+    )
+
+
+def _perfectly_predicted(d, outcome, treatment, group) -> bool:
+    """Within every informative stratum the treatment determines the outcome in
+    the same direction (treated all 1, controls all 0, or the reverse)."""
+    t = d[treatment].to_numpy() > 0
+    y = d[outcome].to_numpy() > 0
+    agree = pd.Series(t == y, index=d.index).groupby(d[group]).all()
+    disagree = pd.Series(t != y, index=d.index).groupby(d[group]).all()
+    return bool(agree.all() or disagree.all())
+
+
+def cond_logit(df, outcome, treatment, covariates, group) -> Estimate:
+    covariates = list(covariates)
+    d = df[[outcome, treatment, group] + covariates].dropna().copy()
+    g = d.groupby(group)
+    informative = (g[outcome].transform("nunique") > 1) & (g[treatment].transform("nunique") > 1)
+    d = d[informative]
+    n_inf = int(d[group].nunique())
+    if n_inf == 0:
+        return Estimate(float("nan"), float("nan"), 0, 0, "clogit")
+    if _perfectly_predicted(d, outcome, treatment, group):
+        return _firth_fit(d, outcome, treatment, covariates, group)
+
+    exog = d[[treatment] + covariates].to_numpy(float)
+    endog = d[outcome].to_numpy(float)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        try:
+            res = ConditionalLogit(endog, exog, groups=d[group].to_numpy()).fit(disp=False)
+            params = np.asarray(res.params, float)
+            bse = np.asarray(res.bse, float)
+        except Exception:
+            params = np.array([np.nan])
+            bse = np.array([np.nan])
+    bad = (
+        not np.all(np.isfinite(params))
+        or not np.all(np.isfinite(bse))
+        or np.max(np.abs(params)) > 15
+        or np.max(bse) > 15
+        or np.min(bse) <= 0
+        or any("onverge" in str(w.message) or "ingular" in str(w.message) for w in caught)
+        or not bool(getattr(res, "mle_retvals", {"converged": True}).get("converged", True))
+        if "res" in locals()
+        else True
+    )
+    if bad:
+        return _firth_fit(d, outcome, treatment, covariates, group)
+    return Estimate(float(params[0]), float(bse[0]), int(len(d)), n_inf, "clogit")
+
+
+# ------------------------------------------------------------------ meta_hksj
+
+def _q_profile(y, se, k):
+    def qgen(t):
+        w = 1 / (se**2 + t)
+        mu = (w * y).sum() / w.sum()
+        return float((w * (y - mu) ** 2).sum())
+
+    def bound(target):
+        if qgen(0.0) < target:
+            return 0.0
+        hi = 1.0
+        for _ in range(200):
+            if qgen(hi) <= target:
+                break
+            hi *= 2
+        return float(brentq(lambda t: qgen(t) - target, 0.0, hi, xtol=1e-12))
+
+    return bound(stats.chi2.ppf(0.975, k - 1)), bound(stats.chi2.ppf(0.025, k - 1))
+
+
+def meta_hksj(estimates) -> Pooled:
+    y = np.array([e.log_or for e in estimates], float)
+    se = np.array([e.se for e in estimates], float)
+    k = len(y)
+    if k == 0:
+        raise ValueError("no estimates")
+    if k == 1:
+        z95, z90 = stats.norm.ppf(0.975), stats.norm.ppf(0.95)
+        return Pooled(
+            float(y[0]),
+            (float(y[0] - z95 * se[0]), float(y[0] + z95 * se[0])),
+            (float(y[0] - z90 * se[0]), float(y[0] + z90 * se[0])),
+            0.0,
+            (0.0, 0.0),
+            1,
+        )
+    w = 1 / se**2
+    mu_f = (w * y).sum() / w.sum()
+    Q = (w * (y - mu_f) ** 2).sum()
+    C = w.sum() - (w**2).sum() / w.sum()
+    tau2 = max(0.0, (Q - (k - 1)) / C)
+    ws = 1 / (se**2 + tau2)
+    mu = (ws * y).sum() / ws.sum()
+    q = (ws * (y - mu) ** 2).sum() / (k - 1)
+    sd = math.sqrt(q / ws.sum())
+
+    def ci(level):
+        t = stats.t.ppf(level, k - 1)
+        return (float(mu - t * sd), float(mu + t * sd))
+
+    lo, hi = _q_profile(y, se, k)
+    return Pooled(float(mu), ci(0.975), ci(0.95), float(tau2), (lo, hi), k)
+
+
+# ------------------------------------------------------------------ tost / holm
+
+def tost(log_or, ci90, margin) -> str:
+    lo90, hi90 = ci90
+    half95 = (hi90 - lo90) / 2 * stats.norm.ppf(0.975) / stats.norm.ppf(0.95)
+    if log_or - half95 > 0 or log_or + half95 < 0:
+        return "effect detected"
+    if lo90 > math.log(margin[0]) and hi90 < math.log(margin[1]):
+        return "equivalent to no effect"
+    return "inconclusive"
+
+
+def holm(pvals: dict) -> dict:
+    items = sorted(pvals.items(), key=lambda kv: kv[1])
+    m = len(items)
+    out, running = {}, 0.0
+    for i, (name, p) in enumerate(items):
+        running = max(running, min(1.0, (m - i) * p))
+        out[name] = running
+    return out
+
+
+# ------------------------------------------------------------------ permutation
+
+def permutation_share(df, label, flag, strata, draws=10000, seed=0):
+    """Share of label rows carrying the flag, and a two-sided permutation p-value
+    from shuffling the label within strata (+1 corrected).
+
+    Shuffling the label within a stratum makes the number of flagged label rows
+    hypergeometric, so the null is sampled from that distribution directly."""
+    lab = df[label].to_numpy(bool)
+    flg = df[flag].to_numpy(bool)
+    n_label = int(lab.sum())
+    if n_label == 0:
+        return float("nan"), 1.0
+    observed_count = int((lab & flg).sum())
+    observed = observed_count / n_label
+    s = pd.DataFrame({"s": df[strata].to_numpy(), "l": lab, "f": flg}).groupby("s")
+    N = s["l"].size().to_numpy()
+    L = s["l"].sum().to_numpy().astype(int)
+    F = s["f"].sum().to_numpy().astype(int)
+    rng = np.random.default_rng(seed)
+    sims = rng.hypergeometric(F, N - F, L, size=(draws, len(N))).sum(axis=1)
+    expected = float((L * F / N).sum())
+    b = int((np.abs(sims - expected) >= abs(observed_count - expected) - 1e-9).sum())
+    return observed, (b + 1) / (draws + 1)
+
+
+# ------------------------------------------------------------------ median_reg
+
+def _qr_coef(d, outcome, treatment, covariates):
+    X = sm.add_constant(d[[treatment] + list(covariates)].to_numpy(float), has_constant="add")
+    res = sm.QuantReg(d[outcome].to_numpy(float), X).fit(q=0.5, max_iter=5000)
+    return float(res.params[1])
+
+
+def median_reg(df, outcome, treatment, covariates, cluster, boot=2000, seed=0) -> Estimate:
+    covariates = list(covariates)
+    d = df[[outcome, treatment, cluster] + covariates].dropna().reset_index(drop=True)
+    point = _qr_coef(d, outcome, treatment, covariates)
+    groups = {k: v.to_numpy() for k, v in d.groupby(cluster).groups.items()}
+    keys = list(groups)
+    rng = np.random.default_rng(seed)
+    draws = []
+    for _ in range(boot):
+        pick = rng.integers(0, len(keys), len(keys))
+        idx = np.concatenate([groups[keys[i]] for i in pick])
+        b = d.iloc[idx]
+        if b[treatment].nunique() < 2:
+            continue
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                draws.append(_qr_coef(b, outcome, treatment, covariates))
+        except Exception:
+            continue
+    se = float(np.std(draws, ddof=1)) if len(draws) > 1 else float("nan")
+    return Estimate(point, se, int(len(d)), len(keys), "quantreg")

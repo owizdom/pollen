@@ -97,3 +97,14 @@ def median_shift_data(seed=5, n_clusters=40, per_cluster=15, shift=2.0, cluster_
             y = 5.0 + shift * t + u + rng.standard_t(3)
             rows.append({"cluster": f"c{c}", "rid": f"{c}-{i}", "t": t, "y": y, "w": int(rng.integers(0, 3))})
     return pd.DataFrame(rows)
+
+
+def exactly_independent_flag_data(n_strata=3, n_label=100, n_other=100, n_flagged=30):
+    """In every stratum the flag rate is identical among label and non-label rows."""
+    rows = []
+    for k in range(n_strata):
+        for lab, n in ((True, n_label), (False, n_other)):
+            flagged = round(n_flagged * n / 100)
+            for i in range(n):
+                rows.append({"stratum": f"w{k}", "label": lab, "flag": i < flagged})
+    return pd.DataFrame(rows)
