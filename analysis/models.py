@@ -34,33 +34,40 @@ class Pooled:
 
 # ------------------------------------------------------------------ cond_logit
 
-def _firth(X: np.ndarray, y: np.ndarray, max_iter: int = 200, tol: float = 1e-8):
-    """Jeffreys-penalised logistic regression by Newton-Raphson with step halving.
+def _sym_inv(A):
+    try:
+        return np.linalg.solve(A, np.eye(len(A)))
+    except np.linalg.LinAlgError:
+        return np.linalg.pinv(A, hermitian=True)
 
-    Returns (beta, covariance)."""
+
+def _firth(X: np.ndarray, y: np.ndarray, max_iter: int = 200, tol: float = 1e-8):
+    """Jeffreys-penalised logistic regression by Newton-Raphson.
+
+    Returns (beta, covariance, converged)."""
     n, p = X.shape
     beta = np.zeros(p)
+    converged = False
     for _ in range(max_iter):
         eta = np.clip(X @ beta, -30, 30)
         mu = 1 / (1 + np.exp(-eta))
         W = mu * (1 - mu)
-        info = X.T @ (X * W[:, None])
-        inv = np.linalg.pinv(info)
-        # hat diagonal of W^1/2 X (X'WX)^-1 X' W^1/2
+        inv = _sym_inv(X.T @ (X * W[:, None]))
         h = W * np.einsum("ij,jk,ik->i", X, inv, X)
         score = X.T @ (y - mu + h * (0.5 - mu))
         step = inv @ score
         mx = np.max(np.abs(step))
-        if mx > 5:  # cap the step length
+        if mx > 5:
             step *= 5 / mx
         beta = beta + step
         if np.max(np.abs(step)) < tol:
+            converged = True
             break
     eta = np.clip(X @ beta, -30, 30)
     mu = 1 / (1 + np.exp(-eta))
     W = mu * (1 - mu)
-    cov = np.linalg.pinv(X.T @ (X * W[:, None]))
-    return beta, cov
+    cov = _sym_inv(X.T @ (X * W[:, None]))
+    return beta, cov, converged
 
 
 def _firth_fit(d: pd.DataFrame, outcome, treatment, covariates, group) -> Estimate:
@@ -71,60 +78,67 @@ def _firth_fit(d: pd.DataFrame, outcome, treatment, covariates, group) -> Estima
         + [dummies.to_numpy()]
     )
     y = d[outcome].to_numpy(float)
-    beta, cov = _firth(X, y)
+    beta, cov, ok = _firth(X, y)
     return Estimate(
         log_or=float(beta[0]),
-        se=float(math.sqrt(cov[0, 0])),
+        se=float(math.sqrt(max(cov[0, 0], 0.0))),
         n=int(len(d)),
         n_groups_informative=int(d[group].nunique()),
-        method="firth",
+        method="firth" if ok else "firth-nonconverged",
     )
 
 
-def _perfectly_predicted(d, outcome, treatment, group) -> bool:
-    """Within every informative stratum the treatment determines the outcome in
-    the same direction (treated all 1, controls all 0, or the reverse)."""
-    t = d[treatment].to_numpy() > 0
-    y = d[outcome].to_numpy() > 0
-    agree = pd.Series(t == y, index=d.index).groupby(d[group]).all()
-    disagree = pd.Series(t != y, index=d.index).groupby(d[group]).all()
-    return bool(agree.all() or disagree.all())
+def _quasi_separated(d, outcome, treatment, group) -> bool:
+    """Exact criterion for a binary treatment: in every stratum the treated
+    successes equal min(n_t, s) (positive direction) or max(0, s - n_c)
+    (negative direction)."""
+    t = (d[treatment].to_numpy() > 0)
+    y = (d[outcome].to_numpy() > 0)
+    f = pd.DataFrame({"g": d[group].to_numpy(), "t": t, "y": y, "ty": t & y}).groupby("g")
+    n_t = f["t"].sum().to_numpy()
+    n = f["t"].size().to_numpy()
+    s = f["y"].sum().to_numpy()
+    ts = f["ty"].sum().to_numpy()
+    n_c = n - n_t
+    pos = np.all(ts == np.minimum(n_t, s))
+    neg = np.all(ts == np.maximum(0, s - n_c))
+    return bool(pos or neg)
 
 
 def cond_logit(df, outcome, treatment, covariates, group) -> Estimate:
     covariates = list(covariates)
     d = df[[outcome, treatment, group] + covariates].dropna().copy()
-    g = d.groupby(group)
-    informative = (g[outcome].transform("nunique") > 1) & (g[treatment].transform("nunique") > 1)
-    d = d[informative]
+    d = d[d.groupby(group)[outcome].transform("nunique") > 1]
     n_inf = int(d[group].nunique())
     if n_inf == 0:
         return Estimate(float("nan"), float("nan"), 0, 0, "clogit")
-    if _perfectly_predicted(d, outcome, treatment, group):
+    if _quasi_separated(d, outcome, treatment, group):
         return _firth_fit(d, outcome, treatment, covariates, group)
 
     exog = d[[treatment] + covariates].to_numpy(float)
     endog = d[outcome].to_numpy(float)
+    bad = True
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         try:
-            res = ConditionalLogit(endog, exog, groups=d[group].to_numpy()).fit(disp=False)
+            model = ConditionalLogit(endog, exog, groups=d[group].to_numpy())
+            res = model.fit(disp=False)
             params = np.asarray(res.params, float)
             bse = np.asarray(res.bse, float)
+            bad = (
+                not np.all(np.isfinite(params))
+                or not np.all(np.isfinite(bse))
+                or np.max(np.abs(params)) > 15
+                or np.max(bse) > 15
+                or np.min(bse) <= 0
+                or any("onverge" in str(w.message) or "ingular" in str(w.message) for w in caught)
+                or not bool(getattr(res, "mle_retvals", {}).get("converged", True))
+            )
+            if not bad:
+                # likelihood still rising along the fitted direction means no finite MLE
+                bad = bool(model.loglike(2 * params) > model.loglike(params) + 1e-8)
         except Exception:
-            params = np.array([np.nan])
-            bse = np.array([np.nan])
-    bad = (
-        not np.all(np.isfinite(params))
-        or not np.all(np.isfinite(bse))
-        or np.max(np.abs(params)) > 15
-        or np.max(bse) > 15
-        or np.min(bse) <= 0
-        or any("onverge" in str(w.message) or "ingular" in str(w.message) for w in caught)
-        or not bool(getattr(res, "mle_retvals", {"converged": True}).get("converged", True))
-        if "res" in locals()
-        else True
-    )
+            bad = True
     if bad:
         return _firth_fit(d, outcome, treatment, covariates, group)
     return Estimate(float(params[0]), float(bse[0]), int(len(d)), n_inf, "clogit")
@@ -164,7 +178,7 @@ def meta_hksj(estimates) -> Pooled:
             (float(y[0] - z95 * se[0]), float(y[0] + z95 * se[0])),
             (float(y[0] - z90 * se[0]), float(y[0] + z90 * se[0])),
             0.0,
-            (0.0, 0.0),
+            (float("nan"), float("nan")),
             1,
         )
     w = 1 / se**2
@@ -187,12 +201,10 @@ def meta_hksj(estimates) -> Pooled:
 
 # ------------------------------------------------------------------ tost / holm
 
-def tost(log_or, ci90, margin) -> str:
-    lo90, hi90 = ci90
-    half95 = (hi90 - lo90) / 2 * stats.norm.ppf(0.975) / stats.norm.ppf(0.95)
-    if log_or - half95 > 0 or log_or + half95 < 0:
+def tost(log_or, ci95, ci90, margin) -> str:
+    if ci95[0] > 0 or ci95[1] < 0:
         return "effect detected"
-    if lo90 > math.log(margin[0]) and hi90 < math.log(margin[1]):
+    if ci90[0] > math.log(margin[0]) and ci90[1] < math.log(margin[1]):
         return "equivalent to no effect"
     return "inconclusive"
 

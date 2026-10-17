@@ -242,8 +242,12 @@ def test_tost_effect_takes_precedence_over_equivalence(models):
 
 
 def test_tost_never_derives_intervals(models):
-    # ci90 deliberately not 1.645/1.96 related to ci95: verdict follows what is passed.
-    assert models.tost(0.1, (-0.5, 0.7), (0.05, 0.15), M) == "inconclusive"
+    # Deriving ci95 from ci90 with normal ratios would give about (0.034, 0.166),
+    # which excludes 0 and would say "effect detected". The passed ci95 contains 0.
+    assert models.tost(0.1, (-0.01, 0.30), (0.05, 0.15), M) == "equivalent to no effect"
+    # Mirror: the passed ci95 excludes 0 while ci90 is wide. Deriving ci95 from ci90
+    # would give an interval containing 0.
+    assert models.tost(0.1, (0.02, 0.18), (-0.3, 0.5), M) == "effect detected"
     assert models.tost(0.1, (-0.5, 0.7), (-0.05, 0.15), M) == "equivalent to no effect"
 
 
