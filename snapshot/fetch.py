@@ -213,6 +213,9 @@ def write_freeze_md(path: Path, f: dict) -> None:
 def run(out: Path, attribution_min: int, only, resume: bool,
         attribution_for=None, freeze_md: Path | None = None) -> None:
     attribution_for = set(attribution_for or [])
+    if only and (out / "FREEZE.json").exists():
+        sys.exit(f"error: {out / 'FREEZE.json'} already exists; --only is refused on a "
+                 "frozen snapshot (the data is fetched once)")
     out.mkdir(parents=True, exist_ok=True)
     old = {}
     if only and (out / "FREEZE.json").exists():
@@ -252,6 +255,9 @@ def run(out: Path, attribution_min: int, only, resume: bool,
                 partial[name] = pa
             if pa:
                 print(f"WARNING: partial attribution for {name}: {', '.join(pa)}", file=sys.stderr)
+        else:
+            for stale in ("attribution.json.gz", "attribution.partial.jsonl"):
+                (d / stale).unlink(missing_ok=True)
         print(f"  {len(subs)} submissions", file=sys.stderr)
     freeze = {
         "fetched_at": dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),

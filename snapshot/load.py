@@ -80,6 +80,7 @@ def _freeze(root: Path) -> dict:
     p = root / "FREEZE.json"
     if not p.exists():
         raise IntegrityError(f"missing {p}")
+    _verify_freeze(root, _sums(root))
     return json.loads(p.read_text())
 
 
@@ -159,10 +160,13 @@ def attribution(benchmark: str, root=None) -> dict[str, list[str]]:
     root = _root(root)
     _verify_dir(root, benchmark)
     p = root / slug_of(benchmark) / "attribution.json.gz"
+    listed = benchmark in (_freeze(root).get("attribution") or [])
     if not p.exists():
-        if benchmark in (_freeze(root).get("attribution") or []):
+        if listed:
             raise IntegrityError(f"{benchmark}: attribution file listed in FREEZE.json is missing")
         return {}
+    if not listed:
+        raise IntegrityError(f"{benchmark}: attribution file present but not listed in FREEZE.json")
     with gzip.open(p, "rb") as f:
         recs = json.loads(f.read())
     partial = set((_freeze(root).get("attribution_partial") or {}).get(benchmark, []))

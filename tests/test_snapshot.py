@@ -111,10 +111,9 @@ def test_file_missing_from_sums_raises(snap):
 
 
 def test_row_count_mismatch_raises(snap):
-    freeze = json.loads((snap / "FREEZE.json").read_text())
-    freeze["counts"][LOWER] += 1
-    (snap / "FREEZE.json").write_text(json.dumps(freeze))
-    with pytest.raises(mod().IntegrityError):
+    # re-signed, so only the row-count check can catch it (lower-bench has 5 rows)
+    edit_freeze(snap, lambda f: f["counts"].update({LOWER: 6}))
+    with pytest.raises(mod().IntegrityError, match=r"(?i)rows?|count"):
         mod().load(LOWER, root=snap)
 
 
@@ -185,10 +184,36 @@ def test_benchmark_meta_slug_derived_from_name(snap):
     assert mod().benchmark_meta(LOWER, root=snap).slug == "yukon__lower-bench"
 
 
-def test_file_listed_in_sums_but_missing_raises(snap):
-    (snap / "yukon__higher-bench" / "submissions.json.gz").unlink()
+def _add_unselected_attribution(snap):
+    """A signed attribution.json.gz for HIGHER, which FREEZE['attribution'] omits."""
+    p = snap / "yukon__higher-bench" / "attribution.json.gz"
+    with gzip.GzipFile(p, "wb", mtime=0) as f:
+        f.write(b"[]")
+    write_sums(snap)
+    return p
+
+
+def test_listed_file_missing_raises_even_if_not_opened(snap):
+    # load() never opens attribution.json.gz, so only a listed-file check catches this
+    p = _add_unselected_attribution(snap)
+    assert "yukon__higher-bench/attribution.json.gz" in (snap / "SHA256SUMS").read_text()
+    p.unlink()
     with pytest.raises(mod().IntegrityError):
         mod().load(HIGHER, root=snap)
+
+
+def test_attribution_file_for_unselected_benchmark_raises(snap):
+    _add_unselected_attribution(snap)
+    with pytest.raises(mod().IntegrityError):
+        mod().attribution(HIGHER, root=snap)
+
+
+def test_benchmarks_verifies_freeze_against_sums(snap):
+    freeze = json.loads((snap / "FREEZE.json").read_text())
+    del freeze["counts"][HIGHER]
+    (snap / "FREEZE.json").write_text(json.dumps(freeze))  # not re-signed
+    with pytest.raises(mod().IntegrityError):
+        mod().benchmarks(root=snap)
 
 
 def test_listed_attribution_file_missing_raises(snap):

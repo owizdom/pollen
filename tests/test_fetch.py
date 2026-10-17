@@ -254,17 +254,33 @@ def test_page_error_recorded_as_partial(tmp_path, monkeypatch, clock):
 
 
 # 8
-def test_only_does_not_shrink_freeze(tmp_path, monkeypatch, clock):
+def test_only_refuses_when_freeze_exists(tmp_path, monkeypatch, clock):
     out, _ = run(tmp_path, monkeypatch, Api(), "--attribution-min", "2", name="m")
-    before = freeze(out)
-    out, _ = run(tmp_path, monkeypatch, Api(), "--attribution-min", "2",
-                 "--only", "x/small", name="m")
-    after = freeze(out)
-    assert after["counts"] == before["counts"]
-    assert after["attribution"] == ["x/big"]
-    assert "FREEZE.json" in (out / "SHA256SUMS").read_text()
-    import snapshot.load as L
-    assert len(L.load("x/big", root=out)) == 3
+    before = (out / "FREEZE.json").read_bytes()
+    sums = (out / "SHA256SUMS").read_bytes()
+    with pytest.raises(SystemExit) as e:
+        run(tmp_path, monkeypatch, Api(), "--attribution-min", "2",
+            "--only", "x/small", name="m")
+    assert e.value.code not in (0, None)
+    assert (out / "FREEZE.json").read_bytes() == before
+    assert (out / "SHA256SUMS").read_bytes() == sums
+
+
+def test_only_allowed_on_fresh_out(tmp_path, monkeypatch, clock):
+    out, _ = run(tmp_path, monkeypatch, Api(), "--only", "x/small", name="fresh")
+    assert freeze(out)["counts"] == {"x/small": 1}
+
+
+def test_refetch_without_selection_leaves_no_attribution_files(tmp_path, monkeypatch, clock):
+    out, _ = run(tmp_path, monkeypatch, Api(), "--attribution-min", "2", name="m")
+    d = out / "x__big"
+    assert (d / "attribution.json.gz").exists()
+    (d / "attribution.partial.jsonl").write_text("{}\n")
+    out, _ = run(tmp_path, monkeypatch, Api(), "--attribution-min", "999", name="m")
+    assert not (d / "attribution.json.gz").exists()
+    assert not (d / "attribution.partial.jsonl").exists()
+    assert freeze(out)["attribution"] == []
+    assert "attribution.json.gz" not in (out / "SHA256SUMS").read_text()
 
 
 # 9
