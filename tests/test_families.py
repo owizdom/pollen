@@ -13,7 +13,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import yaml  # noqa: E402
 
 from families import build_table, mapper  # noqa: E402
-from fixtures_families import GOLDEN, NO_VENDOR, SINGLE_VENDOR, VENDORS  # noqa: E402
+from fixtures_families import (ALLOWED_FAMILIES, GOLDEN, GOLDEN_EXTRA, NO_VENDOR,  # noqa: E402
+                               REVIEW_NO, REVIEW_YES, SINGLE_VENDOR, VENDORS)
 
 TABLE = REPO / "families" / "table.yaml"
 
@@ -50,6 +51,35 @@ def test_table_golden_strings_are_exact_keys():
     strings = yaml.safe_load(TABLE.read_text())["strings"]
     for line, family in GOLDEN:
         assert strings[line] == family
+
+
+@pytest.mark.parametrize("line,family", GOLDEN_EXTRA)
+def test_review_golden_labels_against_checked_in_table(line, family):
+    assert mapper.family_of(line) == family
+
+
+def test_checked_in_table_values_are_allowed():
+    mapper.validate_table(TABLE)
+    import re
+    for k, v in yaml.safe_load(TABLE.read_text())["strings"].items():
+        assert v in ALLOWED_FAMILIES or re.match(r"^Other:\S.*$", v), (k, v)
+
+
+@pytest.mark.parametrize("bad", ["Openai", "Mutli", "Other:", "Other", "unknown", ""])
+def test_validate_table_rejects_bad_family(tmp_path, bad):
+    p = tmp_path / "table.yaml"
+    p.write_text(yaml.safe_dump({"strings": {"GPT-5 Codex": "OpenAI", "X": bad}}))
+    validate = mapper.validate_table  # AttributeError here must not count as a raise
+    with pytest.raises(Exception) as ei:
+        validate(p)
+    assert not isinstance(ei.value, (AttributeError, TypeError, NameError))
+
+
+def test_validate_table_accepts_good_table(tmp_path):
+    p = tmp_path / "table.yaml"
+    p.write_text(yaml.safe_dump({"strings": {"A": "OpenAI", "B": "Other:Cursor",
+                                             "C": "Multi", "D": "Unknown"}}))
+    mapper.validate_table(p)
 
 
 # vendors_in
@@ -145,6 +175,23 @@ def test_propose_is_idempotent():
 
 def test_propose_empty():
     assert build_table.propose([], {"A": "Google"}) == {"A": "Google"}
+
+
+# build_table.review_list
+
+@pytest.mark.parametrize("line", REVIEW_YES)
+def test_review_list_flags_separator_with_under_two_vendors(line):
+    assert line in build_table.review_list([line], {})
+
+
+@pytest.mark.parametrize("line", REVIEW_NO)
+def test_review_list_skips_clean_strings(line):
+    assert line not in build_table.review_list([line], {})
+
+
+def test_review_list_mixed_input_exact():
+    got = build_table.review_list(REVIEW_YES + REVIEW_NO, {})
+    assert sorted(got) == sorted(REVIEW_YES)
 
 
 # AT2 completeness against the frozen snapshot

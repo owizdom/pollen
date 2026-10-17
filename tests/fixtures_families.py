@@ -39,3 +39,25 @@ SINGLE_VENDOR = [
 # No vendor keyword at all.
 NO_VENDOR = ["Devin", "Droid", "Composer", "Factory", "Astra", "benchmark",
              "Scikit-learn"]
+
+# Review-driven golden labels (checked-in table).
+GOLDEN_EXTRA = [
+    ("Daybreak Blue", "OpenAI"),
+    ("gpt-daybreak-blue-latest", "OpenAI"),
+    ("Codex", "Unknown"),
+    ("Codex CLI", "Unknown"),
+    ("SWE-2 Max", "Other:Cognition"),
+    ("Composer 2.5", "Other:Cursor"),
+]
+
+ALLOWED_FAMILIES = {"Anthropic", "OpenAI", "Google", "xAI", "Moonshot", "MiniMax",
+                    "Zhipu", "DeepSeek", "Alibaba", "Mistral", "Meta", "Multi",
+                    "Unknown"}
+
+# Separator present but fewer than two vendors resolve: a human must look.
+REVIEW_YES = ["GPT 6 Astra + Daybreak Blue", "GPT-5 Codex / Codex CLI",
+              "GPT-5 with Devin", "Kimi K3 via Droid", "GPT-5 and Astra",
+              "Kimi K3, Composer 2.5 & Devin"]
+# Either no separator, or two vendors resolved.
+REVIEW_NO = ["Kimi K3", "Devin", "GPT-5.6 Sol", "Claude Opus 4.8 (1M context)",
+             "Claude Opus 5.5 + GPT-6.1 Sol", "Grok 4.6 + Kimi k3"]
