@@ -43,11 +43,14 @@ class Row:
     gain_log: float | None = None
     score: float | None = None
     best_before: float | None = None
+    finished_at: dt.datetime | None = None
     metrics: dict = field(default_factory=dict)
 
 
-def row(i, hours, gain=None, promoted=True, metrics=None, score=None, best_before=None) -> Row:
-    return Row(i, at(hours), promoted, gain, score, best_before, metrics or {})
+def row(i, hours, gain=None, promoted=True, metrics=None, score=None, best_before=None,
+        finished=None) -> Row:
+    return Row(i, at(hours), promoted, gain, score, best_before,
+               None if finished is None else at(finished), metrics or {})
 
 
 DENOM_CONFIG = {

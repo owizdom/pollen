@@ -116,6 +116,14 @@ def test_recompute_compares_only_against_promoted_best():
     assert promotion.recompute(subs, meta("lower")) == [True, False, True]
 
 
+def test_recompute_failed_scored_row_never_promotes_or_moves_best():
+    from outcomes import promotion
+    subs = [sub("f", 1, 50.0, status="failed"), sub("p", 2, 90.0, promoted=True)]
+    assert promotion.recompute(subs, meta("lower")) == [False, True]
+    subs_h = [sub("f", 1, 9.0, status="failed"), sub("p", 2, 0.5, promoted=True)]
+    assert promotion.recompute(subs_h, meta("higher")) == [False, True]
+
+
 def test_recompute_null_scores_never_promote():
     from outcomes import promotion
     subs = [sub("a", 1, None), sub("b", 2, 10.0), sub("c", 3, None)]
@@ -282,10 +290,34 @@ def test_plateau_higher_boundary_exactly_1pct_counts_and_just_under_does_not():
     assert under == []
 
 
-def test_plateau_window_boundary_exactly_72h_is_not_a_break():
+def test_plateau_window_exactly_72h_after_opening_is_a_break():
     from outcomes import jumps
     rows = [_p("a", 72, 98.0, 100.0)]
+    out = jumps.plateau_breaks(rows, 72, 0.01, opened_at=at(0), direction="lower")
+    assert [r.id for r in out] == ["a"]
+
+
+def test_plateau_window_just_under_72h_after_opening_is_not_a_break():
+    from outcomes import jumps
+    rows = [_p("a", 71.99, 98.0, 100.0)]
     assert jumps.plateau_breaks(rows, 72, 0.01, opened_at=at(0), direction="lower") == []
+
+
+def test_plateau_exactly_72h_after_previous_qualifying_promotion_is_a_break():
+    from outcomes import jumps
+    rows = [_p("a", 100, 98.0, 100.0), _p("b", 172, 95.0, 98.0)]
+    out = jumps.plateau_breaks(rows, 72, 0.01, opened_at=at(0), direction="lower")
+    assert [r.id for r in out] == ["a", "b"]
+
+
+def test_plateau_uses_evaluation_order_not_created_at():
+    from outcomes import jumps
+    # Y finished at 20 (within 72h of opening: no break); X finished at 120,
+    # 100h after Y: break. Creation order (X@10, Y@100) would flag Y instead.
+    x = row("X", 10, score=95.0, best_before=100.0, finished=120)
+    y = row("Y", 100, score=98.0, best_before=100.0, finished=20)
+    out = jumps.plateau_breaks([x, y], 72, 0.01, opened_at=at(0), direction="lower")
+    assert [r.id for r in out] == ["X"]
 
 
 # --------------------------------------------------------------------- pareto
@@ -329,6 +361,16 @@ def test_pareto_rows_without_metrics_false_and_do_not_dominate():
             row("c", 3, metrics={"qubits": 1}),
             row("d", 4, metrics=_m(11, 11))]
     assert pareto.pareto_gain(rows) == [False, True, False, False]
+
+
+def test_pareto_uses_evaluation_order_not_created_at():
+    from outcomes import pareto
+    # A created first but finished last; B finished first. In finish order B
+    # is a gain and A (10,10) is not dominated by B (12,12). In creation
+    # order B would be dominated.
+    rows = [row("A", 1, metrics=_m(10, 10), finished=10),
+            row("B", 5, metrics=_m(12, 12), finished=3)]
+    assert pareto.pareto_gain(rows) == [True, True]
 
 
 def test_pareto_only_earlier_rows_dominate():
@@ -443,6 +485,28 @@ def test_superseded_rows_are_a_named_exception_class():
     assert promotion.disagreements(subs, meta("lower")) == ["z"]
 
 
+def test_failed_promotion_status_is_excused_other_statuses_are_not():
+    from outcomes import promotion
+    def run(ps):
+        subs = [sub("a", 1, 100.0, promoted=True),
+                sub("x", 2, 90.0, promoted=False, status="accepted", promotion_status=ps)]
+        return promotion.disagreements(subs, meta("lower"))
+    assert run("failed") == []
+    assert run("superseded") == []
+    assert run("pending") == ["x"]
+    assert run("running") == ["x"]
+    assert run(None) == ["x"]
+
+
+def test_at5_report_does_not_excuse_pending_accepted_rows():
+    from outcomes import promotion
+    rows = [sub("a", 1, 100.0, promoted=True),
+            sub("p", 2, 90.0, status="accepted", promoted=False, promotion_status="pending")]
+    rep = promotion.at5_report({"b": (rows, meta("lower"))})
+    assert rep["counts"]["b"]["disagreements"] == 1
+    assert rep["counts"]["b"]["exceptions"] == 0
+
+
 def test_non_superseded_non_promoted_better_row_is_still_a_disagreement():
     from outcomes import promotion
     subs = [
@@ -510,28 +574,62 @@ def test_analysis_rows_keeps_ambiguous_by_default_drops_with_flag():
 def test_analysis_rows_drops_non_final_statuses():
     from outcomes import denominator
     subs = [sub("v", 1, status="validating"), sub("q", 2, status="queued"),
-            sub("r", 3, status="running"), sub("ok", 4, score=1.0, status="accepted"),
+            sub("r", 3, status="running"),
+            sub("ok", 4, score=1.0, status="accepted", promoted=True,
+                promotion_status="promoted"),
             sub("f", 5, status="failed")]
     out = denominator.analysis_rows(subs, "yukon/b", config=DENOM_CONFIG)
     assert [s.id for s in out] == ["ok", "f"]
 
 
+def test_analysis_rows_drops_accepted_rows_with_non_final_promotion_status():
+    from outcomes import denominator
+    subs = [
+        sub("pend", 1, 1.0, status="accepted", promotion_status="pending"),
+        sub("run", 2, 1.0, status="accepted", promotion_status="running"),
+        sub("pro", 3, 1.0, status="accepted", promoted=True, promotion_status="promoted"),
+        sub("fai", 4, 1.0, status="accepted", promotion_status="failed"),
+        sub("sup", 5, 1.0, status="accepted", promotion_status="superseded"),
+    ]
+    out = denominator.analysis_rows(subs, "yukon/b", config=DENOM_CONFIG)
+    assert [s.id for s in out] == ["pro", "fai", "sup"]
+
+
+def test_failed_row_with_empty_or_none_reason_is_ambiguous():
+    from outcomes import denominator
+    subs = [sub("n", 1, status="failed", reason=None),
+            sub("e", 2, status="failed", reason=""),
+            sub("ok", 3, status="failed", reason="ordinary failure")]
+    kept = denominator.analysis_rows(subs, "yukon/b", config=DENOM_CONFIG)
+    assert [s.id for s in kept] == ["n", "e", "ok"]
+    dropped = denominator.analysis_rows(subs, "yukon/b", config=DENOM_CONFIG,
+                                        drop_ambiguous=True)
+    assert [s.id for s in dropped] == ["ok"]
+
+
 # ------------------------------------------------------------------------ AT5
 
-STUDY_MARKERS = [
-    "ecdsafail", "sig-golf", "flock-challenge", "flock-challenge-multi",
-    "eip8200", "lighter-prover", "qwen38-125b-a6b-cuda-v1",
-    "mlxfast-gemma4-26b-a4b", "mlxfast-challenge",
+STUDY_BENCHMARKS = [
+    "gpsanant/ecdsafail-challenge",
+    "eigenlabs/sig-golf/full",
+    "eigenlabs/flock-challenge",
+    "eigenlabs/flock-challenge-multi/x86",
+    "eigenlabs/eip8200-challenges/modexp",
+    "eigenlabs/eip8200-challenges/ripemd160",
+    "eigenlabs/lighter-prover-challenge",
+    "davidtai/qwen38-125b-a6b-cuda-v1",
+    "davidtai/mlxfast-gemma4-26b-a4b",
+    "eigenlabs/mlxfast-challenge",
 ]
 
 
 def test_at5_all_study_benchmarks_in_snapshot_report_counts():
     from outcomes import denominator, promotion
     from snapshot import load as snap
-    names = snap.benchmarks()
-    study = [n for n in names if any(m in n for m in STUDY_MARKERS)]
-    ecdsa = [n for n in study if "ecdsafail" in n]
-    assert ecdsa == ["gpsanant/ecdsafail-challenge"], "ecdsa.fail must be in the snapshot"
+    present = set(snap.benchmarks())
+    e = "gpsanant/ecdsafail-challenge"
+    assert e in present, "ecdsa.fail must be in the snapshot"
+    study = [n for n in STUDY_BENCHMARKS if n in present]
     items = {}
     for n in study:
         rows = denominator.analysis_rows(snap.load(n), n)
@@ -542,9 +640,8 @@ def test_at5_all_study_benchmarks_in_snapshot_report_counts():
         c = rep["counts"][n]
         assert isinstance(c["disagreements"], int) and c["rows"] == len(items[n][0])
     assert isinstance(rep["not_reproduced"], list)
-    e = "gpsanant/ecdsafail-challenge"
     assert rep["counts"][e]["disagreements"] == 0
     assert e not in rep["not_reproduced"]
     accepted_failed = [s for s in items[e][0]
-                       if s.status == "accepted" and not s.promoted]
+                       if s.status == "accepted" and s.promotion_status == "failed"]
     assert len(accepted_failed) == 4
