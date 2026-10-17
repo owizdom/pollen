@@ -89,7 +89,7 @@ Owns: `analysis/models.py`, `analysis/simulate.py`, `tests/test_models.py`, `tes
 Owns: `analysis/run.py`, `analysis/confirmatory.py`, `analysis/secondary.py`, `analysis/sensitivity.py`, `analysis/exploratory.py`, `analysis/figures.py`, `analysis/numbers.py`, `analysis/study.py`, `results/`, `tests/test_drivers.py`, `tests/fixtures_drivers.py`.
 
 - `study.benchmarks(snapshot) -> list[str]`: applies the §5.6 rule to the frozen snapshot (analysis rows ≥ 500, promoted ≥ 100, ≥ 2 families each ≥ 10% of labelled rows, tree commits fetchable per lineage/frozen missing.json) and always includes gpsanant/ecdsafail-challenge.
-- `confirmatory.run(root) -> dict`: calls `lock.check(root)` first and refuses on failure. For each study benchmark: dataset.build; compute outcomes with the outcomes package into outcomes/sealed; join Y1; restrict to cross-solver, single-parent, both families known, in_window; fit `models.cond_logit(Y1 ~ cross_family + week dummies + child_family_folded + parent_family_folded dummies + parent_is_current_best + log_prior_rows, group=solver)`; pool with `models.meta_hksj`; verdict with `models.tost(pooled.log_or, pooled.ci95, pooled.ci90, margin)`; also the ecdsa.fail single-benchmark verdict. Writes `results/confirmatory.json` (sorted keys, floats rounded to 6 significant digits) with per-benchmark estimates, counts (rows, strata kept, strata with outcome but no treatment variation, Firth used), pooled result, tau², verdicts, margin used.
+- `confirmatory.run(root) -> dict`: calls `lock.check(root)` first and refuses on failure. For each study benchmark: dataset.build; compute outcomes with the outcomes package into outcomes/sealed; join Y1; restrict to cross-solver, single-parent, both families known, in_window; fit `models.cond_logit(Y1 ~ cross_family + time_s1..time_s4 (4-df natural spline on days_since_open, knots at the quartiles of the benchmark's analysis rows) + child_family_folded + parent_family_folded dummies + parent_is_current_best + log_prior_rows, group=solver)`; pool with `models.meta_hksj`; verdict with `models.tost(pooled.log_or, pooled.ci95, pooled.ci90, margin)`; also the ecdsa.fail single-benchmark verdict. Writes `results/confirmatory.json` (sorted keys, floats rounded to 6 significant digits) with per-benchmark estimates, counts (rows, strata kept, strata with outcome but no treatment variation, Firth used), pooled result, tau², verdicts, margin used.
 - `secondary.run(root)`: H2, H3a, H3b, H4 and H5 per spec §5.4 with the minimum-events gate (outcome events in the smaller arm ≥ 20, else descriptive) and one Holm family over passing members; writes `results/secondary.json`.
 - `sensitivity.run(root)`: sensitivities 1 to 9 of §5.5, each re-running the primary pooled estimate with exactly one change; writes `results/sensitivity.json`.
 - `exploratory.run(root)`: E1 and E2, labelled exploratory; writes `results/exploratory.json`.
@@ -100,3 +100,18 @@ Owns: `analysis/run.py`, `analysis/confirmatory.py`, `analysis/secondary.py`, `a
 ## Wave 4
 
 - Track F paper (AT7, AT8, AT10, AT11, AT12): `paper/`, `cases/`, `README.md`.
+
+### E-review round (2026-10-17, review at 4e680a6)
+
+In scope, to fix with a regression test each:
+1. H4 uses time_s1..time_s4 as covariates (secondary.py `_h4_entry` filters `week_`, so it fits no time control).
+2. confirmatory.json and numbers.tex carry the τ² interval from meta_hksj.
+3. ecdsa.fail's single-benchmark H1 is a secondary test in the one Holm family, subject to the minimum-events gate.
+4. A test that passes the events gate but fails to fit or raises stays in the Holm family with p = 1 and is reported as failed; the family never shrinks.
+5. Each of sensitivities 1 to 9 is tested to change its input frame in the stated way (s1, s2, s3, s5, s6, s9 currently pass as no-ops).
+6. study.margin refuses (raises) when docs/prereg.md lacks exactly one canonical `margin: [lo, hi]` line; no silent default.
+7. numbers.tex has macros for strata kept, strata with outcome but no treatment variation, strata dropped, Firth used (per benchmark), the τ² interval, and per-benchmark intervals; confirmatory.json carries the counts these need.
+8. `python -m analysis.confirmatory` checks the lock and exits non-zero on failure (AT6).
+9. Sensitivity 3 matches nonce/validation-draw-only notes in common phrasings ("Changed only the nonce.", "Nonce-only change.", "Only change: new validation draw.", "Re-roll of the validation draw only.") and does not match unrelated uses of "draw" ("Only the draw-call batching changed in the kernel.").
+10. An empty restricted frame never crashes a driver: confirmatory lists the benchmark under excluded_benchmarks with a reason; secondary reports the test as unidentified.
+11. Spline knots are the quartiles of days_since_open over the benchmark's analysis rows (§5.1), passed to design.build, not recomputed on each fitted subset.
