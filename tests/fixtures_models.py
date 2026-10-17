@@ -108,3 +108,37 @@ def exactly_independent_flag_data(n_strata=3, n_label=100, n_other=100, n_flagge
             for i in range(n):
                 rows.append({"stratum": f"w{k}", "label": lab, "flag": i < flagged})
     return pd.DataFrame(rows)
+
+
+def quasi_separated_data(seed=8, n_groups=None):
+    """Treated rows always succeed; controls vary (at least one control fails per group).
+    Strata sizes and control success rates vary with the seed."""
+    rng = np.random.default_rng(seed)
+    n_groups = n_groups or int(rng.integers(120, 260))
+    p_ctrl = float(rng.uniform(0.15, 0.85))
+    rows = []
+    for g in range(n_groups):
+        n_t = int(rng.integers(1, 4))
+        n_c = int(rng.integers(2, 6))
+        ctrl = [int(rng.random() < p_ctrl) for _ in range(n_c)]
+        ctrl[int(rng.integers(0, n_c))] = 0  # guarantee outcome variation
+        for t, y in [(1, 1)] * n_t + [(0, c) for c in ctrl]:
+            rows.append({"g": g, "t": t, "y": y})
+    return pd.DataFrame(rows)
+
+
+def covariate_stratum_data(seed=9, n_groups=80, per_group=8):
+    """Half the strata have alternating treatment, half constant treatment. The covariate x
+    is correlated with treatment, so constant-treatment strata inform its coefficient."""
+    rng = np.random.default_rng(seed)
+    rows = []
+    for g in range(n_groups):
+        a = rng.normal(-0.3, 0.8)
+        const = g % 2 == 1
+        tc = int(rng.random() < 0.5)
+        for j in range(per_group):
+            t = tc if const else j % 2
+            x = 0.8 * t + rng.normal()
+            p = 1 / (1 + np.exp(-(a + 0.5 * t + 0.7 * x)))
+            rows.append({"g": g, "t": t, "x": x, "y": int(rng.random() < p)})
+    return pd.DataFrame(rows)

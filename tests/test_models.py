@@ -71,6 +71,43 @@ def test_cond_logit_accepts_covariates(models):
     assert abs(r.log_or - 0.5) < 3.5 * r.se
 
 
+def test_cond_logit_quasi_separation_uses_firth(models):
+    bad = []
+    for seed in range(30):
+        df = fx.quasi_separated_data(seed=seed)
+        r = models.cond_logit(df, "y", "t", [], "g")
+        ok = (
+            r.method == "firth"
+            and math.isfinite(r.log_or)
+            and math.isfinite(r.se)
+            and abs(r.log_or) <= 8
+        )
+        if not ok:
+            bad.append((seed, r.method, r.log_or))
+    assert not bad, bad
+
+
+def test_cond_logit_keeps_outcome_varying_strata_without_treatment_variation(models):
+    from statsmodels.discrete.conditional_models import ConditionalLogit
+    import warnings
+
+    df = fx.covariate_stratum_data()
+    ov = df[df.groupby("g")["y"].transform("nunique") > 1]
+    n_ov = ov["g"].nunique()
+    n_tv = ov[ov.groupby("g")["t"].transform("nunique") > 1]["g"].nunique()
+    assert n_ov > n_tv > 0  # some outcome-varying strata have constant treatment
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        ref = ConditionalLogit(
+            ov["y"].to_numpy(float), ov[["t", "x"]].to_numpy(float), groups=ov["g"].to_numpy()
+        ).fit(disp=False)
+    r = models.cond_logit(df, "y", "t", ["x"], "g")
+    assert r.method == "clogit"
+    assert r.n_groups_informative == n_ov
+    assert r.log_or == pytest.approx(float(ref.params[0]), abs=1e-6)
+    assert r.se == pytest.approx(float(ref.bse[0]), abs=1e-6)
+
+
 # ---------------------------------------------------------------- meta_hksj
 
 def _hand_hksj(y, se):
@@ -159,6 +196,8 @@ def test_meta_hksj_k1_returns_single_estimate_with_normal_ci(models):
     assert p.ci95[1] == pytest.approx(0.4 + 1.959964 * 0.1, abs=1e-5)
     assert p.ci90[0] == pytest.approx(0.4 - 1.644854 * 0.1, abs=1e-5)
     assert p.ci90[1] == pytest.approx(0.4 + 1.644854 * 0.1, abs=1e-5)
+    assert len(p.tau2_ci) == 2
+    assert math.isnan(p.tau2_ci[0]) and math.isnan(p.tau2_ci[1])
 
 
 # ---------------------------------------------------------------- tost
@@ -167,37 +206,70 @@ M = (0.80, 1.25)
 LO, HI = math.log(0.80), math.log(1.25)
 
 
-def _ci90_for(center, se):
-    return (center - 1.644854 * se, center + 1.644854 * se)
-
-
 def test_tost_effect_detected(models):
-    assert models.tost(0.5, (0.3, 0.7), M) == "effect detected"
-    assert models.tost(-0.5, (-0.7, -0.3), M) == "effect detected"
+    assert models.tost(0.5, (0.2, 0.8), (0.3, 0.7), M) == "effect detected"
+    assert models.tost(-0.5, (-0.8, -0.2), (-0.7, -0.3), M) == "effect detected"
 
 
 def test_tost_equivalent(models):
-    assert models.tost(0.0, (-0.1, 0.1), M) == "equivalent to no effect"
+    assert models.tost(0.0, (-0.12, 0.12), (-0.1, 0.1), M) == "equivalent to no effect"
 
 
 def test_tost_inconclusive(models):
-    assert models.tost(0.05, (-0.3, 0.4), M) == "inconclusive"
+    assert models.tost(0.05, (-0.4, 0.5), (-0.3, 0.4), M) == "inconclusive"
 
 
 def test_tost_margin_boundaries(models):
     eps = 1e-6
-    assert models.tost(0.0, (LO + eps, HI - eps), M) == "equivalent to no effect"
-    assert models.tost(0.0, (LO + eps, HI + eps), M) == "inconclusive"
-    assert models.tost(0.0, (LO - eps, HI - eps), M) == "inconclusive"
+    ci95 = (-0.5, 0.5)
+    assert models.tost(0.0, ci95, (LO + eps, HI - eps), M) == "equivalent to no effect"
+    assert models.tost(0.0, ci95, (LO + eps, HI + eps), M) == "inconclusive"
+    assert models.tost(0.0, ci95, (LO - eps, HI - eps), M) == "inconclusive"
 
 
-def test_tost_zero_boundary_of_95_interval(models):
-    se = 0.1
-    just_out = 1.96 * se * 1.02
-    just_in = 1.96 * se * 0.98
-    assert models.tost(just_out, _ci90_for(just_out, se), M) == "effect detected"
-    assert models.tost(-just_out, _ci90_for(-just_out, se), M) == "effect detected"
-    assert models.tost(just_in, _ci90_for(just_in, se), M) == "inconclusive"
+def test_tost_uses_passed_ci95_for_zero_boundary(models):
+    eps = 1e-6
+    ci90 = (0.05, 0.35)  # outside the margin, so only ci95 decides
+    assert models.tost(0.2, (eps, 0.4), ci90, M) == "effect detected"
+    assert models.tost(0.2, (-eps, 0.4), ci90, M) == "inconclusive"
+    assert models.tost(-0.2, (-0.4, -eps), (-0.35, -0.05), M) == "effect detected"
+    assert models.tost(-0.2, (-0.4, eps), (-0.35, -0.05), M) == "inconclusive"
+
+
+def test_tost_effect_takes_precedence_over_equivalence(models):
+    # ci95 excludes 0 even though ci90 sits inside the margin.
+    assert models.tost(0.02, (0.001, 0.04), (0.005, 0.035), M) == "effect detected"
+
+
+def test_tost_never_derives_intervals(models):
+    # ci90 deliberately not 1.645/1.96 related to ci95: verdict follows what is passed.
+    assert models.tost(0.1, (-0.5, 0.7), (0.05, 0.15), M) == "inconclusive"
+    assert models.tost(0.1, (-0.5, 0.7), (-0.05, 0.15), M) == "equivalent to no effect"
+
+
+def test_tost_regression_hksj_ci95_covers_zero_ci90_does_not(models):
+    z = np.array([-1.2, -0.7, 0.1, 0.6, 1.2])
+    z = (z - z.mean()) / z.std(ddof=1)
+    s = 0.3
+    mu = 2.4 * s / math.sqrt(5)
+    ests = [est(models, float(mu + s * zi), 0.12) for zi in z]
+    p = models.meta_hksj(ests)
+    assert p.ci95[0] < 0 < p.ci95[1]
+    assert p.ci90[0] > 0
+    v = models.tost(p.log_or, p.ci95, p.ci90, M)
+    assert v != "effect detected"
+
+
+def test_tost_null_type_i_rate_k3(models):
+    rng = np.random.default_rng(2026)
+    ses = (0.10, 0.15, 0.20)
+    hits = 0
+    n = 2000
+    for _ in range(n):
+        ests = [est(models, float(rng.normal(0, s)), s) for s in ses]
+        p = models.meta_hksj(ests)
+        hits += models.tost(p.log_or, p.ci95, p.ci90, M) == "effect detected"
+    assert hits / n <= 0.065, hits / n
 
 
 # ---------------------------------------------------------------- holm
@@ -350,3 +422,20 @@ def test_at14_placebo_shuffle_covers_zero_in_90_of_100(models, simulate):
         if r.log_or - 1.96 * r.se <= 0 <= r.log_or + 1.96 * r.se:
             covered += 1
     assert covered >= 90, covered
+
+
+def test_at13_or_one_equivalence_rate_matches_power_prediction(models, simulate):
+    power = importlib.import_module("analysis.power")
+    t = fx.make_treatment(seed=100)
+    predicted = power.equivalence_power(t, 0.25, icc=0.05)
+    n = 100
+    hits = 0
+    for seed in range(n):
+        d = simulate.plant(t, odds_ratio=1.0, base_rate=0.25, icc=0.05, seed=seed)
+        r = _fit(models, d, _outcome_col(d, t))
+        c95 = (r.log_or - 1.959964 * r.se, r.log_or + 1.959964 * r.se)
+        c90 = (r.log_or - 1.644854 * r.se, r.log_or + 1.644854 * r.se)
+        hits += models.tost(r.log_or, c95, c90, (0.80, 1.25)) == "equivalent to no effect"
+    rate = hits / n
+    half = 2.576 * math.sqrt(predicted * (1 - predicted) / n)
+    assert predicted - half <= rate <= predicted + half, (rate, predicted, half)
