@@ -68,8 +68,10 @@ Done means all of the following exist and pass their acceptance tests.
 A submission's parents are the earlier submissions it built on. Sources, in order of precedence:
 
 1. Declared attribution: the structured `dependencies` of the attribution record. One dependency gives a single parent. Two or more give a multi-source row, analysed in E1 and excluded from confirmatory tests.
-2. Tree distance: the earlier analysis row whose editable-path tree has the fewest changed lines against the child's tree. Ties go to the most recent. Candidates are pruned for cost: identical trees collapse by hash, then candidates are the last 50 promoted rows plus the child solver's own history.
-3. Novel: when the nearest tree differs from the child in more than half of the child's editable lines, the row has no parent. Novel rows are excluded from H1 and H2 and reported descriptively. The paper shows the distance distribution split by outcome.
+2. Tree distance: the earlier analysis row whose editable-path tree has the fewest changed lines against the child's tree, where changed lines are the added plus removed text lines of `git diff --numstat --minimal --no-renames` restricted to the editable paths. A changed binary file counts as 1. Ties go to the most recent, then by id. Candidates: rows whose tree exists, collapsed by tree identity (keeping the most recent), then the last 50 rows promoted before the child was created plus the child solver's last 50 earlier rows.
+3. Novel: when the child-side differing lines (text lines present in the child but not in the nearest tree) exceed half of the child's text lines, the row has no parent. Binary files do not count toward size. Novel rows are excluded from H1 and H2 and reported descriptively. The paper shows the distance distribution split by outcome.
+
+The tree-distance parent is computed for every row, including rows with declared attribution, so that AT4 and sensitivity 2 can compare the two. The primary parent is the declared one when it exists. Declared dependencies are de-duplicated in order; ids that are unknown or not earlier are dropped and the drop is recorded.
 
 Trees come from `promotedSourceRef` for promoted rows and `submissionCommitSha` otherwise, fetched by SHA, never by branch name. On ecdsa.fail all 1,012 non-null `submissionCommitSha` values match a branch tip under `refs/heads/submissions/*`. `lineage/frozen/` holds the tree manifests (path to blob hash) and the computed distance table with SHA-256 sums, so the rebuild runs offline (review F8). The eip8200 pair shares one repository; trees are split by benchmark id.
 
@@ -226,8 +228,10 @@ snapshot.benchmark_meta(benchmark: str) -> Benchmark
 snapshot.attribution(benchmark: str) -> dict[str, list[str]]     # submission id -> declared parent ids
 families.family_of(model_line: str | None) -> Family | Multi | Unknown
 families.harness_of(note: str) -> str | None
-lineage.parents(sub: Submission, earlier: list[Submission]) -> ParentLink
-    # ParentLink(parent_ids: tuple[str, ...], method: "declared" | "tree" | "novel", distance: int | None)
+lineage.parents.parents(child, earlier, attribution, trees, own_history) -> ParentResult
+    # ParentResult(primary: ParentLink, tree: ParentLink, dropped_declared: tuple[str, ...])
+    # ParentLink(parent_ids, method: "declared" | "multi" | "tree" | "novel" | "none", distance, child_side)
+lineage.build.run(benchmark) -> writes lineage/frozen/<slug>/{manifests,distances,parents}.json.gz, missing.json
 lineage.declared_base(note: str) -> str | None   # submission-id prefix, promotedSourceRef, or commit SHA
 outcomes.annotate(subs, meta) -> sealed table (written to outcomes/sealed/, not returned to analysis)
 analysis.dataset(benchmark: str) -> pandas.DataFrame   # treatment and covariates; outcomes only after lock check
@@ -336,3 +340,5 @@ Made by Wisdom, 2026-10-17, after the v2 review:
 v2, 2026-10-17, after a fresh-context Opus 5.5 review (18 findings, 17 in scope). Changes by finding: F1 power gate and 90% interval wording (§5.2, §5.3); F2 confirmatory window and promoted trees from `promotedSourceRef` (§3.1, AT15); F3 solver fixed effects and corrected §6; F4 H3 restricted to cross-solver promotions; F5 declared attribution, novel cutoff, multi-source rows (§3.3); F6 AT4 on the treatment cell with two labelled sets; F7 code lock, sealed outcomes, external timestamp (§5.8); F8 frozen trees and distances, offline rebuild; F9 Multi and harness (§3.2, sensitivity 6); F10 promotion thresholds and the eip8200 sibling pair; F11 Holm membership and HKSJ; F12 minimum events; F13 denominator and real recomputation in AT5; F14 sparse families and Firth; F15 AT11 allowlist; F16 conflict of interest; F17 AT13, AT14 and the three-way audit. F18 (scope trims, out of scope): the mechanism-census analysis is dropped; H5 and E2 stay subject to the minimum-events gate.
 
 v2.1, 2026-10-17, after the Track D review (architect decisions, pre-lock): evaluation-order frontier seeded with `baselineScore`; superseded rows as a named exception class; 1% defined as a relative score change; plateau window from opening; three-way failure classes with sensitivity 9; identical Pareto points are not gains; the false flock-multi threshold sentence corrected; AT5 across all study benchmarks.
+
+v2.2, 2026-10-17, after the Track C review (architect decisions, pre-lock): git minimal numstat as the distance, binary files as one changed line and excluded from size; the novel test uses child-side lines; tree parents computed for every row; candidate window filtered and collapsed before slicing, promotions counted only if finished before the child was created, own history capped at 50; declared dependencies de-duplicated and validated; seam renamed to `lineage.parents.parents` returning both links; a build driver writes the frozen lineage outputs.

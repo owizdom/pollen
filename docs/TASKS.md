@@ -30,16 +30,17 @@ Owns: `families/__init__.py`, `families/mapper.py`, `families/table.yaml`, `fami
 - AT2: every distinct `model_line` in every study benchmark of the frozen snapshot maps without raising; golden cases from spec §9 pass.
 - AT3 (live, later): `families/audit/sample.py` draws 200 seeded notes for the reviewer audit.
 
-### Track C: lineage (AT4, AT15)
+### Track C: lineage (AT4, AT15), rework after review (spec v2.2)
 
-Owns: `lineage/__init__.py`, `lineage/declared.py`, `lineage/distance.py`, `lineage/trees.py`, `lineage/parents.py`, `lineage/frozen/`, `tests/test_lineage.py`, `tests/fixtures_lineage.py`.
+Owns: `lineage/__init__.py`, `lineage/declared.py`, `lineage/distance.py`, `lineage/trees.py`, `lineage/parents.py`, `lineage/build.py`, `lineage/window.py`, `lineage/frozen/`, `tests/test_lineage.py`, `tests/fixtures_lineage.py`.
 
-- `declared.py`: `declared_base_tokens(note) -> list[str]` extracts candidate ids after "Base:" or "base:" (submission-id prefixes of 7+ hex, full 40-hex SHAs, full UUIDs). `resolve(token, subs) -> str | None` maps a token to a submission id by matching submission id prefix, `commit_sha`, or the API's `promotedSourceRef`; ambiguous or unknown tokens give None.
-- `distance.py`: `changed_lines(a: dict[str, list[str]], b: dict[str, list[str]]) -> int`, the number of added plus removed lines over the union of paths (a missing path counts as empty). `size(tree) -> int`, total lines.
-- `trees.py`: given a benchmark's repo URL, editable paths and a set of commit SHAs, maintains a bare mirror under `lineage/cache/` (gitignored), reads each commit's editable-path files with `git cat-file`, and returns `{sha: {path: lines}}`. Writes `lineage/frozen/<slug>/manifests.json.gz` (`{sha: {path: blob_sha}}`). SHAs that cannot be fetched are recorded in `missing.json`.
-- `parents.py`: `parents(sub, earlier, attribution, trees, own_history) -> ParentLink(parent_ids, method, distance)`. Order: declared attribution (one parent: method "declared"; two or more: method "multi"); else tree distance over candidates = earlier rows with trees, identical trees collapsed by hash, limited to the last 50 promoted rows plus the solver's own earlier rows, minimum `changed_lines`, ties to the most recent (method "tree"); if that minimum exceeds half of `size(child tree)`, method "novel" with no parent; if the child has no tree, method "none".
-- Writes `lineage/frozen/<slug>/parents.json.gz` and `lineage/frozen/SHA256SUMS`.
-- AT4 and AT15 run on the real data once frozen.
+- `trees.py`: bare mirror per repo under `lineage/cache/` with `gc.auto=0`; fetch SHAs in chunks into `refs/pollen/<sha>`, splitting a failing chunk in halves until bad SHAs are isolated (recorded in `missing`); `tree_ids(sha, editable_paths) -> tuple` of git object ids (one per editable path; missing path gives None) used as tree identity.
+- `distance.py`: `numstat(mirror, sha_a, sha_b, paths) -> (added, removed, binary_changed)` from `git diff --numstat --minimal --no-renames`; `changed_lines = added + removed + binary_changed`; `child_side = added` (direction parent to child); `text_size(mirror, sha, paths)` counts text lines only (numstat against the empty tree). A persistent memo keyed by tree identity pair, written to `lineage/frozen/<slug>/distances.json.gz`.
+- `parents.py`: `parents(child, earlier, attribution, trees, own_history) -> ParentResult(primary, tree, dropped_declared)`. Tree link always computed. Candidates: rows with trees, collapsed by tree identity keeping the most recent, then the last 50 rows promoted with `finished_at` before the child's `created_at`, plus the child solver's last 50 earlier rows; ties by `created_at` then id. Novel when `child_side > text_size(child) / 2`. Declared ids de-duplicated in order; unknown or not-earlier ids dropped and listed.
+- `declared.py`: `resolve` matches id prefix, `commit_sha`, `submission_sha` and `promoted_ref`.
+- `build.py`: per study benchmark, maps each analysis row to its tree SHA (`promoted_ref` for promoted rows, else `submission_sha`), fetches, computes parents, writes `lineage/frozen/<slug>/{manifests,distances,parents}.json.gz`, `missing.json`, and `lineage/frozen/SHA256SUMS`. Resumable from the distance memo.
+- `window.py` (AT15): confirmatory window start per benchmark from tree availability by promoted vs other rows, per spec §3.1.
+- Performance target: ecdsa.fail end to end in under 1 hour on the M1 Pro after the mirror exists.
 
 ### Track D: outcomes (AT5)
 
