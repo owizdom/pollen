@@ -7,7 +7,7 @@ Tracks own disjoint files. A track touches nothing outside its list.
 
 ### Track A: snapshot (AT1)
 
-Owns: `snapshot/__init__.py`, `snapshot/fetch.py`, `snapshot/load.py`, `snapshot/model.py`, `snapshot/raw/` (gzipped JSON, `SHA256SUMS`, `FREEZE.json`), `snapshot/FREEZE.md`, `tests/test_snapshot.py`, `tests/conftest.py`.
+Owns: `snapshot/__init__.py`, `snapshot/fetch.py`, `snapshot/load.py`, `snapshot/model.py`, `snapshot/raw/` (gzipped JSON, `SHA256SUMS`, `FREEZE.json`), `snapshot/FREEZE.md`, `tests/test_snapshot.py`, `tests/test_fetch.py`, `tests/conftest.py`.
 
 - `fetch.py`: download `GET https://api.yukon.org/api/benchmarks`, then per benchmark `/api/benchmarks/{id}` and `/api/benchmarks/{id}/submissions`. No auth. Write gzipped JSON per benchmark under `snapshot/raw/<slug>/`, then `SHA256SUMS` and `FREEZE.md` (UTC fetch time, API URL, per-benchmark row counts, redistribution note).
 - `model.py`: the `Submission` and `Benchmark` dataclasses from spec §8.
