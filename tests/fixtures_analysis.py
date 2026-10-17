@@ -114,6 +114,8 @@ def cells_frame(n_solvers, rows_per, p_cross=0.5, purity=0.9, seed=0) -> pd.Data
             cf = bool(lean if rng.random() < purity else not lean)
             rows.append({"solver": f"s{s}", "cross_family": cf,
                          "cell": "other_switch" if cf else "other_same",
+                         "cross_solver": True, "in_window": True,
+                         "parent_method": "declared",
                          "week": f"2026-W{1 + int(rng.integers(0, 4)):02d}",
                          "child_family_folded": "OpenAI" if rng.random() < 0.5 else "Anthropic",
                          "parent_family_folded": "OpenAI" if rng.random() < 0.5 else "Anthropic",
@@ -152,3 +154,21 @@ def make_tree(root):
         lines = [f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.relative_to(b).as_posix()}"
                  for p in sorted(b.rglob("*")) if p.is_file()]
         (b / "SHA256SUMS").write_text("\n".join(lines) + "\n")
+
+
+def add_non_primary_rows(frame, n_solvers=6, rows_per=5, seed=99):
+    """Append own-lineage, out-of-window, multi-parent and null-family rows (none primary)."""
+    rng = np.random.default_rng(seed)
+    extra = []
+    kinds = [dict(cross_solver=False), dict(in_window=False), dict(parent_method="multi"),
+             dict(cross_family=None)]
+    for s in range(n_solvers):
+        for r in range(rows_per):
+            row = {"solver": f"x{s}", "cross_family": bool(rng.random() < 0.5),
+                   "cell": "own_same", "cross_solver": True, "in_window": True,
+                   "parent_method": "declared", "week": "2026-W01",
+                   "child_family_folded": "OpenAI", "parent_family_folded": "Anthropic",
+                   "parent_is_current_best": False, "log_prior_rows": 1.0}
+            row.update(kinds[(s + r) % len(kinds)])
+            extra.append(row)
+    return pd.concat([frame, pd.DataFrame(extra)], ignore_index=True)

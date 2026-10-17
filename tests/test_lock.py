@@ -194,3 +194,66 @@ def test_check_raises_when_tag_is_named_differently(repo):
     lock_and_tag(repo, tag="prereg-v2")
     with pytest.raises(lock.LockError):
         lock.check(repo)
+
+
+def _outside_rule(tmp_path):
+    out = tmp_path / "outside"
+    out.mkdir()
+    (out / "rule.py").write_text("# original\n")
+    return out
+
+
+@pytest.mark.parametrize("where", ["analysis", "families", "lineage", "snapshot", "outcomes"])
+def test_symlinked_dir_under_code_dirs_refused(repo, tmp_path, where):
+    from analysis import lock
+    out = _outside_rule(tmp_path)
+    (repo / where / "linked").symlink_to(out, target_is_directory=True)
+    with pytest.raises(lock.LockError):
+        lock.write_manifest(repo)
+
+
+def test_check_raises_after_edit_through_symlinked_dir(repo, tmp_path):
+    from analysis import lock
+    out = _outside_rule(tmp_path)
+    lock_and_tag(repo)
+    (repo / "analysis" / "linked").symlink_to(out, target_is_directory=True)
+    (out / "rule.py").write_text("# edited\n")
+    with pytest.raises(lock.LockError):
+        lock.check(repo)
+
+
+@pytest.mark.parametrize("rel", ["analysis/hidden.pyc", "analysis/ext.so",
+                                 "lineage/hidden.pyc"])
+def test_importable_non_py_file_refused(repo, rel):
+    from analysis import lock
+    (repo / rel).write_bytes(b"\x00binary")
+    with pytest.raises(lock.LockError):
+        lock.write_manifest(repo)
+
+
+def test_check_raises_on_sourceless_pyc_added_after_tag(repo):
+    from analysis import lock
+    lock_and_tag(repo)
+    (repo / "analysis/hidden.pyc").write_bytes(b"\x00binary")
+    with pytest.raises(lock.LockError):
+        lock.check(repo)
+
+
+def test_pycache_pyc_is_still_ignored(repo):
+    from analysis import lock
+    lock_and_tag(repo)
+    (repo / "analysis/__pycache__").mkdir()
+    (repo / "analysis/__pycache__/dataset.cpython-312.pyc").write_bytes(b"x")
+    lock.check(repo)
+
+
+@pytest.mark.parametrize("base", ["lineage/frozen", "snapshot/raw"])
+def test_symlinked_subdir_in_frozen_data_refused(repo, tmp_path, base):
+    from analysis import lock
+    lock_and_tag(repo)
+    out = _outside_rule(tmp_path)
+    (repo / base / "linked").symlink_to(out, target_is_directory=True)
+    with pytest.raises(lock.LockError):
+        lock.check(repo)
+    with pytest.raises(lock.LockError):
+        lock.write_manifest(repo)

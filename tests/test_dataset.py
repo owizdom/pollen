@@ -8,7 +8,7 @@ import re
 import pandas as pd
 import pytest
 
-from tests.fixtures_analysis import (CLAUDE, DEVIN, GPT, KIMI, MULTI, NEVER_EVALUATED,
+from tests.fixtures_analysis import (add_non_primary_rows, CLAUDE, DEVIN, GPT, KIMI, MULTI, NEVER_EVALUATED,
                                      StubSnapshot, at, cells_frame, declared, link, meta,
                                      sub, write_parents)
 
@@ -283,6 +283,76 @@ def test_equivalence_power_deterministic_for_fixed_seed():
     a = power.equivalence_power(cells, 0.3, sims=10, seed=11)
     b = power.equivalence_power(cells, 0.3, sims=10, seed=11)
     assert a == b
+
+
+def test_equivalence_power_uses_design_module(monkeypatch):
+    from analysis import design, power
+    seen = {"rows": 0, "build": 0}
+    real_rows, real_build = design.primary_rows, design.build
+
+    def rows(f):
+        seen["rows"] += 1
+        return real_rows(f)
+
+    def build(f):
+        seen["build"] += 1
+        return real_build(f)
+
+    monkeypatch.setattr(design, "primary_rows", rows)
+    monkeypatch.setattr(design, "build", build)
+    power.equivalence_power(cells_frame(12, 6, seed=1), 0.3, sims=3, seed=2)
+    assert seen["rows"] >= 1 and seen["build"] >= 1
+
+
+def test_power_ignores_non_primary_rows():
+    from analysis import power
+    base = cells_frame(12, 6, seed=1)
+    noisy = add_non_primary_rows(base)
+    a = power.equivalence_power(base, 0.3, sims=10, seed=5)
+    b = power.equivalence_power(noisy, 0.3, sims=10, seed=5)
+    assert a == b
+
+
+def _failing(monkeypatch, should_fail):
+    from analysis import models
+    real, state = models.cond_logit, {"n": 0}
+
+    def fake(*a, **k):
+        state["n"] += 1
+        if should_fail(state["n"]):
+            return models.Estimate(float("nan"), float("nan"), 0, 0, "failed")
+        return real(*a, **k)
+
+    monkeypatch.setattr(models, "cond_logit", fake)
+
+
+def test_failed_fits_count_as_non_equivalent_and_are_reported(monkeypatch):
+    from analysis import power
+    frame = cells_frame(12, 6, seed=1)
+    _failing(monkeypatch, lambda n: True)
+    rep = power.equivalence_power_report(frame, 0.3, sims=6, seed=2)
+    assert rep["power"] == 0.0
+    assert rep["failed_share"] == pytest.approx(1.0)
+    assert power.equivalence_power(frame, 0.3, sims=6, seed=2) == 0.0
+
+
+def test_partial_failures_report_share(monkeypatch):
+    from analysis import power
+    _failing(monkeypatch, lambda n: n % 2 == 0)
+    rep = power.equivalence_power_report(cells_frame(12, 6, seed=1), 0.3, sims=10, seed=2)
+    assert rep["failed_share"] == pytest.approx(0.5)
+    assert rep["power"] <= 0.5
+
+
+def test_pooled_power_never_drops_a_benchmark_silently(monkeypatch):
+    from analysis import power
+    frames = {f"b{i}": cells_frame(12, 6, seed=i) for i in range(3)}
+    rates = {k: 0.3 for k in frames}
+    _failing(monkeypatch, lambda n: n % 3 == 2)   # one benchmark fails in every run
+    rep = power.pooled_equivalence_power_report(frames, rates, sims=5, seed=4)
+    assert rep["failed_share"] == pytest.approx(1 / 3)
+    assert rep["power"] == 0.0
+    assert power.pooled_equivalence_power(frames, rates, sims=5, seed=4) == 0.0
 
 
 def test_equivalence_power_calls_cond_logit_once_per_sim(monkeypatch):
