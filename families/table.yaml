@@ -96,3 +96,686 @@ strings:
   # Codex, Codex CLI: agent products with no model (spec 3.2)
   Codex: Unknown
   Codex CLI: Unknown
+  '31.': Unknown
+  Abliterated Large v2: Unknown
+  Angel: Unknown
+  Angel (GPT-5): OpenAI
+  Angel (OpenAI): OpenAI
+  Angel (Treebeard): Unknown
+  Angel (cockpit/treebeard): Unknown
+  Angel (competition loop): Unknown
+  Angel (gpt-5.2): OpenAI
+  Angel (local harness): Unknown
+  Angel (treebeard lane): Unknown
+  Angel Cockpit: Unknown
+  Angel SOTA: Unknown
+  Angel cockpit: Unknown
+  Angel cockpit (Claude 4.5): Anthropic
+  Angel cockpit (competition iteration): Unknown
+  Angel cockpit (self): Unknown
+  Angel cockpit (swarm): Unknown
+  Angel cockpit driver: Unknown
+  Angel cockpit driver (fused/rsp baseptr port): Unknown
+  AngelX: Unknown
+  AngelX (DeepSeek V3.2): DeepSeek
+  AngelX harness: Unknown
+  Antigravity: Unknown
+  Antigravity (Gemini 2.5 Pro): Google
+  Antigravity CSG: Unknown
+  Antigravity-1.486-QuadHead-Router64: Unknown
+  Antigravity-1.486-QuadHead-Router64-Ladder2: Unknown
+  Antigravity-1.491-Compound-QuadHead-Router64-DownRes1: Unknown
+  Antigravity-1.741-Full40Layer-NativeAffineOProj: Unknown
+  Antigravity-1.805-FusedGateFold-Ladder2: Unknown
+  Antigravity-1.805-FusedGateFold-NVFP4Tail: Unknown
+  Antigravity-1.822-GatedOutputQMV-Ladder2-Router4: Unknown
+  Antigravity-1.822-GatedOutputQMV-NOVOL: Unknown
+  Antigravity-1.835-FusedRMSNormQKV: Unknown
+  Antigravity-1.835-HighFrequencyLadder-Router4-ScatterPrune: Unknown
+  Antigravity-QuadHead-SDPA: Unknown
+  Antigravity/EXP-038-MatrixRegisterReduction: Unknown
+  Antigravity/EXP-039-GateUpCarry2AndPrefillSDPA: Unknown
+  Antigravity/EXP-044-SDPATable-SlidingNibbleHalf-MTPMemo: Unknown
+  Baseline: Unknown
+  CSG Core Engine: Unknown
+  CSG Deterministic Solver (0 LLM): Unknown
+  CSG Deterministic Solver (0 LLMs): Unknown
+  Cartwright Exp4 Best Effort Trace Policy: Unknown
+  Cartwright Exp4 Full Best Effort V2: Unknown
+  Cartwright Exp4 Transfer Pilot: Unknown
+  Cartwright L2-E1 Research Batch (Pi Loop 1 / Terra): Unknown
+  Cartwright L2-E2 Candidate Archive (Pi Loop 1 / Terra): Unknown
+  Cartwright Pi Loop 1: Unknown
+  Cartwright Pi Loop 1 + L2 E3: Unknown
+  Cartwright Pi Loop 1 + L2 E4 validation repair: Unknown
+  Cartwright Pi Loop 1 standard suite sanity: Unknown
+  Cartwright Pi Loop 1 v0: Unknown
+  Cartwright Process Architecture v1 (Pi/Terra): Unknown
+  Cartwright Sequential Control v0 (Pi/Terra): Unknown
+  Cartwright Trace Process v1 (Pi/Terra): Unknown
+  Cartwright balanced portfolio v13 (Pi/Terra): Unknown
+  Cartwright conservative family-prior v12 (Pi/Terra): Unknown
+  Cartwright duplicate-escape v8 (Pi/Terra): Unknown
+  Cartwright family-prior v11 (Pi/Terra): Unknown
+  Cartwright gpt-5.6-terra: OpenAI
+  Cartwright orthogonal escape v14 (Pi/Terra): Unknown
+  Cartwright policy-mix v6 (Pi/Terra): Unknown
+  Cartwright portfolio-submit v10 (Pi/Terra): Unknown
+  Cartwright remote-best portfolio v15 (Pi/Terra): Unknown
+  Cartwright remote-prior v9 (Pi/Terra): Unknown
+  Cartwright sphere-budget v7 (Pi/Terra): Unknown
+  Cartwright stagnation-diversify v5 (Pi/Terra): Unknown
+  Cartwright tail-robust v4 (Pi/Terra): Unknown
+  Cartwright trace-dossier v2 (Pi/Terra): Unknown
+  Cartwright unbounded-proxy v3 (Pi/Terra): Unknown
+  ChatGPT 5.6 Luna: Unknown
+  Claude: Anthropic
+  Claude (Angel cockpit): Anthropic
+  Claude (exact version not disclosed to agent): Anthropic
+  Claude 3.5 Sonnet: Anthropic
+  Claude 3.7 Sonnet: Anthropic
+  Claude 3.7 Sonnet (0xClaw AI Agent): Anthropic
+  Claude 3.7 Sonnet (Thinking): Anthropic
+  Claude 4.6: Anthropic
+  Claude 5.5: Anthropic
+  Claude Code: Anthropic
+  Claude Fable 5 (claude-fable-5): Anthropic
+  Claude Fable 5 + Claude Opus 5: Anthropic
+  Claude Fable 5 + Claude Opus 5 + GPT-5.6 Sol (Codex): Multi
+  Claude Fable 5 + GPT-5.6 Codex: Multi
+  Claude Fable 5.1 (xhigh): Anthropic
+  Claude Fable 5.1 + GPT-6: Multi
+  Claude Haiku 4.5: Anthropic
+  Claude Opus: Anthropic
+  Claude Opus (autoresearch harness): Anthropic
+  Claude Opus 4: Anthropic
+  Claude Opus 4.1: Anthropic
+  Claude Opus 4.5: Anthropic
+  Claude Opus 4.7: Anthropic
+  Claude Opus 4.7 (1M context): Anthropic
+  Claude Opus 4.8 (Cursor): Anthropic
+  Claude Opus 4.8 (PACEvolve++ Qwen3-8B advisor base): Multi
+  Claude Opus 4.8 (ecadd-research): Anthropic
+  Claude Opus 4.8 (multi-model harness): Anthropic
+  Claude Opus 4.8 (multi-model harness; Grok-4.3 adversarial review): Multi
+  Claude Opus 5 (1M context): Anthropic
+  'Claude Opus 5 (1M context), Agent: Claude Code': Anthropic
+  Claude Opus 5 (1M): Anthropic
+  Claude Opus 5 + Claude Fable 5.1: Anthropic
+  Claude Opus 5 + GPT 5.6 Sol: Multi
+  Claude Opus 5.5 (1M context): Anthropic
+  Claude Opus 5; GPT-6 Astra: Multi
+  Claude Opus 5; GPT-6 Astra; Grok Build: Multi
+  Claude Opus 5; Muse Spark 1.3 Contributor; GPT-6 Astra: Multi
+  Claude Sonnet 4: Anthropic
+  Claude Sonnet 4.5: Anthropic
+  Claude Sonnet 5: Anthropic
+  Codex (GPT-5): OpenAI
+  Codex GPT-5: OpenAI
+  Codex GPT-5 + Claude Opus 4.8: Multi
+  Codex GPT-6 controller: OpenAI
+  Codex GPT-6-Sol: OpenAI
+  Cursor Gemini 3.7 Flash: Google
+  Cursor Grok 4.5: xAI
+  Cursor Grok 4.6: xAI
+  Cursor Grok 4.6 High: xAI
+  Cursor Grok 4.6 High Fast: xAI
+  Cursor Grok 4.6 high-fast: xAI
+  Cursor Grok 4.7: xAI
+  DFlash15: Unknown
+  DFlash15_Q4: Unknown
+  DeepSeek: DeepSeek
+  DeepSeek (Angel cockpit self): DeepSeek
+  DeepSeek 4.1 Flash: DeepSeek
+  DeepSeek Flash: DeepSeek
+  DeepSeek R1: DeepSeek
+  DeepSeek V3.2: DeepSeek
+  DeepSeek V4: DeepSeek
+  DeepSeek V4 Flash: DeepSeek
+  DeepSeek V4 Flash (MoA): DeepSeek
+  DeepSeek V4 Flash (ds4): DeepSeek
+  DeepSeek V4 Flash 0731: DeepSeek
+  DeepSeek V4 Flash Free: DeepSeek
+  DeepSeek V4 Flash High: DeepSeek
+  DeepSeek V4 Pro: DeepSeek
+  DeepSeek V4 Pro 0813: DeepSeek
+  DeepSeek V4 Pro High: DeepSeek
+  DeepSeek V4.1 Flash (opencode-go): DeepSeek
+  DeepSeek V4.1 Flash [1m]: DeepSeek
+  DeepSeek v4 Pro / QNFO-QWAV Agent: DeepSeek
+  DeepSeek v4-pro: DeepSeek
+  DeepSeek-Flash: DeepSeek
+  DeepSeek-V3.2: DeepSeek
+  DeepSeek-V4-Flash: DeepSeek
+  DeepSeek-V4-Flash-0731-MXFP4-MLX: DeepSeek
+  DeepSeek-V4-Pro: DeepSeek
+  DeepSeek-V4-Pro + RL-trained Qwen3-8B advisor (PACEvolve++): Multi
+  DeepSeek-V4.1-Flash: DeepSeek
+  DeepSeek-V41-Flash: DeepSeek
+  Deepseek V4 Flash: DeepSeek
+  Deepseek V4 Pro: DeepSeek
+  Deepseek flash (harness angelX): DeepSeek
+  Deepseek v4 flash/angelX: DeepSeek
+  Deepseek-V4-Flash: DeepSeek
+  Doubao: Other:ByteDance
+  EigenLabs/Qwen3.8-27B-4bit-mtp: Alibaba
+  EternaPeptix: Unknown
+  Eureka Harness v0.0.1 via Pi: Unknown
+  Eureka Harness via Pi: Unknown
+  Fable 5: Anthropic
+  Fable 5.1: Anthropic
+  Forge: Unknown
+  GLM: Zhipu
+  GLM (glm-5.3-flash): Zhipu
+  GLM (glm-5.3-flash-free): Zhipu
+  GLM 4.6 (angelX harness): Zhipu
+  GLM 5.1: Zhipu
+  GLM 5.2: Zhipu
+  GLM 5.2 (AngelX harness): Zhipu
+  GLM 5.2 Max: Zhipu
+  GLM 5.2 Xhigh: Zhipu
+  GLM 5.3: Zhipu
+  GLM 5.3 Flash: Zhipu
+  GLM 5.3 Flash + Qwen 3.8 Flash + Muse Spark 1.3 Contributor + Omen Alpha: Multi
+  GLM 5.32: Zhipu
+  GLM-4.7: Zhipu
+  GLM-5.1 via Sisyphus/omo: Zhipu
+  GLM-5.2: Zhipu
+  GLM-5.2 (OpenCode): Zhipu
+  GLM-5.2 (angelX harness): Zhipu
+  GLM-5.2 (opencode CLI): Zhipu
+  GLM-5.2 High: Zhipu
+  GLM-5.3 (ZCode): Zhipu
+  GLM-5.3 Flash: Zhipu
+  GLM-5.3-Flash: Zhipu
+  GLM-5.3-Flash (zai): Zhipu
+  GLM-5.3-flash: Zhipu
+  GLM-5.3-flash (ollama-cloud via omniroute): Zhipu
+  GPT: OpenAI
+  GPT (exact variant not exposed): OpenAI
+  GPT 5.2: OpenAI
+  GPT 5.2 Thinking: OpenAI
+  GPT 5.4: OpenAI
+  GPT 5.6: OpenAI
+  GPT 5.6 Luna: OpenAI
+  GPT 5.6 Luna + GPT 6 Astra: OpenAI
+  GPT 5.6 Sol: OpenAI
+  GPT 5.6 Sol (High Effort): OpenAI
+  GPT 5.6 Sol Pro: OpenAI
+  GPT 5.6 Terra: OpenAI
+  GPT 6 Luna: OpenAI
+  GPT 6 Luna, GPT 6.1 Sol, GPT 6 Astra and Claude Opus 5.5: Multi
+  GPT Sol: OpenAI
+  GPT Sol 6.1: OpenAI
+  GPT-5 (Codex): OpenAI
+  GPT-5 (Codex) + Claude Opus 4.8: Multi
+  GPT-5 + Claude Opus 4.8: Multi
+  GPT-5 / Codex: OpenAI
+  GPT-5 Codex + Claude Opus 4.8: Multi
+  GPT-5-Codex: OpenAI
+  GPT-5.1: OpenAI
+  GPT-5.1 Codex: OpenAI
+  GPT-5.2: OpenAI
+  GPT-5.3 Codex: OpenAI
+  GPT-5.3-Codex-Spark: OpenAI
+  GPT-5.4: OpenAI
+  GPT-5.4 / Angel: OpenAI
+  GPT-5.5: OpenAI
+  GPT-5.5 Hermes Agent: OpenAI
+  GPT-5.5 via Hermes/openai-codex: OpenAI
+  GPT-5.5-high: OpenAI
+  GPT-5.6: OpenAI
+  GPT-5.6 Codex: OpenAI
+  GPT-5.6 Hermes Agent: OpenAI
+  GPT-5.6 Luna: OpenAI
+  GPT-5.6 Luna Max: OpenAI
+  GPT-5.6 Sol: OpenAI
+  GPT-5.6 Sol (Ultra): OpenAI
+  GPT-5.6 Sol (extra-high): OpenAI
+  GPT-5.6 Sol + Claude Fable 5 Exact32: Multi
+  GPT-5.6 Sol + Terra: OpenAI
+  GPT-5.6 Sol / ChatGPT: OpenAI
+  GPT-5.6 Sol Hermes Agent: OpenAI
+  GPT-5.6 Sol Light: OpenAI
+  GPT-5.6 Sol Medium: OpenAI
+  GPT-5.6 Sol Pro; GPT-5.6 Sol Extra High; GPT-6 Astra via Codex: OpenAI
+  GPT-5.6 Sol Pro; GPT-6 Astra via Codex: OpenAI
+  GPT-5.6 Sol extra-high: OpenAI
+  GPT-5.6 Sol ultra: OpenAI
+  GPT-5.6 Sol via openai-codex: OpenAI
+  GPT-5.6 Sol, extra-high: OpenAI
+  GPT-5.6 Terra: OpenAI
+  'GPT-5.6 Terra implementation + GPT-5.6 Sol review: v5 row-selective exact LM-head': OpenAI
+  GPT-5.6 Thinking: OpenAI
+  GPT-5.6-Luna: OpenAI
+  GPT-5.6-Sol: OpenAI
+  GPT-5.6-sol: OpenAI
+  GPT-5.6-sol (Hermes Agent): OpenAI
+  GPT-5.6-sol Hermes Agent: OpenAI
+  GPT-5.6-sol-900k: OpenAI
+  GPT-6 (Codex): OpenAI
+  GPT-6 (Codex), GPT-6 Astra (advisor): OpenAI
+  GPT-6 (exact variant not exposed in this session): OpenAI
+  GPT-6 (exact variant not exposed) + Claude Opus 5.5: Multi
+  GPT-6 Astra (gpt-6-astra): OpenAI
+  GPT-6 Astra High: OpenAI
+  GPT-6 Astra Medium Thinking: OpenAI
+  GPT-6 Astra Pro: OpenAI
+  GPT-6 Astra; Muse Spark 1.3 Contributor: Multi
+  GPT-6 Codex: OpenAI
+  GPT-6 Luna: OpenAI
+  GPT-6 Sol: OpenAI
+  GPT-6 through Codex.: OpenAI
+  GPT-6-ASTRA: OpenAI
+  GPT-6-Astra: OpenAI
+  GPT-6-Sol: OpenAI
+  GPT-6.1: OpenAI
+  GPT-6.1 Sol xhigh: OpenAI
+  GPT-6.1-Sol: OpenAI
+  GPT-6.1-sol (max); GPT-6 Astra (advisor, high): OpenAI
+  GPT-Astra Medium: OpenAI
+  GPT-Codex: OpenAI
+  GPT-OSS 120B: OpenAI
+  GPT-OSS-120B: OpenAI
+  GPT-OSS-120B (TTT-Discover): OpenAI
+  GPT5.6 Luna Max: OpenAI
+  GPT_5.6_Sol: OpenAI
+  Gemini: Google
+  Gemini 1.5 Pro: Google
+  Gemini 2.5 Flash: Google
+  Gemini 2.5 Pro (Colosseum Theorem-Proving Orchestrator): Google
+  Gemini 2.5 Pro + Claude Fable 5.1: Multi
+  Gemini 3 Flash Preview: Google
+  Gemini 3.1 Pro (High): Google
+  Gemini 3.5 Flash: Google
+  Gemini 3.6 Flash: Google
+  Gemini 3.6 Flash (High): Google
+  Gemini 3.6 Flash / South CSG: Google
+  Gemini 3.7 Flash (High): Google
+  Gemini 3.7 Flash High: Google
+  Gemini 3.8: Google
+  Gemini 3.8 Flash (High): Google
+  Gemini 3.8 Flash (Medium): Google
+  Gemini Flash 3.8 High: Google
+  Gemini Pro 3.1: Google
+  Gemini-1.5-Pro: Google
+  Gemma 4 26B A4B via OpenRouter Darkbloom: Google
+  GitHub Copilot: Unknown
+  Grok: xAI
+  Grok 4 MAX: xAI
+  Grok 4.3: xAI
+  Grok 4.3 (xAI): xAI
+  Grok 4.5: xAI
+  Grok 4.5 (high): xAI
+  Grok 4.5 high: xAI
+  Grok 4.6 + GPT-5.6 Sol: Multi
+  Grok 4.6 + Kimi K3 Max: Multi
+  Grok 4.6 exp-fb-qout-pretouch-r1: xAI
+  'Grok 4.6, Agent: Grok Build (xAI)': xAI
+  Grok Build: xAI
+  Hermes Agent (DeepSeek): DeepSeek
+  Hermes Agent (GPT-5.6-sol): OpenAI
+  Hermes Agent / CP-SAT incumbent-seeded optimization: Unknown
+  Hermes Agent / CP-SAT plateau-disagreement repair: Unknown
+  Hermes GPT-5.5: OpenAI
+  Hermes/MiniMax-M2.7: MiniMax
+  Human / Manual Logic: Unknown
+  Junie: Unknown
+  K3: Unknown
+  KAL_VENT_HALVE=1 (Gidney 2025 venting adder): Unknown
+  Kimi: Moonshot
+  Kimi 3: Moonshot
+  Kimi Code (Moonshot AI): Moonshot
+  Kimi Code (k2/k3, high effort): Moonshot
+  Kimi K2.7 Coding: Moonshot
+  Kimi K3 (kimi-code CLI): Moonshot
+  Kimi K3 Fast: Moonshot
+  Kimi K3 High: Moonshot
+  Kimi k1.6: Moonshot
+  Kylon Aura agent (model undisclosed): Unknown
+  Laguna XS 2.1 NVFP4: Unknown
+  Laguna ed877 affine-gate softplus: Unknown
+  Laguna-XS-2.1: Unknown
+  Laguna-XS-2.1-Baseline: Unknown
+  Leanstral: Unknown
+  Luna Max: Unknown
+  # MAI-A.A.E.: notes 81864024, d6747e44 name Claude Fable/Opus 5 and GPT-6 as the coding models
+  MAI-A.A.E.: Multi
+  Manual: Unknown
+  Manus: Unknown
+  Manus 2.0: Unknown
+  Manus autonomous agent: Unknown
+  # MiMo: Xiaomi's model; note 635f66f3 names opencode/mimo-v2.5-free
+  MiMo 2.6 Flash Free: Other:Xiaomi
+  MiniMax 2.7: MiniMax
+  MiniMax M3: MiniMax
+  MiniMax-M2: MiniMax
+  MiniMax-M2.7: MiniMax
+  MiniMax-M3: MiniMax
+  MiniMax-M3 (Nous Research): MiniMax
+  Minimax m2.7: MiniMax
+  Model South Core: Unknown
+  Money Maker Bot: Unknown
+  Muse Spark (opencode-zen/muse-spark-1.3-contributor-free): Meta
+  Muse Spark 1.2: Meta
+  Muse Spark 1.3 Contributor: Meta
+  Muse Spark 1.3 Contributor Free: Meta
+  Muse Spark 1.3 Contributor; GPT-6 Astra: Multi
+  NVIDIA Nemotron 3.5 Lightning 30B: Unknown
+  Nebula: Unknown
+  OpenAI API assistant (self; version unavailable): OpenAI
+  OpenAI Codex (GPT-5): OpenAI
+  OpenAI Codex GPT-5: OpenAI
+  OpenAI Codex GPT-5.6 Sol: OpenAI
+  OpenAI GPT (API; exact model identifier unavailable): OpenAI
+  OpenAI GPT (exact version unavailable): OpenAI
+  OpenAI GPT 5.6: OpenAI
+  OpenAI GPT-5: OpenAI
+  OpenAI GPT-5 (Codex): OpenAI
+  OpenAI GPT-5 Codex: OpenAI
+  OpenAI GPT-5.4: OpenAI
+  OpenAI GPT-5.5: OpenAI
+  OpenAI GPT-5.6: OpenAI
+  OpenAI GPT-5.6 Codex: OpenAI
+  OpenAI GPT-5.6 Sol: OpenAI
+  OpenAI GPT-5.6-sol: OpenAI
+  OpenAI GPT-6: OpenAI
+  OpenAI GPT-6.1: OpenAI
+  OpenAI Treebeard: OpenAI
+  OpenAI gpt-5.6-sol (max reasoning) + gpt-5.6-luna subagents: OpenAI
+  OpenAI gpt-6.1-sol: OpenAI
+  OpenAI o3: OpenAI
+  # Hy3 is Tencent's model, so this pool names two vendors
+  OpenCode Zen Free Pool (Muse Spark 1.2 / Hy3): Multi
+  OpenCode Zen MiMo-V2.5 Free: Other:Xiaomi
+  OpenCode Zen Ox Alpha Free: Unknown
+  Original: Unknown
+  Ox Alpha: Unknown
+  Ox Alpha (Hermes Agent): Unknown
+  Ox Alpha Free: Unknown
+  Poolside: Other:Poolside
+  # Laguna is the mlxfast-challenge target model; notes 5053322f, 89250076 tune its kernels
+  Poolside Laguna S 2.1: Unknown
+  Poolside Laguna S2.1: Unknown
+  Poolside Laguna XS 2.1 NVFP4: Unknown
+  Poolside Preview: Other:Poolside
+  Prime parity-r19: Unknown
+  Prime stack-34: Unknown
+  'Probe A: small-n embedded + cubic large': Unknown
+  Qwen 3.8 27B: Alibaba
+  Qwen 3.8 27B 4bit: Alibaba
+  Qwen 3.8 27B GDN QK BF16 RMS scale fold: Alibaba
+  Qwen 3.8 27B MTP conservative cost ratio 0.30 control: Alibaba
+  Qwen 3.8 Flash Next: Unknown
+  Qwen 3.8-max: Alibaba
+  Qwen3.5-35B-A3B-MTP-GGUF: Alibaba
+  Qwen3.7-Max: Alibaba
+  Qwen3.8-27B: Alibaba
+  Qwen3.8-27B-oQ4e-mtp: Alibaba
+  # the string itself marks Qwen as the benchmark's target model, not the author
+  'Qwen3.8-Flash-Next (target model); coding agent: Angel': Unknown
+  Qwen3.8-Flash-Next-MTPLX-Optimized-Speed: Alibaba
+  Qwen3.8-Max: Alibaba
+  Qwen3.8-Max-Preview: Alibaba
+  SWE-1.7: Other:Cognition
+  SWE-1.7 Max: Other:Cognition
+  SWE-1.7 Medium: Other:Cognition
+  SWE-2: Other:Cognition
+  SWE-2 Max (Devin): Other:Cognition
+  Sable Autoresearch: Unknown
+  Sable Autoresearch (Codex Runtime): Unknown
+  Smithers (GLM 5.2 + Deepseek V4 Pro): Multi
+  Sol/Grok/GLM: Multi
+  South Core: Unknown
+  South Core Engine: Unknown
+  Space Bunny Alpha (stealth): Unknown
+  Teamily AI Agent: Unknown
+  Vontra/Qwen3.8-Flash-Next-MLX-4bit-MTP: Alibaba
+  Zed DeepSeek V4 Flash: DeepSeek
+  \ Grok 4.3\: xAI
+  angel: Unknown
+  angel (Claude Fable 5): Anthropic
+  angel (DeepSeek V3.1 flash): DeepSeek
+  angel (Gemini 3.7 Flash High composite + gate): Google
+  angel (fleet, treebeard lane): Unknown
+  angel (self-hosted cockpit, DirectFold8 + merged hybrid-prefix leaf dispatch): Unknown
+  angel (self-hosted cockpit, DirectFold8 + parent tail extended to 128 children): Unknown
+  angel (self-hosted cockpit, DirectFold8 + tail-128 + merged leaf composition): Unknown
+  angel (self-hosted cockpit, fused 5-dispatch hybrid prefix + 128-thread tail): Unknown
+  angel (self-hosted cockpit, merged hybrid-prefix leaf dispatch): Unknown
+  angel (self-hosted cockpit, tail-128 + merged prefix leaf): Unknown
+  angel (treebeard lane): Unknown
+  angel cockpit (R1): Unknown
+  angel-cockpit: Unknown
+  angel-cockpit (Claude): Anthropic
+  angel-cockpit (Treebeard): Unknown
+  angel-cockpit (deepseek-flash harness): DeepSeek
+  angel-cockpit (self): Unknown
+  angel-cockpit (treebeard lane): Unknown
+  angel-cockpit (treebeard): Unknown
+  angel-cockpit / DeepSeek-V4-Flash: DeepSeek
+  angel-cockpit driver: Unknown
+  angel-cockpit driver (operator SLOT LAW ruling 2026-08-15): Unknown
+  angel-cockpit r822: Unknown
+  angel-cockpit r823: Unknown
+  angel-cockpit r824: Unknown
+  angel-cockpit r826: Unknown
+  angel-cockpit treebeard: Unknown
+  angel-cockpit-treebeard: Unknown
+  angel-cockpit/driver: Unknown
+  angel-cockpit/treebeard: Unknown
+  angel-r388-pack: Unknown
+  angel-treebeard: Unknown
+  angel/self: Unknown
+  angelX: Unknown
+  angelx: Unknown
+  anthropic/claude-opus-5: Anthropic
+  antigravity: Unknown
+  big-pickle/opencode: Unknown
+  champ5-replay450: Unknown
+  chewy: Unknown
+  claude: Anthropic
+  claude-fable: Anthropic
+  claude-fable-5: Anthropic
+  claude-fable-5 (autoresearch): Anthropic
+  claude-fable-5-1: Anthropic
+  claude-fable-5-thinking-high: Anthropic
+  claude-opus-4-8: Anthropic
+  claude-opus-5: Anthropic
+  claude-sonnet-4: Anthropic
+  claude-sonnet-4-5: Anthropic
+  claude-sonnet-5: Anthropic
+  clean-baseline-v2: Unknown
+  codex: Unknown
+  composer: Other:Cursor
+  creative-slp-polish: Unknown
+  cursor-agent: Unknown
+  cursor-grok-4.6-high: xAI
+  custom-heuristic-search: Unknown
+  # benchmark names, not models
+  davidtai/qwen38-125b-a6b-mlx-v1: Unknown
+  ddalcu/Qwen3.8-Flash-Next-MLX-Serve-mixed-4-8bit: Alibaba
+  deepseek: DeepSeek
+  deepseek v4 flash: DeepSeek
+  deepseek-flash: DeepSeek
+  deepseek-v4-flash: DeepSeek
+  deepseek-v4-flash (Hermes Agent): DeepSeek
+  deepseek-v4-flash (opencode-go): DeepSeek
+  deepseek-v4-flash-0731: DeepSeek
+  deepseek-v4-flash-dspark: DeepSeek
+  deepseek-v4-pro: DeepSeek
+  deepseek-v4.1-flash (opencode-go): DeepSeek
+  'deepseek-v4.1-flash. Harness: opencode.': DeepSeek
+  deepseek/deepseek-chat:free: DeepSeek
+  deepseek/deepseek-v4-flash: DeepSeek
+  deepseek/deepseek-v4-flash-0731: DeepSeek
+  deepseek/deepseek-v4-flash-0731 via provider nous: DeepSeek
+  deepseek/deepseek-v4.1-flash: DeepSeek
+  devin/swe-2: Other:Cognition
+  dflash-arm-v2-resubmit: Unknown
+  differential-encoding-3cases: Unknown
+  distributed-search-1024-compact: Unknown
+  distributed-search-375-729: Unknown
+  distributed-search-375-729-compact: Unknown
+  dunno: Unknown
+  fable 5: Anthropic
+  fable 5 high: Anthropic
+  frontier-plus-replay: Unknown
+  gemini-2.5-pro: Google
+  gemini-2.5-pro (angel-cockpit treebeard r309): Google
+  gemini-2.5-pro (angel-cockpit): Google
+  gemini-3.1-pro: Google
+  gemini-3.7-flash: Google
+  gemini-3.8-flash: Google
+  glm-5-2 High: Zhipu
+  glm-5.2: Zhipu
+  glm-5.2:cloud: Zhipu
+  glm-5.3-flash: Zhipu
+  glm5.1: Zhipu
+  google-antigravity/gemini-3.7-flash: Google
+  google/gemini-3.7-flash: Google
+  google/gemini-3.7-flash (nous): Google
+  gpt-5: OpenAI
+  gpt-5-codex: OpenAI
+  gpt-5.2-treebeard: OpenAI
+  gpt-5.5: OpenAI
+  gpt-5.5 (autoresearch): OpenAI
+  gpt-5.6 (autoresearch): OpenAI
+  gpt-5.6-luna: OpenAI
+  gpt-5.6-luna-max: OpenAI
+  gpt-5.6-sol: OpenAI
+  gpt-astra: OpenAI
+  gpt-terra-xhigh: OpenAI
+  gpt5.5: OpenAI
+  grok: xAI
+  grok 4.5: xAI
+  grok 4.5 high: xAI
+  grok-4.5: xAI
+  grok-4.6: xAI
+  grok-build: xAI
+  grok/angelX/moa: xAI
+  identity tour (payload-fix test): Unknown
+  igneous-prose: Unknown
+  initial: Unknown
+  k3: Unknown
+  kimi: Moonshot
+  kimi-code (claude + gpt lanes): Multi
+  kimi-code/k3: Moonshot
+  kimi-k3: Moonshot
+  laguna-optim-v1: Unknown
+  laguna-optim-v10: Unknown
+  laguna-optim-v11: Unknown
+  laguna-optim-v11-pure-v11.1: Unknown
+  laguna-optim-v11v12-merged: Unknown
+  laguna-optim-v2: Unknown
+  laguna-optim-v4: Unknown
+  laguna-optim-v5: Unknown
+  laguna-optim-v6: Unknown
+  laguna-optim-v7: Unknown
+  laguna-optim-v9: Unknown
+  laguna-s-2.1-nvfp4: Unknown
+  laguna-s2.1: Unknown
+  laguna-xs-2.1-serial-v2: Unknown
+  meituan/longcat-2.0:free: Unknown
+  mimo-v2.5-pro: Unknown
+  minimax-m3-preview (Venice): MiniMax
+  # the gemma4 benchmark's target weights; note ab86721f runs Codex
+  mlx-community/gemma-4-26B-A4B-it-qat-4bit: Unknown
+  moonshotai/kimi-k3: Moonshot
+  mtp-head-distill-d3: Unknown
+  multivmlabs-smol-researcher: Unknown
+  muse-spark-1.2: Meta
+  muse-spark-1.2-contributor-free: Meta
+  muse-spark-1.3: Meta
+  muse-spark-1.3-contributor-free (opencode-zen): Meta
+  newjordan: Unknown
+  nop: Unknown
+  not-applicable: Unknown
+  ollama-cloud/glm-5.2: Zhipu
+  openai: OpenAI
+  openai-codex/gpt-5.6: OpenAI
+  openai-codex/gpt-5.6-sol: OpenAI
+  openai-codex/gpt-6-astra: OpenAI
+  openai-treebeard: OpenAI
+  openai/gpt-5.2: OpenAI
+  openai/gpt-5.4: OpenAI
+  openai/gpt-5.6-luna: OpenAI
+  openai/gpt-6-astra: OpenAI
+  openclaw-deepseek-v4-pro: DeepSeek
+  opencode-go/deepseek-flash: DeepSeek
+  opencode-go/deepseek-v4-flash: DeepSeek
+  opencode-zen/muse-spark-1.3-contributor-free: Meta
+  opencode/x-preview-f-free: Unknown
+  ox-alpha: Unknown
+  ox-alpha (Hermes Agent): Unknown
+  ox-alpha (OpenRouter stealth preview): Unknown
+  ox-alpha (stealth/ox-alpha): Unknown
+  ox-alpha exp-fb-onebuf-r1: Unknown
+  ox-alpha exp-pow-r1: Unknown
+  ox-alpha exp-pow-r2: Unknown
+  ox-alpha frontier-replay: Unknown
+  ox-alpha hash-tg256-r1: Unknown
+  ox-alpha oracle-index-isolate-r1: Unknown
+  ox-alpha pair-hybrid r1: Unknown
+  ox-alpha parity-r20: Unknown
+  ox-alpha pepe-adopt-r2: Unknown
+  ox-alpha pepe-defense: Unknown
+  ox-alpha pepe-r3-defense: Unknown
+  ox-alpha pepe-r4-defense: Unknown
+  ox-alpha reducing-isolate-r1: Unknown
+  ox-alpha reducing-scratch-r1: Unknown
+  ox-alpha sigma-release-bar-r3: Unknown
+  ox-alpha sigma-release-bar-r4: Unknown
+  ox-alpha sigma-release-spine-r1: Unknown
+  ox-alpha spine-gate-r1: Unknown
+  ox-alpha spine-hash-tg256: Unknown
+  ox-alpha-free: Unknown
+  pi: Unknown
+  poolside/laguna-m.1: Other:Poolside
+  poolside/laguna-s-2.1:free: Other:Poolside
+  prod perf 2: Unknown
+  qmv-m5-native-vector: Unknown
+  qmv-occupancy-rps2: Unknown
+  qmv-occupancy-rps2-isolated: Unknown
+  quant-g128bits4-depth1: Unknown
+  quant-g128bits4-depth1-v2: Unknown
+  qwen/qwen3.6-35b-a3b: Alibaba
+  qwen3.8 (harness angelX): Alibaba
+  qwen3.8-27b-mtp-v1: Alibaba
+  qwen3.8-max (nous): Alibaba
+  qwen3.8:27b: Alibaba
+  # qwen38 and Qwen 3.8 Flash Next name the qwen38 benchmarks' target model
+  qwen38: Unknown
+  qwen38-125b-a6b-mlx-v1: Unknown
+  redraw: Unknown
+  reference (prod perf test): Unknown
+  rekursiv.ai: Unknown
+  sakana/fugu-ultra: Unknown
+  saucegodbased: Unknown
+  self: Unknown
+  senai: Unknown
+  senpai: Unknown
+  stealth/ox-alpha: Unknown
+  stealth/space-bunny-alpha: Unknown
+  stepfun/step-3.7-flash:free: Unknown
+  swe-1-7 Max: Other:Cognition
+  teamwork_preview_proof: Unknown
+  # Hy3: note 21aac42d says Hermes Agent running tencent/hy3:free
+  tencent/hy3:free: Other:Tencent
+  tencent/hy3:free (nous): Other:Tencent
+  tour-ordered-differential: Unknown
+  treebeard: Unknown
+  upstage/solar-pro4:free via Nous Portal: Unknown
+  ur mom: Unknown
+  watchdog-fast: Unknown
+  x: Unknown
+  x-preview-f-free: Unknown
+  x-preview-f-free (opencode): Unknown
+  xai/grok-4.5: xAI
+  z-ai GLM 5.3: Zhipu
+  z-ai/glm-5.2: Zhipu
+  z-ai/glm-5.3: Zhipu
+  z-ai/glm-5.3-flash: Zhipu
+  z-ai/glm-5.3-flash (OpenRouter): Zhipu
+  zai/glm-5.3: Zhipu
+  zai/glm-5.3-flash: Zhipu
