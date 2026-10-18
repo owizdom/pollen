@@ -84,3 +84,22 @@ def test_spline_columns_vary_with_days():
     lo, hi = day.argmin(), day.argmax()
     assert not (X.iloc[lo][["time_s1", "time_s2", "time_s3", "time_s4"]].to_numpy()
                 == X.iloc[hi][["time_s1", "time_s2", "time_s3", "time_s4"]].to_numpy()).all()
+
+
+def test_text_declared_parents_are_primary_rows():
+    # spec v2.9: a text-declared base is a single parent like a declared one
+    from analysis import design
+    frame = cells_frame(6, 5, seed=1)
+    frame["parent_method"] = "text"
+    assert len(design.primary_rows(frame)) == len(frame[(frame["cross_solver"] == True)  # noqa: E712
+                                                        & frame["cross_family"].notna()
+                                                        & (frame["in_window"] == True)])  # noqa: E712
+    assert len(design.primary_rows(frame)) > 0
+
+
+def test_text_declared_parents_are_own_rows_in_h2():
+    from analysis import secondary
+    frame = cells_frame(6, 5, seed=1)
+    frame["cross_solver"] = False
+    frame["parent_method"] = "text"
+    assert len(secondary._own_rows(frame)) > 0

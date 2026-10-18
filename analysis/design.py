@@ -20,7 +20,7 @@ def primary_rows(frame) -> pd.DataFrame:
     keep = ((frame["cross_solver"] == True)  # noqa: E712
             & frame["cross_family"].notna()
             & (frame["in_window"] == True)  # noqa: E712
-            & frame["parent_method"].isin(["declared", "tree"]))
+            & frame["parent_method"].isin(["declared", "text", "tree"]))
     return frame[keep].reset_index(drop=True)
 
 

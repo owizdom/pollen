@@ -114,7 +114,7 @@ def build(benchmark, *, snapshot=None, lineage_root=None) -> pd.DataFrame:
         primary = link.get("primary") or [[], "none", None, None]
         tree = link.get("tree") or [[], "none", None, None]
         pids = tuple(primary[0])
-        method = primary[1] if primary[1] in ("declared", "multi", "tree", "novel") else "none"
+        method = primary[1] if primary[1] in ("declared", "multi", "text", "tree", "novel") else "none"
         single = len(pids) == 1 and pids[0] in allsubs
         parent = allsubs[pids[0]] if single else None
         cf = fam[s.id]

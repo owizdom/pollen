@@ -14,7 +14,7 @@ SEEDS = {"H3a": 20261101, "H3b": 20261102, "H4": 20261103}
 def _own_rows(df):
     keep = ((df["cross_solver"] == False)  # noqa: E712
             & df["cross_family"].notna() & df["in_window"].astype(bool)
-            & df["parent_method"].isin(["declared", "tree"]))
+            & df["parent_method"].isin(["declared", "text", "tree"]))
     return df[keep].reset_index(drop=True)
 
 
