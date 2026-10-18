@@ -82,3 +82,9 @@ failure_classes:
   '^workflow run timed out after ': ambiguous  # slow submission or stuck runner
   '^agent-compose run .* finished with status failed': ambiguous  # agent run failed, cause not stated
   '^invokeAndWait: run .* did not settle': ambiguous  # run never settled, cause not stated
+  # --- added 2026-10-19 for reasons first seen in the 18 Oct freeze; none occurs in a study benchmark
+  '^workflow run concluded failure at step "(Qwen-MTP correctness and parity gate|Timed paired Qwen-MTP benchmark|Compute Qwen-MTP score and enforce floor|Check the verifier.s verdict)': evaluated  # the submission failed a gate or its scoring floor
+  '^workflow run concluded failure at step "(Install sandbox dependency|Install sandbox tools|Prepare bench workspace)': infrastructure  # runner setup before evaluation
+  '^workflow run concluded startup_failure': infrastructure  # the run never started
+  '^workflow run concluded failure at step "(Resolve the declared Qwen-MTP head|Write Yukon score)': ambiguous  # cause not stated
+  "an unexpected error has occurred": ambiguous  # cause not stated
