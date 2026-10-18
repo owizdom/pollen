@@ -50,3 +50,4 @@
 - E-review round 2 fixes `b9e9b79` (Sonnet `claude-sonnet-5-5`): make check 445 passed, 2 failed (AT2, AT5, need FREEZE.json), 0 skipped, 361 s. Fresh review round 3 running.
 - E-review round 3 at `b9e9b79` (Opus 5.5 `claude-opus-5-5`): N2 and N3 FIXED, N1 fixed for the power gate (8/8 mutants killed). In scope: AT13/AT14 still use a patsy basis (a design.build-raises mutant survived both); the N3 regex regressed five phrasings that matched before. Out of scope, not fixed: double-space 'Not  only', 'Kept the nonce only', empty-primary IndexError in power, all-NaN H4 promotions.
 - Review loop on E1–E3 closed after round 3 by Wisdom's call (2026-10-18). R3-1 and R3-2 fixed with tests; no round 4.
+- Final gate at `5f06f04`: 2 failed, 446 passed in 1315.38s (0:21:55) (AT2, AT5 wait on FREEZE.json).
