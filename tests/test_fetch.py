@@ -298,3 +298,22 @@ def test_freeze_md_written_from_freeze_json(tmp_path, monkeypatch, clock):
 def test_freeze_json_is_in_sha256sums_after_fetch(tmp_path, monkeypatch, clock):
     out, _ = run(tmp_path, monkeypatch, Api(), "--attribution-min", "2")
     assert "FREEZE.json" in (out / "SHA256SUMS").read_text()
+
+
+def test_attribution_calls_overlap_and_every_row_gets_one_record(tmp_path, monkeypatch, clock):
+    import threading
+    released = threading.Event()
+    seen = {}
+
+    def attr(url, sid):
+        if sid == "s0":
+            seen["overlap"] = released.wait(timeout=5)  # s0 stays in flight until s1 starts
+        elif sid == "s1":
+            released.set()
+        return record(sid)
+
+    benches = {"x/big": [sub(f"s{i}") for i in range(12)]}
+    out, _ = run(tmp_path, monkeypatch, Api(benches=benches, attr=attr), "--attribution-min", "2")
+    assert seen["overlap"], "attribution calls ran serially"
+    ids = [r["submissionId"] for r in gz(out / "x__big" / "attribution.json.gz")]
+    assert sorted(ids) == sorted(f"s{i}" for i in range(12))

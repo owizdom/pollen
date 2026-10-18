@@ -10,7 +10,9 @@ import gzip
 import hashlib
 import json
 import sys
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -22,7 +24,9 @@ MAX_RPS = 8
 ATTR_RPS = 2
 BUDGET_429 = 900.0
 TRIES = 5
+ATTR_WORKERS = 6  # calls in flight; starts stay spaced at ATTR_RPS
 _last = [0.0]
+_throttle_lock = threading.Lock()
 
 
 def slug(name: str) -> str:
@@ -46,10 +50,11 @@ def write_sums(out: Path) -> None:
 
 
 def _throttle(interval: float) -> None:
-    wait = _last[0] + interval - time.monotonic()
-    if wait > 0:
-        time.sleep(wait)
-    _last[0] = time.monotonic()
+    with _throttle_lock:
+        wait = _last[0] + interval - time.monotonic()
+        if wait > 0:
+            time.sleep(wait)
+        _last[0] = time.monotonic()
 
 
 def _retry_wait(e: urllib.error.HTTPError, attempt: int) -> float:
@@ -169,16 +174,16 @@ def _attribution_for_bench(d: Path, subs: list, resume: bool) -> list:
         for r in done.values():
             f.write(json.dumps(r, sort_keys=True, separators=(",", ":")) + "\n")
         f.flush()
-        for i, s in enumerate(subs, 1):
-            if s["id"] in done:
-                continue
-            warn: list = []
-            r = fetch_attribution(s["id"], warn)
-            done[s["id"]] = r
-            f.write(json.dumps(r, sort_keys=True, separators=(",", ":")) + "\n")
-            f.flush()
-            if i % 100 == 0:
-                print(f"  attribution {i}/{len(subs)}", file=sys.stderr)
+        todo = [s["id"] for s in subs if s["id"] not in done]
+        with ThreadPoolExecutor(max_workers=ATTR_WORKERS) as pool:
+            # map yields in input order; an exception stops at the first failed row
+            for i, (sid, r) in enumerate(zip(todo, pool.map(lambda x: fetch_attribution(x, []), todo)),
+                                         len(done) + 1):
+                done[sid] = r
+                f.write(json.dumps(r, sort_keys=True, separators=(",", ":")) + "\n")
+                f.flush()
+                if i % 100 == 0:
+                    print(f"  attribution {i}/{len(subs)}", file=sys.stderr)
     recs = sorted(done.values(), key=lambda r: r["submissionId"])
     write_gz(final, recs)
     partial.unlink()
