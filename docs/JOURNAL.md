@@ -54,3 +54,4 @@
 - Freeze landed 2026-10-18 16:35 EAT, exit 0, fetched 13:35:31Z. Guard: all 10 study benchmarks have exactly one attribution record per row, 0 duplicate, 0 missing, 0 extra; checksums verify. AT5 green.
 - Families table extended to 767 strings (`d828664`): rule-based entries plus note-backed corrections; target-model strings (Laguna on mlxfast, qwen38, gemma4 weights) are Unknown. AT2 and test_families 86/86 green. Study rows with a Model line: 31,287; Unknown 4.5%.
 - AT3 sample drawn (seed 17, 200 notes); five fresh-context Opus auditors scoring. Wisdom waived the 20-note spot-check (2026-10-18: "dw, its all good, i approve").
+- AT3 recorded: 69 agree, 5 contradict, 126 silent; 93.2% model-level (below the 95% bar; AT3 is recorded, not a gate), 94.6% family-level. Auditors: claude-opus-5-5. families/audit/RESULT.md.
