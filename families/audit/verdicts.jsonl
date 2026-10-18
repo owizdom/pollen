@@ -1,0 +1,200 @@
+{"id": "04243d47-0403-423a-9ddf-3ddd52e65df9", "verdict": "agree", "evidence": "GPT/Codex performed a bounded static identity review and preparation"}
+{"id": "644c4257-a269-4823-8339-273224a00f46", "verdict": "agree", "evidence": "Agent: Claude Code. Effort: high (adaptive)."}
+{"id": "dd392008-0783-41a5-95c3-148fa4bd3787", "verdict": "agree", "evidence": "Exact `--model` attribution: GPT 5.6 Sol."}
+{"id": "01fc4d1f-2412-43cd-a8af-447942bd1b58", "verdict": "agree", "evidence": "Agent: Claude Code. Effort: high. Model: Claude Opus 5."}
+{"id": "aa192362-0378-49ca-b723-6d13891aa377", "verdict": "silent", "evidence": ""}
+{"id": "70c85b93-7fff-4432-82da-0c2941e3c273", "verdict": "silent", "evidence": ""}
+{"id": "6f537016-7183-41fa-aa9d-c3c2465b9896", "verdict": "agree", "evidence": "Effort: high. Model: Grok 4. Harness: Cursor."}
+{"id": "80f4468a-ab5e-4d29-adf8-ac0223bb65ca", "verdict": "silent", "evidence": ""}
+{"id": "7f216910-1061-412d-960e-59d47eca801d", "verdict": "silent", "evidence": ""}
+{"id": "32d66d28-0042-432e-8e9b-14743c6a1af1", "verdict": "silent", "evidence": ""}
+{"id": "1acd7309-f863-474d-9319-e4bd35735594", "verdict": "silent", "evidence": ""}
+{"id": "27b8d4d7-a397-4bc1-93e3-228f74da555a", "verdict": "agree", "evidence": "Exact model: **Grok 4.6**. Agent: Grok Build. Effort: high."}
+{"id": "6f5ebced-fd94-476f-9b04-cc43b7576e90", "verdict": "agree", "evidence": "Effort: xhigh. Agents: Codex and Claude Code, working jointly."}
+{"id": "2648f76c-8fe4-4c7e-a046-050075d9dedc", "verdict": "agree", "evidence": "Model: Claude Opus 4.8. Effort: high. Agent: Claude Code."}
+{"id": "54ddaa7c-c794-488a-8699-774e4551d3ba", "verdict": "silent", "evidence": ""}
+{"id": "1672520a-397a-4b45-83d6-4d850467a38d", "verdict": "silent", "evidence": ""}
+{"id": "a16cb87f-0515-44ce-adfe-9565f54513a5", "verdict": "agree", "evidence": "Model: Claude Opus 4.8 (OpenCode autonomous harness; parallel subagents + Fiat-Shamir island screener)."}
+{"id": "49fcc291-89ee-4094-b82a-1274c8f9c8cd", "verdict": "agree", "evidence": "- Underlying model: **Grok 4.5**"}
+{"id": "d02768ee-ab0d-462b-b68d-15e5850cff90", "verdict": "silent", "evidence": ""}
+{"id": "b0fac765-e920-4d55-8e54-196d062300cb", "verdict": "silent", "evidence": ""}
+{"id": "ec27e669-0228-4fce-9c73-6ea3b7155063", "verdict": "silent", "evidence": ""}
+{"id": "d6c19654-7354-439f-bfe8-8f6516822fbf", "verdict": "silent", "evidence": ""}
+{"id": "e9c7a035-78c6-46f9-b118-e114e337b9e3", "verdict": "silent", "evidence": ""}
+{"id": "f6e2286b-4994-4527-aecb-536bca7a3ef7", "verdict": "silent", "evidence": ""}
+{"id": "4385e740-34ec-4eb1-b316-c01673ddef0b", "verdict": "agree", "evidence": "Effort: Claude Sonnet 5, medium effort, in Claude Code."}
+{"id": "dcb85e0f-e1e4-42c1-b531-bb0abd44e6ef", "verdict": "silent", "evidence": ""}
+{"id": "69012c38-49eb-4cef-8f6b-6cec1d0fa1f6", "verdict": "contradict", "evidence": "GPT 5.6 Luna with maximum reasoning effort repaired the remaining downstream instruction-index certificates ... Hermes used Muse Spark 1.3 Contributor"}
+{"id": "5ad3b33a-6732-4530-b7ac-80091ab07d68", "verdict": "agree", "evidence": "This work used **GPT 6 Astra**, effort **ultra**, in **Codex**."}
+{"id": "6dbb96ba-7ec8-4485-b327-fd10fc169433", "verdict": "silent", "evidence": ""}
+{"id": "a6bb88f4-255f-4ea4-acc0-52da0fc8f7e2", "verdict": "silent", "evidence": ""}
+{"id": "8f35bdcc-5ed6-4d1a-b1cd-4fa68fd58452", "verdict": "silent", "evidence": ""}
+{"id": "08943ad6-089d-48bc-918a-f8141234f903", "verdict": "silent", "evidence": ""}
+{"id": "f339f6f9-df7f-4302-9867-986dcc22d226", "verdict": "agree", "evidence": "hilbert submit --note-file <this file> --model \"Claude Fable 5\""}
+{"id": "5b0abfbf-cff2-48f5-91a2-aee09d89d0d4", "verdict": "agree", "evidence": "Agent: Codex"}
+{"id": "2c04b9c7-90d0-446b-9a30-e25c05e81d89", "verdict": "silent", "evidence": ""}
+{"id": "865dba86-6cbb-4a7b-ad84-b39ca4cf2423", "verdict": "silent", "evidence": ""}
+{"id": "dae695b0-26f5-42a5-ba95-cc63fbabb158", "verdict": "agree", "evidence": "- Underlying model: **Grok 4.5**"}
+{"id": "9e674e58-da9a-4c5f-aad2-edb7f18f1772", "verdict": "agree", "evidence": "Model and harness: Claude Opus 5.5 (high effort) in Claude Code. A lead session coordinated several Claude Opus 5.5 sub-agents"}
+{"id": "81fe4a28-ad6e-4e7c-88d8-6f3d80489530", "verdict": "agree", "evidence": "Claude (Anthropic), model **Claude Fable 5**, running as Claude Code."}
+{"id": "db94efb7-1d67-440a-8825-37b95303bc83", "verdict": "silent", "evidence": ""}
+{"id": "58c62771-a057-4bef-b9d9-427a9f7bf33d", "verdict": "agree", "evidence": "Agent: Claude Code. Effort: high. Model: Claude Opus 5."}
+{"id": "7bcb06a4-e7e3-4e28-b421-4722ab0c8da8", "verdict": "agree", "evidence": "Model/effort: **Claude Fable 5, max effort**, Claude Code harness, continuous-presence defense mode."}
+{"id": "73f68583-3dd2-42a9-b7ee-b3a4500d66d5", "verdict": "silent", "evidence": ""}
+{"id": "046581af-1100-45dd-8384-32f44c259f2a", "verdict": "silent", "evidence": ""}
+{"id": "895dcd32-d01a-42b5-884b-ced98583d17b", "verdict": "agree", "evidence": "Agent: Codex"}
+{"id": "108af808-0de4-46e1-b184-475291dab012", "verdict": "agree", "evidence": "Exact model: **Grok 4.6**. Agent: Grok Build. Effort: high."}
+{"id": "49ba3e4b-b633-42ea-8433-b1e78c315876", "verdict": "agree", "evidence": "Effort: high. Agent: Claude Fable 5.1 running in Claude Code, coordinated by the"}
+{"id": "b15c4d76-a02f-495a-8f6f-fcd8a25a1931", "verdict": "agree", "evidence": "Attribution: Model GLM 5.3 (Z.AI), harness ZCode."}
+{"id": "cee11fbb-9355-4a52-8ce6-1484746cb28f", "verdict": "silent", "evidence": ""}
+{"id": "ab307b27-83f1-40e1-bd85-dd6c289bbb53", "verdict": "silent", "evidence": ""}
+{"id": "e0f8d731-fc94-4df1-ba9f-cdb45487d806", "verdict": "silent", "evidence": ""}
+{"id": "152d320b-009e-490c-8c41-1d761a976107", "verdict": "contradict", "evidence": "- Model: GLM-5.2 High via Devin CLI"}
+{"id": "a7727680-7dc2-4175-965e-6a1e5f1bb785", "verdict": "agree", "evidence": "Effort: max. Prepared with Claude Opus 5.5 in Claude Code on an RTX 4090 + i7-13700K host"}
+{"id": "53dd0175-3f0e-4fb8-9817-7bc1b91fca46", "verdict": "agree", "evidence": "Effort: max. Claude Opus 5.5 (1M context) in Claude Code, with Claude subagents"}
+{"id": "51d2f158-2410-433c-9ffb-b1fa4fb19a52", "verdict": "silent", "evidence": ""}
+{"id": "d48164b9-82ad-400e-adce-cdd3ec5a9551", "verdict": "silent", "evidence": ""}
+{"id": "94545edb-f081-4039-871e-a943947e08db", "verdict": "silent", "evidence": ""}
+{"id": "d194fee9-755c-4474-a242-71593e10eff4", "verdict": "agree", "evidence": "Prepared with GPT 6 Sol in Codex for the pinning track."}
+{"id": "92779e43-4d9c-4895-b88d-0eaed36e1728", "verdict": "silent", "evidence": ""}
+{"id": "196a4ed4-e0bb-462b-b39d-7b694d0ed0e9", "verdict": "agree", "evidence": "Effort: high · Agent: Claude Code"}
+{"id": "225f79dd-85a9-4c59-ace0-fecfa6777e0e", "verdict": "silent", "evidence": ""}
+{"id": "e79810b7-11c9-40d5-afe1-a70f9768b7f3", "verdict": "silent", "evidence": ""}
+{"id": "d6e736f7-84b0-4217-bb04-2bf3af0ac0cc", "verdict": "silent", "evidence": ""}
+{"id": "5c3384e6-add7-4dc2-a6df-9e0450154939", "verdict": "silent", "evidence": ""}
+{"id": "f67bc98f-826f-436c-9c9a-2aa7cf8e9927", "verdict": "silent", "evidence": ""}
+{"id": "77343676-0e12-4313-a9c7-28833babc556", "verdict": "silent", "evidence": ""}
+{"id": "d3881d54-5ac7-473a-b7ba-acb1741fb7f8", "verdict": "silent", "evidence": ""}
+{"id": "adf015f1-af7d-4d35-932d-6e5bce4d0add", "verdict": "agree", "evidence": "Agent: Claude Code"}
+{"id": "ca93f9d0-c98f-4fb6-997a-eb88547b5d2d", "verdict": "agree", "evidence": "Model context for this preparation: Grok 4 through the Cursor harness."}
+{"id": "4556bc28-3580-48f4-b425-8be7e1b0fdb8", "verdict": "silent", "evidence": ""}
+{"id": "bef0fea3-f4da-4d1f-b69e-8d75f859bb34", "verdict": "silent", "evidence": ""}
+{"id": "b8e22a32-2840-4fc2-82ca-0d78eda9a397", "verdict": "agree", "evidence": "Effort: high. This source review and submission use GPT 6 Astra through Codex."}
+{"id": "1ee7190a-55f4-4674-bcc7-bdf885a06653", "verdict": "agree", "evidence": "Agent: Claude Code"}
+{"id": "d5e9a8b5-af3a-4987-9bfb-c198c608fbd2", "verdict": "silent", "evidence": ""}
+{"id": "ee2fed96-6fea-45e5-b91c-7488d555c40c", "verdict": "silent", "evidence": ""}
+{"id": "ad577d1a-8920-49a9-9b0d-79984402bc35", "verdict": "silent", "evidence": ""}
+{"id": "1e9e046c-de37-4b72-9aed-74cbb3c55f9f", "verdict": "agree", "evidence": "Model and effort context: Claude Opus 5 (1M context) via Claude Code, default"}
+{"id": "5be236b8-55b6-4857-9db8-b19cce19bb29", "verdict": "silent", "evidence": ""}
+{"id": "5fdf82cc-e4e0-40e3-8554-bbcee2d838b0", "verdict": "silent", "evidence": ""}
+{"id": "5082721d-a3aa-42b5-af0b-9d5f001cce11", "verdict": "silent", "evidence": ""}
+{"id": "6b0dbab8-ded7-41c0-82ea-e4f28ce4af5b", "verdict": "silent", "evidence": ""}
+{"id": "96b5033b-541d-4a44-9a17-69793b6000f7", "verdict": "silent", "evidence": ""}
+{"id": "6eaffca4-b88a-400d-a1da-9d9e530e1231", "verdict": "silent", "evidence": ""}
+{"id": "6d42c72e-20b9-4b04-95e9-e17b0b2e1d80", "verdict": "silent", "evidence": ""}
+{"id": "96f22927-67ea-48a1-8c7c-edbf9f7e9d22", "verdict": "silent", "evidence": ""}
+{"id": "ac5a254b-7caf-436c-b04c-1e4587b08c58", "verdict": "silent", "evidence": ""}
+{"id": "ae679268-ad0e-4557-a5b9-4e5cf5069004", "verdict": "silent", "evidence": ""}
+{"id": "0ba20eb1-fcbb-4e1f-8411-3dd5db676c8d", "verdict": "silent", "evidence": ""}
+{"id": "cda9585c-732c-4172-856e-77559cbec2fc", "verdict": "agree", "evidence": "Agent: Codex. Effort: high. Yukon attaches the exact underlying model, `GPT 5.6 Sol`, through the submission command."}
+{"id": "6e8d263a-76f1-442e-b260-30051e0c4ccc", "verdict": "silent", "evidence": ""}
+{"id": "da2da92c-5551-4cab-93f2-6e7c2ce66d10", "verdict": "agree", "evidence": "## Model Composer overnight user-authorized."}
+{"id": "52c5c31c-f296-477d-932b-3ab13c328638", "verdict": "silent", "evidence": ""}
+{"id": "c0c0fbd1-c267-4793-a21f-7453a389603b", "verdict": "silent", "evidence": ""}
+{"id": "f33bf705-cf21-45d3-9c59-adf032d4f573", "verdict": "silent", "evidence": ""}
+{"id": "f4fc2bea-410e-470e-b5a8-6d5561af3abd", "verdict": "silent", "evidence": ""}
+{"id": "3aa88412-b029-432c-a77b-3ee1d46174f2", "verdict": "agree", "evidence": "Agent: Claude Fable 5 via Claude Code (implementation partly by delegated fresh-context agents under the day's measured discipline)"}
+{"id": "18f97c32-bc56-44a0-bd8d-abec014a8908", "verdict": "silent", "evidence": ""}
+{"id": "f1555811-88cb-4ebc-b546-0957bbddaca4", "verdict": "silent", "evidence": ""}
+{"id": "121d42f4-57e3-4070-abea-4923cf59eff2", "verdict": "silent", "evidence": ""}
+{"id": "b81ed0b5-4224-461e-966d-b2133cabd087", "verdict": "silent", "evidence": ""}
+{"id": "fd059253-c7af-4c9d-9332-09352f2087cf", "verdict": "agree", "evidence": "Effort: Claude Fable 5.1, high (Oh My Pi harness)."}
+{"id": "1824e2df-6c6f-4b64-be59-78b861653428", "verdict": "silent", "evidence": ""}
+{"id": "d29f1d2a-c3ec-4ea7-9aac-bc5a14eaee86", "verdict": "silent", "evidence": ""}
+{"id": "4c90d0bc-8aac-458f-ad98-ab98463b9771", "verdict": "silent", "evidence": ""}
+{"id": "f153a8e8-8edc-40c8-a3c1-bce401068c99", "verdict": "silent", "evidence": ""}
+{"id": "1500ab81-dcce-4b31-9222-ffbe36439b9b", "verdict": "silent", "evidence": ""}
+{"id": "36c88c5b-d93d-4d57-b772-621b05c98ee5", "verdict": "agree", "evidence": "Agent context: Oh My Pi coding harness with the exact underlying `GPT 5.6 Sol` model."}
+{"id": "a2e9d10f-3ff2-47ec-9323-6eab512e676a", "verdict": "silent", "evidence": ""}
+{"id": "e44b37b2-6e3d-4d13-9cb4-bbb22a8f7b03", "verdict": "silent", "evidence": ""}
+{"id": "238d6ada-9489-48db-980b-32e3d5fcc88e", "verdict": "silent", "evidence": ""}
+{"id": "f68c46b7-3e90-410a-a2b6-693dc4da4370", "verdict": "silent", "evidence": ""}
+{"id": "7feb1846-731b-4dd1-97f5-1bb42f7ead6c", "verdict": "agree", "evidence": "Model attribution for this submission is recorded as `redraw` ... reflecting that the work is a reproduction pipeline and not a fresh model-authored optimization."}
+{"id": "8257e6dd-fd72-4ead-855f-45d3460b6e41", "verdict": "silent", "evidence": ""}
+{"id": "aa892ab1-7b4b-4678-b90f-37fd2c0394f8", "verdict": "agree", "evidence": "Effort: high. Model: Claude Fable 5. Harness: Claude Code. Orchestrated end to end by one agent: attribution, kernel, numerics probe, A/B, rebase."}
+{"id": "5ca6092f-cf1c-4792-a8c2-cbb93764bc26", "verdict": "agree", "evidence": "Written with Claude Code on Claude Opus 5.5, effort high."}
+{"id": "e36d2bfd-6934-41cb-a557-76a9eca6b8f7", "verdict": "agree", "evidence": "Implementation, integration, tests, benchmarking, frontier alignment, validation, and note: **GPT 5.6 Sol** via Codex."}
+{"id": "0ca74324-eb66-441a-8485-f9727faf462d", "verdict": "silent", "evidence": ""}
+{"id": "10206a42-ba66-4ea3-ae61-4dabf2ce573f", "verdict": "silent", "evidence": ""}
+{"id": "a64662ba-dad2-4782-951a-1c7d915f33d4", "verdict": "agree", "evidence": "Harness & Framework**: Antigravity pairing harness with Gemini 3.8 Flash"}
+{"id": "280fc0c6-d1b5-4c48-8cb0-bd3ba4d137b8", "verdict": "agree", "evidence": "Implementation and experiments were performed by **OpenAI GPT-6**, using the **Codex** harness."}
+{"id": "6dfad8df-a54c-49fd-a07b-a79ea9f62fc1", "verdict": "silent", "evidence": ""}
+{"id": "4cf0a90e-796d-40d5-8913-23bd7cf80c45", "verdict": "silent", "evidence": ""}
+{"id": "fc1d7c72-06d7-4b5a-9a1d-809f831c71d5", "verdict": "silent", "evidence": ""}
+{"id": "205cf13c-f622-4f22-a225-f9a7c2bc7fe9", "verdict": "agree", "evidence": "Agent: Claude Code · Dev host: Apple M4"}
+{"id": "be7dd84b-452a-46ea-b78b-4d8a6e971631", "verdict": "silent", "evidence": ""}
+{"id": "4e04a409-e25e-49c6-bcb4-087e732412d3", "verdict": "silent", "evidence": ""}
+{"id": "e74b31f9-8ebc-4036-a72e-0dc2774da210", "verdict": "agree", "evidence": "This candidate was implemented and reviewed in Codex using `GPT 5.6 Sol`."}
+{"id": "18f8daba-9a6c-49d5-b327-64f416d4a2f3", "verdict": "silent", "evidence": ""}
+{"id": "7b21a095-2fa8-47d2-b172-dcd6b442cb92", "verdict": "agree", "evidence": "Effort: Claude Opus 5.5 in Claude Code"}
+{"id": "367f03ce-60a3-496f-b00e-6e4efad0cf5e", "verdict": "silent", "evidence": ""}
+{"id": "80b572e1-ea4e-4c1d-9630-b2acc9188680", "verdict": "agree", "evidence": "- Model: `devin` (SWE-2 Max)"}
+{"id": "76aa0afb-e5ae-4b36-9fd4-fa2b8537d52b", "verdict": "silent", "evidence": ""}
+{"id": "f968ffc9-4d89-4fcc-af13-e7a10a03b2db", "verdict": "silent", "evidence": ""}
+{"id": "10b257ab-78f7-43dc-9138-73119296d58d", "verdict": "silent", "evidence": ""}
+{"id": "4121b6c7-0372-41da-9fa7-5f9ece5fb166", "verdict": "silent", "evidence": ""}
+{"id": "53ec7063-f527-4540-b5fc-fc9cedc70c09", "verdict": "agree", "evidence": "Effort: low (courier). Agent: Claude Code."}
+{"id": "795830b1-5cc1-4f48-b6fa-7226cac42782", "verdict": "agree", "evidence": "This evaluation is prepared by GPT 6 Astra through Codex."}
+{"id": "35000245-ee88-4525-adb6-ca49818cf272", "verdict": "silent", "evidence": ""}
+{"id": "c10e5444-992b-4a3f-96af-b1c4be41b366", "verdict": "silent", "evidence": ""}
+{"id": "a5039858-05e2-45ef-9c60-ace5267e8f66", "verdict": "silent", "evidence": ""}
+{"id": "f5226937-61d6-41b6-ae71-c1097899b95c", "verdict": "silent", "evidence": ""}
+{"id": "ef46875a-eed6-4760-bef4-431ef548e4be", "verdict": "agree", "evidence": "Written with GPT 6.1 Sol, high effort, in Codex."}
+{"id": "392072e5-711c-46c6-b21f-32b9c717970f", "verdict": "agree", "evidence": "Model: **GPT 5.6 Sol**. Agent: Codex desktop. Effort: high."}
+{"id": "f4420898-0c52-40a1-8050-1ebe582193d9", "verdict": "agree", "evidence": "Agent: Claude Code. Effort: ultracode."}
+{"id": "f778bfed-11a3-4be7-8959-5f5a4c0a145c", "verdict": "silent", "evidence": ""}
+{"id": "c17c6a39-277d-4d00-b594-be1104d21511", "verdict": "agree", "evidence": "This implementation uses GPT 6.1 Sol through Codex."}
+{"id": "57458b2d-1f68-4db5-b5e1-05808421a6a8", "verdict": "silent", "evidence": ""}
+{"id": "ce11e0d5-267b-43c9-85cd-266080a58d5f", "verdict": "agree", "evidence": "**Model/effort:** Claude Opus 5, high effort, via the Oh My Pi (omp) harness."}
+{"id": "13796013-ba3b-46d6-a15b-74f5f2851029", "verdict": "silent", "evidence": ""}
+{"id": "a1793773-f852-4def-a1ec-6fe916d72646", "verdict": "agree", "evidence": "Agent: Claude Code. Effort: high."}
+{"id": "1ff85dd9-8df0-4a0d-b643-7e8cde272d1b", "verdict": "silent", "evidence": ""}
+{"id": "bd3ac06f-ff5f-4e6c-8243-eba4a5d8e155", "verdict": "agree", "evidence": "Agent: Codex"}
+{"id": "cd20ea59-300e-4756-a6dc-68454b0722aa", "verdict": "contradict", "evidence": "submitter/rebuilder: Claude Opus 5.5 in Claude Code; scored bytes and proof tree authored by GLM 5.3 and Claude Fable 5.1"}
+{"id": "4dbdf3b3-a929-4e64-aac3-f489afe7ea21", "verdict": "silent", "evidence": ""}
+{"id": "ed54ff77-df80-476e-8009-0d7446f38170", "verdict": "contradict", "evidence": "yukon submit --model \"Gemini 2.5 Flash\" --note-file /Users/qumo/.gemini/antigravity/brain/"}
+{"id": "1b017af1-1e25-4f3f-93ae-2e805192659a", "verdict": "silent", "evidence": ""}
+{"id": "bf57e5a1-e29d-4282-8c24-2a1fcb8d16c0", "verdict": "silent", "evidence": ""}
+{"id": "fe4efbb9-dc4a-4354-9eb3-ba21a46cf256", "verdict": "silent", "evidence": ""}
+{"id": "6d2e318d-d0b0-4b67-b597-b4c145de1aa7", "verdict": "agree", "evidence": "Host-run CORAL submission; model attribution: **GPT-5.6 Sol**."}
+{"id": "39d8a649-c745-4fbe-8a42-f25e249f2b65", "verdict": "agree", "evidence": "Orchestration: Claude Fable 5 orchestrating, Claude Opus 5 subagents for builds, probes and board forensics."}
+{"id": "92c398de-eca8-46b4-929e-1f2b8aff8276", "verdict": "silent", "evidence": ""}
+{"id": "25f691d5-547b-4777-8023-09a5f7d8d9a5", "verdict": "silent", "evidence": ""}
+{"id": "f108eef1-bcae-4a30-9ec7-ed7089bb7129", "verdict": "silent", "evidence": ""}
+{"id": "75625535-beb5-405a-a984-182f2e33e29e", "verdict": "agree", "evidence": "Exact model: DeepSeek V4 Flash. Agent: baran. Effort: high."}
+{"id": "bec7dc1c-cc0d-48e9-aed9-a094491b1c61", "verdict": "silent", "evidence": ""}
+{"id": "4f6420e0-a437-44bb-ad97-84bb8648cc27", "verdict": "silent", "evidence": ""}
+{"id": "98d5636f-e1cf-4347-9859-47266798fdd8", "verdict": "agree", "evidence": "Model: Claude Opus 5, medium reasoning, driving Claude Code."}
+{"id": "53820f28-2dfe-4695-adf9-a787b281404e", "verdict": "agree", "evidence": "The redundant reduction was found by **`z-ai/glm-5.3-flash`**"}
+{"id": "ccf72545-16b6-487e-a688-3308718ede33", "verdict": "silent", "evidence": ""}
+{"id": "681bc6dd-b361-4976-9376-b9462595dd84", "verdict": "silent", "evidence": ""}
+{"id": "2e6b8db0-b0d1-4574-a9af-8a7f188811ad", "verdict": "agree", "evidence": "This work used GPT 6.1 Sol in the Angel competition-loop harness."}
+{"id": "03163692-fb87-403f-8f69-7593ab76be83", "verdict": "contradict", "evidence": "authored earlier today by a **GPT-5 / Codex operator** on this workstream ... Assembly, audit, gating and validation of the combination is Claude Opus 5's, orchestrated by Claude Fable 5."}
+{"id": "0714a2ec-bcb9-4157-9032-39c492c665d2", "verdict": "agree", "evidence": "Exact model: **Grok 4.5**. Agent: Grok Build. Effort: high."}
+{"id": "637b89b0-a250-41e1-8a26-11ea8361d00e", "verdict": "silent", "evidence": ""}
+{"id": "757e1cda-1f7c-4d09-8716-43f11da27def", "verdict": "silent", "evidence": ""}
+{"id": "dcc261e6-91b6-4fb8-90bc-e67828e68c65", "verdict": "silent", "evidence": ""}
+{"id": "8b227a96-3422-41ea-bd3b-72a2b56ce5ff", "verdict": "silent", "evidence": ""}
+{"id": "d2dfd3fe-095b-46be-8b13-229114da2aa0", "verdict": "silent", "evidence": ""}
+{"id": "a9d0946b-2250-40a7-aac8-b772cb3c0356", "verdict": "agree", "evidence": "Exact model: **Grok 4.5**. Continuous multi-fire campaign for cumulative promotion probability."}
+{"id": "23a4d1d6-cf45-4f16-be9d-13e4130bd04a", "verdict": "silent", "evidence": ""}
+{"id": "4eb2006d-4341-46b3-8b72-e2cb6bd45155", "verdict": "silent", "evidence": ""}
+{"id": "e9dffed0-c29b-4bf5-95d2-e834f141efb5", "verdict": "silent", "evidence": ""}
+{"id": "720bd078-0944-4f54-b30d-80e59adb9c2f", "verdict": "silent", "evidence": ""}
+{"id": "0d134871-e23d-4342-bb36-94fadc4ab5bb", "verdict": "silent", "evidence": ""}
+{"id": "a1e08a76-e875-43f0-a341-7de364504ffb", "verdict": "silent", "evidence": ""}
+{"id": "cf8a3d8f-57a6-406b-a79a-8a0f2ebdfeb7", "verdict": "silent", "evidence": ""}
+{"id": "76fcf93d-e0da-4f40-ba29-dc8513be68bf", "verdict": "silent", "evidence": ""}
+{"id": "8887d188-631a-42b5-a0d6-1e9c031c5576", "verdict": "agree", "evidence": "Verdict Ledger (all DrCleverHans / Gemini 3.8 / Antigravity, ranked M5 box)"}
+{"id": "aa74d566-5abc-4aed-88a7-092e5359c112", "verdict": "silent", "evidence": ""}
+{"id": "c611317e-5fc5-4213-8e53-d4f67c0c3404", "verdict": "silent", "evidence": ""}
+{"id": "a27aad01-f4c2-413e-b43f-4bf40006a297", "verdict": "silent", "evidence": ""}
+{"id": "6bca0dda-47f7-4ec5-8922-54060fb78c37", "verdict": "agree", "evidence": "Coding environment: Codex desktop agent with three independent GPT-5.6 Sol strategy audits."}
+{"id": "ceefe1bc-1177-481b-b730-8ead79b71021", "verdict": "silent", "evidence": ""}
+{"id": "572f8ad3-9c97-4cd1-8b42-f433292b032a", "verdict": "agree", "evidence": "Development context: Claude Opus 5 driving Claude Code (a lead session plus sub-agents on the same model"}
+{"id": "a671f274-59eb-466c-a1aa-d7f18fa51052", "verdict": "silent", "evidence": ""}
+{"id": "dcceb7b2-284f-4f6a-a2bd-5365e50e8386", "verdict": "agree", "evidence": "Exact model: **Grok 4.6**."}
+{"id": "b0b7cc67-67ae-4d40-83f2-8aeb86d5c981", "verdict": "silent", "evidence": ""}
+{"id": "b86d962d-ac15-4d8d-bd11-b113854f6427", "verdict": "agree", "evidence": "Effort: Claude Opus 5.5 in Claude Code"}
+{"id": "bcc0bc6f-06c7-463c-9e7f-500989200e31", "verdict": "silent", "evidence": ""}
+{"id": "4e2d4e39-53b4-4658-a6cf-1459b0507b51", "verdict": "silent", "evidence": ""}
