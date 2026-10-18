@@ -122,3 +122,9 @@ All 11 round-1 findings verified FIXED (16 of 16 mutants killed). In scope, to f
 N1. dataset.build emits spline_knot_0..4 (min, quartiles, max of days_since_open over the benchmark's analysis rows), so the power gate and AT13/AT14 fit the same spline as the confirmatory model (§5.3 "fitted with the §5.1 conditional model and covariates").
 N2. A secondary test on a non-empty frame whose fit comes back "unidentified" keeps its real events count; if it passes the events gate it stays in the Holm family with p = 1 and method "unidentified" (§5.4 "One Holm family holds every secondary test that passes the minimum-events gate"). Only an empty frame is reported outside the family.
 N3. Sensitivity 3 does not match "Not only the nonce: the whole adder was rewritten." or "Rewrote the reducer; the nonce only seeds the validation draw."; the round-1 phrasings still match.
+
+### E-review round 3 (2026-10-18, review at b9e9b79)
+
+N2 and N3 verified FIXED (mutants killed); N1 fixed for the power gate. In scope:
+R3-1. AT13/AT14 and the OR-1 power-prediction test fit covariates built by analysis.design.build (spline from the dataset knots), not a patsy basis (spec §9 AT13 "the pipeline recovers"; TASKS N1 "the power gate and AT13/AT14 fit the same spline as the confirmatory model"). Test-side change only.
+R3-2. Sensitivity 3 again matches the notes it matched at b5c9cd0: "Nonce only change.", "Nonce only tweak.", "Nonce only (same code).", "Nonce only - nothing else touched.", "Validation draw only change; same circuit." The two N3 negatives still do not match.
