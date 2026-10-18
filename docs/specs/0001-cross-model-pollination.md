@@ -105,7 +105,7 @@ Outcome columns are sealed until `prereg-v1` exists (§5.8).
 - H3b: the same for plateau breaks.
 - H4: among cross-solver promotions, gain size (Y3) differs between cross-family and same-family steps.
 - H5 (ecdsa.fail): among cross-solver rows, cross-family rows differ in Pareto gain (Y2).
-- E1 (exploratory): multi-family and multi-source rows differ from single-family, single-parent rows on Y1 and Y3.
+- E1 (exploratory): multi-family and multi-source rows differ from single-family, single-parent rows on Y1 and Y3, controlling for calendar-week dummies.
 - E2 (exploratory): the H1 effect varies over the life of a benchmark (thirds of its analysis rows).
 
 Every hypothesis is two-sided.
@@ -118,10 +118,10 @@ Decided (D-A): the primary result is H1 pooled across all study benchmarks, ecds
 
 Per-benchmark model: conditional logistic regression of Y1 on the cross-family indicator, stratified by solver (solver fixed effects), among cross-solver single-parent rows with both families known, inside the confirmatory window. Covariates:
 
-- a natural cubic spline with 4 degrees of freedom on days since the benchmark opened (knots at the quartiles of the analysis rows), for frontier difficulty and model releases over time;
+- a natural cubic spline with 4 degrees of freedom on days since the benchmark opened (interior knots at the quartiles and boundary knots at the minimum and maximum of the benchmark's analysis rows, a Harrell restricted spline with 4 columns), for frontier difficulty and model releases over time;
 - child-family and parent-family fixed effects (after sparse-family folding);
 - an indicator that the parent was the current best at the time of the row;
-- log of the solver's prior analysis rows.
+- ln(1 + the solver's prior analysis rows).
 
 Strata (solvers) with no variation in the outcome carry no information in a conditional model and are dropped. Strata with outcome variation but no treatment variation are kept, because they inform the covariates; the paper reports both counts. If the model shows separation, Firth's penalised likelihood replaces it, and the paper says so.
 
@@ -141,7 +141,7 @@ Run from treatment counts only, never outcomes, before `prereg-v1`.
 
 - H2: the primary model restricted to own-lineage rows.
 - H3a, H3b: permutation tests, 10,000 draws, shuffling family labels among cross-solver promotions within calendar-week strata (review F4).
-- H4: median regression of Y3 on the cross-family indicator with the same time spline; bootstrap interval clustered by solver.
+- H4: median regression of Y3 on the cross-family indicator with the same time spline; standard error from a bootstrap clustered by solver, with a normal-approximation p-value.
 - H5: the primary model with Y2 as the outcome, ecdsa.fail only.
 - One Holm family holds every secondary test that passes the minimum-events gate, each benchmark's test as its own member (review F11).
 - E1 and E2 are reported without correction, labelled exploratory.
@@ -156,7 +156,7 @@ Run from treatment counts only, never outcomes, before `prereg-v1`.
 9. Drop rows whose failure reason is classed ambiguous.
 6. Add harness fixed effects.
 7. Drop the author's own rows (solver `owizdom`, 5 rows on ecdsa.fail) (review F16).
-8. Sibling benchmarks: pooled result with each sibling pair reduced to one member (flock pair; eip8200 pair).
+8. Sibling benchmarks: pooled result with each sibling pair reduced to its member with fewer analysis rows (flock pair; eip8200 pair).
 
 ### 5.6 Study benchmarks
 
@@ -356,3 +356,5 @@ v2.5, 2026-10-17, after the Track E2 review: TOST uses the actual 95% and 90% in
 v2.6, 2026-10-17, after the Track E1 review: the lock covers all rule code and verifies frozen lineage data; missing required files fail the lock; the power gate simulates the actual pooled conditional estimand; minimum events are outcome events counted after the lock.
 
 v2.7, 2026-10-17: the time control in §5.1 and H4 is a 4-df natural spline on days since opening instead of calendar-week fixed effects. On synthetic frames with the real structure (solvers active 1 to 3 weeks over about 20 weeks), week dummies separated the outcome and even a reference conditional fit failed to converge in 10 of 10 seeds. The H3 permutation strata remain calendar weeks. Approved by the author on 2026-10-17.
+
+v2.8, 2026-10-18, before the lock: five sentences now state what the locked code does, with no code change. The spline names its boundary knots; the prior-rows covariate is ln(1 + n); H4 reports a cluster-bootstrap standard error with a normal p-value; E1 controls for calendar weeks; sensitivity 8 keeps the smaller sibling. Found by the paper drafter reading the code. Covered by Wisdom's lock approval of 2026-10-18.
