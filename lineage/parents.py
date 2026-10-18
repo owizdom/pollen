@@ -1,9 +1,10 @@
-"""Parent inference: declared attribution plus an always-computed tree link (spec 3.3)."""
+"""Parent inference: declared attribution, then a text-declared base, plus an always-computed
+tree link over promoted rows (spec 3.3, v2.9)."""
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from lineage import trees as trees_mod
+from lineage import declared as declared_mod, trees as trees_mod
 from lineage.distance import Memo, ident
 
 WINDOW = 50
@@ -12,7 +13,7 @@ WINDOW = 50
 @dataclass(frozen=True)
 class ParentLink:
     parent_ids: tuple[str, ...]
-    method: str  # declared | multi | tree | novel | none
+    method: str  # declared | multi | text | tree | novel | none
     distance: int | None = None
     child_side: int | None = None
 
@@ -29,7 +30,10 @@ def _key(s):
 
 
 def candidates(child, earlier, trees, own_history, ids) -> list:
-    """Window: rows with trees, collapsed by tree identity (newest kept), then last 50."""
+    """Window: promoted rows with trees, collapsed by tree identity (newest kept), then last 50.
+
+    own_history is accepted for compatibility and ignored (v2.9): a solver's own unpromoted
+    attempts are usually siblings built on the same base, not the base itself."""
     def pool(rows):
         rows = sorted((s for s in rows if s.id in trees and s.id != child.id
                        and s.created_at < child.created_at), key=_key)
@@ -40,9 +44,7 @@ def candidates(child, earlier, trees, own_history, ids) -> list:
 
     promoted = [s for s in earlier
                 if s.promoted and (s.finished_at or s.created_at) < child.created_at]
-    out = {s.id: s for s in pool(promoted)}
-    out.update({s.id: s for s in pool(own_history)})
-    return sorted(out.values(), key=_key)
+    return pool(promoted)
 
 
 def _ids_for(rows, trees, mirror, paths, ids):
@@ -91,6 +93,10 @@ def parents(child, earlier, attribution, trees, own_history, mirror, paths,
             continue
         (kept if d in known else dropped).append(d)
     if not kept:
+        tok = declared_mod.declared_base(child.note)
+        pid = declared_mod.resolve(tok, [s for s in pool if s.id in known]) if tok else None
+        if pid:
+            return ParentResult(ParentLink((pid,), "text"), link, tuple(dropped))
         return ParentResult(link, link, tuple(dropped))
     method = "declared" if len(kept) == 1 else "multi"
     return ParentResult(ParentLink(tuple(kept), method), link, tuple(dropped))

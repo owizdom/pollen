@@ -330,23 +330,45 @@ def test_unpromoted_other_solver_not_a_candidate(tmp_path):
     assert r.tree.parent_ids == ("prom",)
 
 
-def test_own_history_is_candidate_even_if_unpromoted(tmp_path):
+def test_own_unpromoted_history_is_not_a_candidate(tmp_path):
+    # spec v2.9: tree candidates are promoted rows only
     w = World(tmp_path)
     mine = w.add("mine", 1, variant(1), solver="alice")
     w.add("prom", 2, variant(4), solver="bob", promoted=True)
     child = w.add("c", 10, BASE, solver="alice")
     r = w.parents(child, own=[mine])
-    assert r.tree.parent_ids == ("mine",)
+    assert r.tree.parent_ids == ("prom",)
 
 
-def test_own_history_capped_at_50(tmp_path):
+def test_text_declared_base_is_primary_without_attribution(tmp_path):
     w = World(tmp_path)
-    own = [w.add("mine_exact_old", 0, BASE, solver="alice")]
-    for i in range(50):
-        own.append(w.add(f"m{i}", 10 + i, variant(3, f"m{i}_"), solver="alice"))
-    child = w.add("c", 100, BASE, solver="alice")
-    r = w.parents(child, own=own)
-    assert r.tree.parent_ids != ("mine_exact_old",)
+    w.add("bae50001-aaaa-bbbb-cccc-000000000001", 1, variant(4), solver="bob", promoted=True)
+    w.add("near", 2, variant(1), solver="bob", promoted=True)
+    child = w.add("c", 10, BASE, solver="alice",
+                  note="Base: bae50001-aaaa-bbbb-cccc-000000000001")
+    r = w.parents(child)
+    assert r.primary.method == "text"
+    assert r.primary.parent_ids == ("bae50001-aaaa-bbbb-cccc-000000000001",)
+    assert r.tree.parent_ids == ("near",)
+
+
+def test_attribution_beats_text_declared_base(tmp_path):
+    w = World(tmp_path)
+    w.add("decl", 1, variant(2), promoted=True)
+    w.add("bae50001-aaaa-bbbb-cccc-000000000002", 2, variant(3), promoted=True)
+    child = w.add("c", 10, BASE, note="Base: bae50001-aaaa-bbbb-cccc-000000000002")
+    r = w.parents(child, attribution={"c": ["decl"]})
+    assert (r.primary.method, r.primary.parent_ids) == ("declared", ("decl",))
+
+
+def test_unresolvable_or_later_text_base_falls_back_to_tree(tmp_path):
+    w = World(tmp_path)
+    w.add("p", 1, variant(1), promoted=True)
+    w.add("bae50001-aaaa-bbbb-cccc-000000000003", 50, variant(2), promoted=True)
+    child = w.add("c", 10, BASE, note="Base: bae50001-aaaa-bbbb-cccc-000000000003")
+    assert w.parents(child).primary.method == "tree"
+    child2 = w.add("c2", 11, BASE, note="Base: 0123456789abcdef0123")
+    assert w.parents(child2).primary.method == "tree"
 
 
 def test_later_rows_never_chosen(tmp_path):
