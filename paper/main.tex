@@ -1,0 +1,50 @@
+\documentclass[11pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage{url}
+
+% Benchmark and field names, set in monospace with line breaks at slashes.
+\newcommand{\bench}[1]{\nolinkurl{#1}}
+\newcommand{\field}[1]{\texttt{#1}}
+\newcommand{\file}[1]{\nolinkurl{#1}}
+
+% Results numbers. Until the M4 run this file holds \textbf{??} placeholders with
+% the macro names analysis/numbers.py emits. At M4, replace this line with
+% \input{numbers} (the generated paper/numbers.tex) and delete sections/numbers.tex.
+\input{sections/numbers}
+
+\title{Does Cross-Model Pollination Help Open Autoresearch?\\Evidence from Yukon Leaderboards}
+\author{Wisdom Okechukwu}
+\date{}
+
+\begin{document}
+\maketitle
+
+\input{sections/abstract}
+
+\input{sections/01-introduction}
+\input{sections/02-setting}
+\input{sections/03-data}
+\input{sections/04-design}
+\input{sections/05-results}
+\input{sections/06-benchmarks}
+\input{sections/07-cases}
+\input{sections/08-threats}
+\input{sections/09-discussion}
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\input{sections/appendix}
+
+\end{document}

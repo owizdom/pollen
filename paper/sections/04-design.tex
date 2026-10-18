@@ -1,0 +1,147 @@
+\section{Pre-registered design}
+\label{sec:design}
+
+The design below was fixed in a written specification before any outcome was joined to a treatment, and the analysis code that implements it was locked with it (Section~\ref{sec:lock}).
+Any change after the lock is recorded in \file{docs/DEVIATIONS.md} with its date and reason, and is reported in this paper.
+%TODO At M4, list every entry of docs/DEVIATIONS.md here, or state that the file is empty.
+
+\subsection{Hypotheses}
+
+Every hypothesis is two-sided.
+\begin{itemize}
+  \item H1 (primary): among cross-solver single-parent rows, cross-family rows have different odds of promotion (Y1) from same-family rows.
+  \item H2: among own-lineage rows, a family switch changes the odds of promotion.
+  \item H3a: among cross-solver promotions, large jumps are cross-family more often than other promotions.
+  \item H3b: the same for plateau breaks.
+  \item H4: among cross-solver promotions, gain size (Y3) differs between cross-family and same-family steps.
+  \item H5 (ECDSA.Fail only): among cross-solver rows, cross-family rows differ in Pareto gain (Y2).
+  \item E1 (exploratory): multi-family and multi-source rows differ from single-family, single-parent rows on Y1 and Y3.
+  \item E2 (exploratory): the H1 effect varies over the life of a benchmark, by thirds of its analysis rows.
+\end{itemize}
+
+\subsection{Primary model}
+\label{sec:model}
+
+The primary result is H1 pooled across all study benchmarks, ECDSA.Fail included.
+Each benchmark contributes one log odds ratio from a conditional logistic regression of Y1 on the cross-family indicator, stratified by solver \citep{breslow1980}.
+The fit uses the benchmark's primary rows: cross-solver rows with a single declared or tree parent, both families known, inside the confirmatory window.
+Stratifying by solver compares each solver's cross-family rows with that solver's own same-family rows, which removes stable differences in skill between solvers.
+The covariates are:
+\begin{itemize}
+  \item a restricted cubic spline in days since the benchmark opened, with five knots at the minimum, the three quartiles and the maximum of the benchmark's analysis rows, which gives four columns \citep{harrell2015};
+  \item child-family and parent-family indicators, after sparse families are folded;
+  \item an indicator that the parent was the best promoted row whose evaluation had finished when the child was created;
+  \item the logarithm of one plus the solver's earlier analysis rows on the benchmark.
+\end{itemize}
+The spline stands in for frontier difficulty and model releases over time.
+Calendar-week indicators were the first choice and were replaced before the lock, because on synthetic frames with the real structure they separated the outcome and a reference fit failed to converge.
+
+Strata with no variation in the outcome carry no information in a conditional model and drop out.
+Strata with outcome variation but no treatment variation stay, because they inform the covariates, and the paper reports both counts.
+Before fitting, \file{analysis/models.py} removes covariates that are linearly dependent within strata, by pivoted QR on the stratum-demeaned design with the treatment first.
+If the treatment itself is dependent, the benchmark has no estimate.
+The conditional fit uses Newton's method and is checked for convergence through the score and for an unbounded likelihood.
+If the data show separation or the fit fails these checks, Firth's penalised likelihood with solver indicators replaces it \citep{firth1993}, and the paper says so for that benchmark.
+A fit that still does not converge is a failure, with no estimate, and is never reported as one.
+Planted-effect and placebo tests of the whole pipeline are described in Appendix~\ref{app:checks}.
+
+The per-benchmark log odds ratios are pooled by random-effects meta-analysis.
+The between-benchmark variance $\tau^2$ is the DerSimonian--Laird estimate \citep{dersimonian1986}, with a Q-profile interval \citep{viechtbauer2007}.
+The pooled interval uses the Hartung--Knapp--Sidik--Jonkman variance with a $t$ distribution on $k-1$ degrees of freedom \citep{hartung2001,sidik2002}.
+ECDSA.Fail's own estimate is the headline case study and is also a secondary test.
+
+\subsection{Equivalence and verdict}
+\label{sec:equivalence}
+
+A null result is a finding only if the design can tell ``no effect'' from ``not enough data''.
+Equivalence uses two one-sided tests at $\alpha = 0.05$ \citep{schuirmann1987}, which amounts to checking whether the 90\% interval of the odds ratio lies inside the margin.
+The pre-registered margin is $[0.80, 1.25]$.
+The verdict is one of three.
+\begin{itemize}
+  \item Effect detected: the 95\% interval excludes an odds ratio of 1.
+  \item Equivalent to no effect: the 90\% interval lies inside the margin.
+  \item Inconclusive: neither.
+\end{itemize}
+Both intervals come from the same distribution as the estimate.
+When both of the first two conditions hold, the verdict is ``effect detected'', and the paper adds that the effect lies inside the margin.
+
+\paragraph{Power gate.}
+Before the lock, equivalence power was computed from treatment counts only, with no outcomes.
+Outcomes were simulated at a true odds ratio of 1 on each benchmark's real treatment frame, with a solver random intercept and each benchmark's marginal promotion rate, then fitted with the model above and pooled.
+A simulated run counted as equivalent only if every benchmark's fit succeeded and the pooled 90\% interval lay inside the margin.
+The pre-registered rule was to widen the margin to $[0.67, 1.50]$ if power fell below 80\%.
+On ECDSA.Fail alone even an unclustered calculation gives $1.645 \times 0.137 \approx 0.226$, above $\log 1.25 \approx 0.223$, so a single-benchmark verdict there is close to certain to be inconclusive; the pooled estimand is primary for this reason.
+Power at the original margin was \PowerEquivalence{}, with a failed-fit share of \PowerFailedShare{}, and the margin used in this paper is \MarginFinal{}.
+%TODO At M3, fill the power result and the final margin from docs/prereg.md, and state the reason if the margin was widened.
+
+\subsection{Secondary tests and multiplicity}
+\label{sec:secondary}
+
+Each secondary test is run per benchmark (\file{analysis/secondary.py}).
+\begin{itemize}
+  \item H2 fits the primary model to own-lineage rows.
+  \item H3a and H3b are permutation tests among cross-solver promotions. They shuffle the family label within ISO calendar-week strata, which makes the count of flagged cross-family promotions hypergeometric within each week; the test samples that distribution 10,000 times and reports a two-sided $p$-value with a plus-one correction.
+  \item H4 is a median regression of Y3 on the cross-family indicator and the time spline \citep{koenker1978}, with a standard error from 2,000 bootstrap draws that resample solvers.
+  \item H5 fits the primary model with Y2 as the outcome, on ECDSA.Fail only.
+\end{itemize}
+A secondary test is confirmatory only when the smaller of its two arms has at least 20 outcome events, counted after the lock and before the test result is computed.
+Below that, it is reported descriptively and leaves the multiplicity family.
+Every secondary test that passes this gate, with each benchmark's test as its own member and ECDSA.Fail's H1 included, forms one Holm family \citep{holm1979}.
+A test that passes the gate but cannot be fitted stays in the family with $p = 1$.
+E1 and E2 are exploratory and are reported without correction.
+
+\subsection{Sensitivity analyses}
+\label{sec:sensitivity}
+
+Each sensitivity analysis recomputes the pooled primary estimate with one change (\file{analysis/sensitivity.py}).
+\begin{enumerate}
+  \item Unknown is a family of its own instead of being excluded.
+  \item Every row takes its tree-distance parent, ignoring declared attribution.
+  \item Rows whose note says that only a nonce or a validation draw changed are dropped.
+  \item Families are coarsened to Anthropic, OpenAI and other.
+  \item The first 72 hours of each benchmark are dropped.
+  \item Harness indicators are added, each only when it adds rank beyond the family indicators.
+  \item The author's own rows (solver \field{owizdom}) are dropped.
+  \item Each sibling pair is reduced to one member: the code keeps the member with fewer analysis rows.
+  \item Rows whose failure reason is classed ambiguous are dropped.
+\end{enumerate}
+Analysis 3 targets nonce search, which the ECDSA.Fail paper identifies as a way to lower a reported score without changing the circuit \citep[\S6]{long2026ecdsafail}.
+%TODO Analysis 8: the spec says only "reduced to one member"; the code drops the member with more analysis rows (sensitivity.py, min over (-len, name)). Confirm this rule is the intended one before the lock, or state it in docs/prereg.md.
+
+\subsection{Lock and sealing}
+\label{sec:lock}
+
+The lock binds the pre-registration text, the analysis code, the label and denominator tables, and the checksums of the frozen data to the git tag \texttt{prereg-v1}, and every analysis driver refuses to run unless the lock check passes (Appendix~\ref{app:lock}).
+The commit of tag \texttt{prereg-v1} is \PreregTag{}, timestamped with OpenTimestamps \citep{opentimestamps} on \PreregOTSDate{}.
+%TODO At M3, fill the tag commit hash and OpenTimestamps date, and confirm the .ots proof is committed.
+
+\subsection{What was seen before the lock}
+\label{sec:peek}
+
+The analysis is not blind, and five things were computed before the lock.
+\begin{enumerate}
+  \item On 16 October, I looked at the ECDSA.Fail leaderboard frontier and its low-qubit Pareto points.
+  \item On 16 October, I computed a crude version of H4 on ECDSA.Fail, taking the previous promotion as every row's parent, and compared gain sizes for steps that switched family with steps that did not.
+  \item On the same day, I computed a crude version of H3 on ECDSA.Fail: the share of family switches among the 50 largest drops with known families, against the base rate of switches.
+  \item On 17 October, I counted submissions, promotions and declared families on every benchmark the API lists. No outcome was split by family on any benchmark other than ECDSA.Fail.
+  \item On 17 October, a fresh-context reviewer computed a crude H1 and H2 promotion-rate split on ECDSA.Fail, taking the frontier holder at creation as the parent. The reviewer withheld the numbers from me, and they are not in the repository.
+\end{enumerate}
+My reading of items 2 and 3 was that neither showed a visible difference on ECDSA.Fail.
+The crude analyses differ from the pre-registered ones in their parent rule, their treatment of solvers, their window and their outcome definitions.
+They touched only ECDSA.Fail, which is one of \StudyK{} benchmarks in the pooled primary.
+%TODO Decide whether to print the crude H3 and H4 numbers recorded in spec section 5.7 here. They are outcomes split by family, so this draft leaves them out.
+
+\subsection{Conflict of interest}
+\label{sec:coi}
+
+I am a participant in the system I study.
+I am solver \field{owizdom} on ECDSA.Fail, with five submissions on 2 June 2026, three of which were promoted.
+I am also a listed author of the ECDSA.Fail paper whose prose claims this study tests \citep{long2026ecdsafail}.
+Sensitivity analysis 7 drops my rows from every benchmark.
+The data, code and frozen snapshot are public, so anyone can rerun the analysis without my involvement.
+%TODO Confirm the five-submission, three-promoted count against the frozen snapshot (spec section 6 records it from the 17 Oct probe), and whether owizdom has rows on any other study benchmark.
+
+\paragraph{Use of AI tools.}
+The analysis code was written by Claude agents working under my direction, with separate Claude agents reviewing each part against the specification.
+The label audit in Section~\ref{sec:labels} was scored by Claude Opus~5.5.
+These reviewers share weights with the code's authors, so their agreement counts as one opinion, and I invite outside statistical review.

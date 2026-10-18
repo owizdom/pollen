@@ -1,0 +1,73 @@
+\section{Setting}
+\label{sec:setting}
+
+\subsection{Yukon}
+
+Yukon describes itself as a platform for open frontier research, on which organisers create autoresearch challenges with verifiable benchmarks and solvers deploy agents against them \citep{yukon2026}.
+Each benchmark has a public repository, a set of editable paths, a scoring direction, a baseline score, and an evaluator that scores each submission.
+The public API at \url{https://api.yukon.org} lists every benchmark, open or closed, and returns each benchmark's submissions without credentials.
+
+A solver submits through the Yukon command-line tool.
+The tool requires a public Markdown note, a \field{-{}-model} flag naming the underlying model, and a \field{-{}-harness} flag naming the coding agent or harness \citep{yukoncli2026}.
+It writes these two flags into the note as canonical \field{Model:} and \field{Harness:} lines.
+The tool's guidance asks for the exact, fully qualified model and tells solvers never to copy the model attribution from the base submission \citep{yukoncli2026}.
+It also asks solvers to cite a promoted submission they started from in the note, and to credit substantial unpromoted help from another solver through a co-author flag.
+
+The evaluator either accepts or rejects a submission, or the run fails.
+An accepted submission that improves on the current best is promoted onto the benchmark branch, and the landed commit is recorded as \field{promotedSourceRef} \citep{yukoncli2026}.
+Each benchmark object carries a field \field{minScoreImprovementBips}, the smallest relative improvement that can promote, and the field differs between benchmarks.
+Normal synchronisation restores the editable paths from the best promoted submission, so the current best is the default starting point for new work \citep{yukoncli2026}.
+A separate endpoint, \field{/api/submissions/\{id\}/attribution}, returns a structured attribution record for a submission.
+When the solver declared parents, the record has \field{declaration} set to \field{provided} and lists them as \field{dependencies}.
+%TODO Cite a public Yukon page that documents the attribution endpoint and minScoreImprovementBips, if one exists; both are described here from the API responses and the CLI skill.
+
+\subsection{ECDSA.Fail}
+
+ECDSA.Fail, launched by Eigen Labs in late May 2026, optimises a reversible secp256k1 mixed point-addition circuit and scores it by $S = Q \times T$, the product of peak logical qubit width and average executed Toffoli count \citep[\S\S3, 4.2]{long2026ecdsafail}.
+Over about eight weeks, more than one hundred participants using diverse models produced over four hundred promoted submissions \citep[\S4.2]{long2026ecdsafail}.
+Promoted improvements add their score, source, participant attribution and declared AI model to the public record \citep[\S4.2]{long2026ecdsafail}.
+On Yukon the benchmark is \bench{gpsanant/ecdsafail-challenge}.
+It is the benchmark that motivated this study, so it is always included and its own primary estimate is reported as the headline case.
+
+\subsection{Study benchmarks}
+
+The pre-registration fixes a selection rule, applied by \file{analysis/study.py} to the frozen snapshot and the frozen lineage files.
+A benchmark joins the study, open or closed, when it meets all of the following.
+\begin{enumerate}
+  \item It has at least 500 analysis rows (Section~\ref{sec:denominator}), and at least 100 of them were promoted.
+  \item At least two model families each hold at least 10\% of the analysis rows that carry a single known family.
+  \item Its trees are recoverable: a confirmatory window exists (Section~\ref{sec:window}), and at least half of its promoted analysis rows have a tree commit that the lineage build did not record as unfetchable.
+\end{enumerate}
+ECDSA.Fail is included whatever the rule says.
+
+Ten benchmarks met this rule at a probe on 17 October 2026, and attribution records were frozen for all ten.
+Table~\ref{tab:benchmarks} lists them with their row counts in the frozen snapshot.
+The final rule runs again on the frozen data before the confirmatory analysis, so the study contains \StudyK{} benchmarks.
+%TODO After lineage freeze and the M3 lock, confirm that study.study_names() returns exactly these ten; if not, edit Table 1 and record the change in docs/DEVIATIONS.md.
+Two pairs are siblings: the two flock benchmarks, and the two EIP-8200 benchmarks, which share one repository.
+Sensitivity analysis 8 reduces each pair to one member (Section~\ref{sec:sensitivity}).
+
+\begin{table}[t]
+\centering
+\caption{Study benchmarks at the 17 October probe. Rows are all submissions in the frozen snapshot, cancelled included; attribution 404 counts the rows whose attribution endpoint returned HTTP 404 at the freeze. Source: \file{snapshot/FREEZE.md}.}
+\label{tab:benchmarks}
+\begin{tabular}{lrr}
+\toprule
+Benchmark & Rows & Attribution 404 \\
+\midrule
+\bench{davidtai/mlxfast-gemma4-26b-a4b} & 3,239 & 397 \\
+\bench{davidtai/qwen38-125b-a6b-cuda-v1} & 5,757 & 337 \\
+\bench{eigenlabs/eip8200-challenges/modexp} & 1,512 & 151 \\
+\bench{eigenlabs/eip8200-challenges/ripemd160} & 1,233 & 122 \\
+\bench{eigenlabs/flock-challenge} & 4,632 & 53 \\
+\bench{eigenlabs/flock-challenge-multi/x86} & 3,392 & 166 \\
+\bench{eigenlabs/lighter-prover-challenge} & 8,379 & 338 \\
+\bench{eigenlabs/mlxfast-challenge} & 1,904 & 85 \\
+\bench{eigenlabs/sig-golf/full} & 933 & 246 \\
+\bench{gpsanant/ecdsafail-challenge} & 1,593 & 255 \\
+\midrule
+Total & 32,574 & 2,150 \\
+\bottomrule
+\end{tabular}
+\end{table}
+%TODO Add a column with a one-line task description per benchmark, taken from each benchmark object in the snapshot.

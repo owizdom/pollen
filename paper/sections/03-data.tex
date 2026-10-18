@@ -1,0 +1,157 @@
+\section{Data and measurement}
+\label{sec:data}
+
+\subsection{Snapshot}
+\label{sec:snapshot}
+
+The snapshot was fetched once from the public API without credentials, by \file{snapshot/fetch.py}.
+For every benchmark the API lists, the script stores the benchmark object and its full submission list as gzipped JSON with fixed timestamps.
+For the study benchmarks it also stores the attribution record of every submission, cancelled rows included.
+An attribution call that returns HTTP 404 is stored as unavailable, and the row's identifier is listed in the freeze record.
+After writing the files, the script writes \file{FREEZE.json}, with the fetch time and row counts, and a \file{SHA256SUMS} file covering every data file and \file{FREEZE.json} itself.
+Once a freeze exists, the script refuses partial refetches.
+
+The fetch finished at 2026-10-18T13:35:31Z.
+It holds 48 benchmarks and 47,525 submissions, of which 32,574 belong to the ten benchmarks in Table~\ref{tab:benchmarks} (\file{snapshot/FREEZE.md}).
+Of the attribution calls for those ten benchmarks, 2,150 returned HTTP 404.
+At the end of the freeze, a guard checked that every study benchmark holds exactly one attribution record per row, with no duplicates and none missing (\file{docs/JOURNAL.md}).
+
+The loader, \file{snapshot/load.py}, reads only these files and checks them on every open (Appendix~\ref{app:snapshot}).
+A submission is flagged as promoted when its status is \field{accepted} and its promotion status is \field{promoted}.
+
+\subsection{Analysis rows}
+\label{sec:denominator}
+
+An analysis row is a submission that the evaluator scored, as decided by \file{outcomes/denominator.py}.
+The function drops cancelled rows and rows whose status is not accepted, rejected or failed.
+It drops accepted rows whose promotion status is set but is not one of promoted, failed or superseded, because their promotion was not final.
+It drops rows rejected before evaluation, matched by exact reason strings and patterns in \file{outcomes/denominator.yaml}.
+These are rejections on the solver's own claimed score, submissions with no code change, and packaging errors such as an archive path outside the editable paths or an over-long pull-request body.
+
+Failed rows are classed by reason into three groups.
+Evaluated failures, where the scoring command ran or the submission's own code failed a gate or a build, are kept.
+Infrastructure failures, such as runner setup, artifact transfer, dispatch errors, platform rate limits and interrupted validation jobs, are dropped.
+Ambiguous failures, whose text does not say whether the submission caused them, are kept, and sensitivity analysis 9 drops them.
+A failed row with no reason counts as ambiguous, and a reason that matches no class stops the pipeline with an error.
+The class list was built from the distinct failure reasons in the snapshot, without splitting any outcome by treatment.
+
+\subsection{Model family labels}
+\label{sec:labels}
+
+The declared model is the text after \field{Model:} on the first non-empty line of the note; a note whose first line is anything else has no declared model.
+A checked-in table, \file{families/table.yaml}, maps each exact declared string to a family, which is the model's vendor.
+The table holds 767 strings.
+Of these, 254 map to Unknown and 35 to Multi; the rest map to one of 16 vendor families (\file{families/table.yaml}).
+
+The table was proposed by vendor keyword rules in \file{families/build_table.py} and then corrected by hand where note text gave evidence.
+A string naming two or more vendors is Multi, for example ``Claude Opus 5.5 + GPT-6.1 Sol''.
+A string naming two models from one vendor maps to that vendor.
+A model that a company names as its own maps to that company, as \field{Other:Cognition} for SWE-2 or \field{Other:Cursor} for Composer.
+A string maps to Unknown when it names an agent product with no model (``Devin'', ``Codex''), a name whose vendor is ambiguous (``Astra''), or something that is not a model at all.
+Strings that name the model being optimised rather than the model doing the work, such as target model weights on the inference benchmarks, are also Unknown.
+A row with no \field{Model:} line is Unknown.
+Lookup is exact: a declared string absent from the table raises an error, so every analysed string has a recorded decision.
+
+Of the 31,287 study-benchmark rows with a \field{Model:} line, 4.5\% map to Unknown (\file{docs/JOURNAL.md}).
+%TODO Confirm the denominator of the 4.5% Unknown share (rows with a Model line, or all study rows) and whether it is computed on all rows or analysis rows.
+Unknown and Multi rows are excluded from the confirmatory tests.
+Sensitivity analysis 1 restores Unknown as a family of its own, and the exploratory analysis E1 studies Multi rows.
+Within a benchmark, a family with fewer than 30 analysis rows is folded into a single ``Other'' level for the family covariates of the model in Section~\ref{sec:model}.
+The \field{Harness:} line, when present, is kept for sensitivity analysis 6, because harness and family are close to collinear.
+
+\paragraph{Label audit.}
+A declared label is what the solver typed, so I measured how often the note body agrees with it.
+A seeded sample of 200 notes from benchmarks with at least 500 rows was drawn by \file{families/audit/sample.py} (seed 17).
+Five fresh-context Claude Opus~5.5 auditors each scored 40 notes as agree, contradict or silent against the \field{Model:} line, ignoring the header itself and verbatim copies of it.
+The result was 69 agree, 5 contradict and 126 silent (\file{families/audit/RESULT.md}).
+Agreement among non-silent notes was 69 of 74, or 93.2\%, below the pre-registered bar of 95\%.
+Four of the five contradictions change the family, three of them because a single-vendor label covered work that the body attributes to more than one vendor.
+At the family level, agreement was 70 of 74, or 94.6\%.
+The auditors differed on one rule: three of the five batches counted an agent line naming the declared vendor's harness as agreement, and one counted it as silent.
+Recoding those 13 notes as silent gives 56 of 61, or 91.8\%, at the model level.
+The audit is recorded, not a gate, so the shortfall is a limitation of the labels (Section~\ref{sec:threats}).
+
+\subsection{Parents}
+\label{sec:parents}
+
+A submission's parents are the earlier submissions it built on.
+The lineage code in \file{lineage/} finds them from two sources and keeps both for every analysis row.
+
+\paragraph{Declared parents.}
+When a row's attribution record has \field{declaration} equal to \field{provided} and lists dependencies, those are its declared parents.
+Declared identifiers are de-duplicated in order, and identifiers that are unknown or not created before the child are dropped and recorded.
+Declared parents are checked against every snapshot row of the benchmark, so a declared parent can be a row that is not itself an analysis row.
+One remaining declared parent gives a single-parent row.
+Two or more give a multi-source row, which is excluded from the confirmatory tests and studied in E1.
+
+\paragraph{Tree-distance parents.}
+Each analysis row has a tree: the commit in \field{promotedSourceRef} for promoted rows, and the commit in \field{submissionCommitSha} otherwise.
+The build fetches each commit by hash from the benchmark's public repository and records unfetchable ones in \file{missing.json} (Appendix~\ref{app:trees}).
+The distance between two trees is the number of added plus removed text lines reported by \texttt{git diff -{}-numstat -{}-minimal -{}-no-renames} over the benchmark's editable paths, with each changed binary file counted as one line.
+The candidates are recent promoted rows and the child solver's own recent rows (Appendix~\ref{app:trees}).
+The tree parent is the candidate at the smallest distance, with ties going to the most recent row and then to the identifier.
+
+\paragraph{Novel rows.}
+A row is novel, and has no tree parent, when the text lines added relative to its nearest candidate exceed half of the text lines in its own tree.
+Binary files do not count toward size.
+Novel rows are excluded from H1 and H2 and reported descriptively.
+
+\paragraph{Primary parent and freeze.}
+The primary parent is the declared one when it exists, and the tree parent otherwise.
+Sensitivity analysis 2 uses the tree parent for every row, which estimates a different quantity: the immediate code parent rather than the declared origin.
+The build writes, per benchmark, the tree manifests (path to blob hash), the distance table, the parent links and \file{missing.json} under \file{lineage/frozen/}, with their own \file{SHA256SUMS}.
+The analysis rebuilds from these files offline.
+The build refuses to overwrite a frozen benchmark when commits it already holds can no longer be fetched.
+%TODO Add the per-benchmark count of unfetchable tree commits from lineage/frozen/<slug>/missing.json once the lineage freeze is final (descriptive, no outcome).
+
+\paragraph{Validation.}
+Acceptance test AT4 checks the inferred treatment cell, not the parent identifier, against two labelled sets: declared attribution edges, and notes that name a base in text.
+A base named in text is read from a \field{Base:} line and resolved to a submission by identifier prefix, submission commit or promoted commit (\file{lineage/declared.py}).
+The pre-registered bar is 85\% agreement on each set.
+Agreement was \ATFourDeclaredAgree{} against declared edges and \ATFourTextAgree{} against text-declared bases, and \ATFourFrontierAgree{} and \ATFourNonFrontierAgree{} for frontier and non-frontier parents.
+
+\subsection{Treatment cells}
+\label{sec:cells}
+
+A row is cross-solver when its single primary parent was submitted by a different solver.
+It is cross-family when the parent's family differs from the child's, with both families known and single-vendor.
+Rows with a single parent and two known families fall into four cells: own lineage with the same family, own lineage with a switched family, another solver's work in the same family, and another solver's work in another family.
+The primary contrast fixes ``another solver's work'' and varies only the family.
+Within a solver, it compares that solver's cross-family attempts with the same solver's same-family attempts, which separates model pollination from people pollination.
+
+\subsection{Outcomes}
+\label{sec:outcomes}
+
+The outcome code in \file{outcomes/} writes outcome columns only to a sealed directory, and the treatment dataset (\file{analysis/dataset.py}) carries no outcome column.
+Outcomes are joined to treatments only inside the confirmatory drivers, after the lock check passes (Section~\ref{sec:lock}).
+
+Rows are ordered by evaluation, using the time promotion finished and falling back to the last update time, because promotions can finish out of creation order.
+``Earlier'' in every outcome below means earlier in this order.
+The running best before a row is the best promoted score among rows that finished strictly earlier, seeded with the benchmark's baseline score.
+\begin{itemize}
+  \item Y1, promotion: the row's promotion status is \field{promoted}. Accepted rows whose promotion failed count as not promoted.
+  \item Y2, Pareto gain (ECDSA.Fail only): the row has both a qubit count and a Toffoli count, and no earlier row with both counts dominates or equals its point.
+  \item Y3, gain size: for a promoted row, the log ratio of the running best before it to its own score, signed so that larger is better under the benchmark's direction.
+  \item Large jump: a promotion in the top decile of Y3 within its benchmark.
+  \item Plateau break: a promotion that improves the running best by at least 1\% and comes at least 72 hours after the previous promotion of that size, or after the benchmark's opening when there was none.
+\end{itemize}
+
+\paragraph{Recomputation.}
+Acceptance test AT5 recomputes Y1 in evaluation order from the baseline-seeded running best, applying each benchmark's \field{minScoreImprovementBips}.
+Only accepted or rejected rows can promote or move the running best.
+Rows whose promotion status is failed or superseded are named exceptions and are removed from the series.
+A benchmark whose recomputation disagrees with the recorded promotion status on more than 1\% of its analysis rows is reported as ``promotion rule not reproduced'', and Y1 still comes from the recorded status.
+The recomputation reproduced the recorded promotions on \ATFiveReproduced{} benchmarks; the rule was not reproduced on \ATFiveNotReproducedList{}.
+On \bench{eigenlabs/flock-challenge-multi/x86}, every row that disagreed in a probe on 17 October predates 25 August 2026, the date of the first rejection citing a 100-basis-point threshold, so the threshold appears to have started part-way through the benchmark.
+
+\subsection{Confirmatory window}
+\label{sec:window}
+
+Tree recovery must not depend on the outcome.
+On ECDSA.Fail, accepted rows lack a submission commit more often than rejected rows, mostly in June, while every promoted row has a promoted commit.
+Without a correction, promoted rows would have parents more often than other rows.
+For each benchmark, \file{lineage/window.py} groups analysis rows by calendar week, starting on Mondays in UTC.
+Walking back from the freeze, it finds the earliest week from which, through the freeze, the share of rows with a recoverable tree differs by at most 5 percentage points between promoted and other rows.
+The window starts at that week, and rows before it are reported descriptively only.
+Acceptance test AT15 checks the balance inside each window.
+On ECDSA.Fail the window starts in the week of \WindowStartEcdsa{}.

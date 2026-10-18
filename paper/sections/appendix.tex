@@ -1,0 +1,40 @@
+\appendix
+\section{Implementation details}
+\label{app:impl}
+
+This appendix describes code behaviour that the main text summarises.
+
+\subsection{Snapshot fetch and loader}
+\label{app:snapshot}
+
+The fetch script, \file{snapshot/fetch.py}, spaces general requests at no more than eight per second and attribution calls at no more than two starts per second, with six attribution calls in flight.
+It retries rate-limited calls within a fifteen-minute budget, and gives server errors and timeouts up to five attempts.
+The loader, \file{snapshot/load.py}, never touches the network.
+Each time it opens a file it checks the file against \file{SHA256SUMS}, checks \file{FREEZE.json} against its own sum, and checks the row count against \file{FREEZE.json}.
+It also refuses a listed file that is missing and a data file that is not listed.
+
+\subsection{Tree recovery and candidate parents}
+\label{app:trees}
+
+The build in \file{lineage/build.py} fetches every tree commit by its hash into a local bare mirror, never by branch name.
+A failing batch of hashes is split in halves until the unfetchable hashes are isolated, and those are written to \file{missing.json}.
+The candidates for a child are earlier analysis rows with a tree, collapsed by tree identity so that only the most recent row with each tree remains.
+From them the build keeps the 50 most recent promoted rows whose promotion finished before the child was created, and the child solver's own 50 most recent earlier rows.
+
+\subsection{Lock check}
+\label{app:lock}
+
+The lock is a manifest, \file{docs/prereg-manifest.json}, holding the SHA-256 of the pre-registration text, every code file under \file{snapshot/}, \file{families/}, \file{lineage/}, \file{outcomes/} and \file{analysis/}, the family table, the denominator classes, and the checksum files of the frozen snapshot and lineage data.
+The lock check in \file{analysis/lock.py} recomputes every hash, verifies every frozen data file against its checksum file, rejects unlisted data files, symbolic links and compiled files without source, and requires the manifest to equal the copy under the git tag \texttt{prereg-v1}.
+Every analysis driver runs the check first, and the confirmatory script exits with an error if it fails.
+The equivalence margin is read from a single line of \file{docs/prereg.md}.
+
+\subsection{Checks on the estimator}
+\label{app:checks}
+
+Two automated tests check the pipeline on simulated data with the real treatment structure.
+In AT13, outcomes with a planted odds ratio of 1.5 must be recovered inside the 95\% interval in at least 90 of 100 fixed seeds.
+A correct 95\% interval falls below 90 of 100 with probability about 0.03 under a Binomial(100, 0.95) count.
+In AT14, shuffling family within solver must give an H1 interval that covers 1 in at least 90 of 100 fixed seeds.
+At the lock, coverage was \ATThirteenCoverage{} for AT13 and \ATFourteenCoverage{} for AT14.
+

@@ -1,0 +1,70 @@
+\section{Threats to validity}
+\label{sec:threats}
+
+The design removes some sources of bias and leaves others in place.
+This section lists the ones it cannot remove, in roughly the order of how much I expect them to matter.
+
+\paragraph{Self-selection within solvers.}
+Participants choose both their parents and their models.
+Solver strata remove stable traits, such as skill or compute budget, from the primary contrast.
+They do not remove choices that vary within a solver.
+A solver who reaches for a different model when a problem looks harder, or who builds on another solver's work only after a promising idea appears, changes the comparison in ways the covariates may not capture.
+The time spline and the current-best indicator absorb part of this, and the rest remains.
+
+\paragraph{Self-declared labels.}
+The \field{Model:} line is what the solver typed, and the platform does not verify it.
+In the audit, 93.2\% of non-silent notes agreed with the declared model and 94.6\% with the declared family, below the 95\% bar set in advance (Section~\ref{sec:labels}).
+Most disagreements were multi-vendor work under a single-vendor label, which would move some cross-family rows into the same-family arm.
+Uniform label noise of this kind tends to pull an odds ratio toward 1, so it bears on how to read an equivalence verdict.
+Sensitivity analyses 1, 4 and 6 change how labels and harnesses enter the model.
+The audit itself was scored by models from one of the vendors being labelled.
+
+\paragraph{Parent inference.}
+Declared attribution exists for only some rows, and the tree-distance parent is an inference from code similarity.
+A solver can build on an idea without copying its code, and two solvers can reach similar code independently.
+AT4 measures how often the inferred cell matches the cell implied by declared or text-named parents (Section~\ref{sec:parents}).
+Sensitivity analysis 2 replaces every declared parent with the tree parent.
+Rows whose tree is far from every candidate are treated as novel and leave the primary sample, which changes who is compared with whom.
+
+\paragraph{Missing attempts.}
+The API holds only submitted work.
+Local experiments, discarded branches and private agent sessions are absent, a point the ECDSA.Fail paper also makes about its own archive \citep[\S6]{long2026ecdsafail}.
+Y1 is therefore promotion per evaluated submission, never per attempt.
+If solvers submit cross-family work only when it looks promising, the per-submission rate overstates its per-attempt rate, and the same holds for same-family work.
+
+\paragraph{Missing trees.}
+On ECDSA.Fail, commit availability differs between accepted and rejected rows in the early weeks.
+The confirmatory window starts only once tree recovery is balanced between promoted and other rows, and AT15 checks this.
+Rows before the window are excluded, so results describe the later part of each benchmark.
+
+\paragraph{The denominator.}
+The line between an evaluated failure and an infrastructure failure was drawn from reason text.
+Ambiguous reasons are kept in the primary analysis and dropped in sensitivity analysis 9.
+
+\paragraph{Dependence between rows.}
+Resubmissions of one idea, shared parents and repeated nonce draws make rows within a benchmark dependent in ways the solver strata do not fully capture.
+Sensitivity analysis 3 drops rows whose note reports only a nonce or validation-draw change.
+Sibling benchmarks share tasks or repositories, and sensitivity analysis 8 keeps one member of each pair.
+
+\paragraph{One platform.}
+Every benchmark runs on Yukon, with one submission format and one promotion mechanism.
+Promotion thresholds differ between benchmarks, and on at least one benchmark the threshold appears to have changed part-way through (Section~\ref{sec:outcomes}).
+Results may not carry over to settings where participants coordinate differently or share work outside a leaderboard.
+
+\paragraph{The motivating comparison.}
+The gate counts in the 16 October post come from two searches with different interfaces and accounting conventions (Section~\ref{sec:intro}).
+The study does not use that comparison as evidence, and its result says nothing about which search found the better circuit.
+
+\paragraph{What was seen before the lock.}
+Crude analyses on ECDSA.Fail were computed before the lock (Section~\ref{sec:peek}).
+The parent rule, sample and model were fixed in writing before outcomes were joined, and the lock binds the code to that text.
+A reader can still discount ECDSA.Fail's own estimate on these grounds, and the pooled primary is less exposed because the other benchmarks were not split by family before the lock.
+
+\paragraph{Conflict of interest.}
+I am a participant on ECDSA.Fail and a listed author of the paper whose claims this study tests (Section~\ref{sec:coi}).
+Sensitivity analysis 7 removes my rows, and the full pipeline is public.
+
+\paragraph{Reviewer independence.}
+The code and the label audit were reviewed by Claude models, which share weights with the agents that wrote the code.
+Agreement among them is one opinion, and the design has not yet had an outside statistical review.
+%TODO Name any outside reviewer here after M6, or keep this sentence.
