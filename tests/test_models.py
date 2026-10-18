@@ -412,6 +412,18 @@ def _ref_fit(d, ycol, cov, group="solver"):
     return float(res.params[0]), ov, Xd
 
 
+def _design_frame(df, ycol):
+    """Covariates and the time spline come from analysis.design.build (knots from the frame's
+    spline_knot_* columns), so these tests exercise the pipeline's model."""
+    design = importlib.import_module("analysis.design")
+    X, _, groups = design.build(df)
+    out = X.copy()
+    out["solver"] = groups
+    out["t"] = X["cross_family"].astype(int)
+    out["y"] = df[ycol].astype(int).to_numpy()
+    return out, list(X.columns[1:])
+
+
 def test_realistic_design_uses_clogit_and_matches_reference(models, simulate):
     n_clogit = 0
     n = 30
@@ -419,8 +431,7 @@ def test_realistic_design_uses_clogit_and_matches_reference(models, simulate):
         orr = 1.0 if seed % 2 == 0 else 1.5
         f = fx.primary(fx.realistic_frame(seed))
         d = simulate.plant(f, odds_ratio=orr, base_rate=0.25, icc=0.05, seed=seed)
-        d = d.assign(t=d["cross_family"].astype(int), y=d["y_sim"].astype(int))
-        cov = fx.realistic_covariates(d)
+        d, cov = _design_frame(d, "y_sim")
         r = models.cond_logit(d, "y", "t", cov, "solver")
         if r.method != "clogit":
             continue
@@ -428,7 +439,7 @@ def test_realistic_design_uses_clogit_and_matches_reference(models, simulate):
         ref, ov, Xd = _ref_fit(d, "y", cov)
         assert r.log_or == pytest.approx(ref, abs=1e-4), (seed, r.log_or, ref)
         constant = {c for c in cov if np.allclose(Xd[c].to_numpy(), 0)}
-        assert any(c.startswith("cf_") for c in constant)
+        assert any(c.startswith("child_family_folded_") for c in constant)
         assert constant <= set(r.dropped_covariates), (seed, constant - set(r.dropped_covariates))
         assert "t" not in set(r.dropped_covariates)
         assert r.n_groups_informative == ov["solver"].nunique()
@@ -541,8 +552,8 @@ def _outcome_col(planted, t):
 
 
 def _fit(models, df, ycol):
-    d = df.assign(t=df["cross_family"].astype(int), y=df[ycol].astype(int))
-    return models.cond_logit(d, "y", "t", fx.realistic_covariates(d), "solver")
+    d, cov = _design_frame(df, ycol)
+    return models.cond_logit(d, "y", "t", cov, "solver")
 
 
 def test_at13_planted_or_recovered_in_90_of_100(models, simulate):

@@ -179,26 +179,18 @@ def realistic_frame(seed=0, n_solvers=50, n_rows=800, n_weeks=20):
     df["cross_solver"] = rng.random(len(df)) > 0.03
     df["in_window"] = rng.random(len(df)) > 0.03
     df["parent_method"] = rng.choice(["tree", "declared", "novel"], size=len(df), p=[0.67, 0.30, 0.03])
-    import patsy
-
-    wk = pd.DataFrame(
-        np.asarray(patsy.dmatrix("cr(x, df=4) - 1", {"x": df["days_since_open"]})),
-        columns=[f"time_s{i}" for i in range(1, 5)],
-    )
-    cf = pd.get_dummies(df["child_family_folded"], prefix="cf", dtype=float).iloc[:, 1:]
-    pf = pd.get_dummies(df["parent_family_folded"], prefix="pf", dtype=float).iloc[:, 1:]
-    return pd.concat([df, wk, cf, pf], axis=1)
+    # Knots as analysis.dataset.build emits them: min, quartiles, max of days_since_open over
+    # all rows of the frame (the spline basis itself is built by analysis.design.build).
+    knots = np.quantile(df["days_since_open"], [0, 0.25, 0.5, 0.75, 1.0])
+    for i, kv in enumerate(knots):
+        df[f"spline_knot_{i}"] = float(kv)
+    return df
 
 
 def primary(df):
     """The rows analysis.design.primary_rows keeps."""
     keep = df["cross_solver"] & df["in_window"] & df["parent_method"].isin(["declared", "tree"])
     return df[keep].reset_index(drop=True)
-
-
-def realistic_covariates(df):
-    dummies = [c for c in df.columns if c.startswith(("time_s", "cf_", "pf_"))]
-    return dummies + ["parent_is_current_best", "log_prior_rows"]
 
 
 def joint_separated_data(n_groups=40):
