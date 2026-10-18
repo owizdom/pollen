@@ -55,3 +55,4 @@
 - Families table extended to 767 strings (`d828664`): rule-based entries plus note-backed corrections; target-model strings (Laguna on mlxfast, qwen38, gemma4 weights) are Unknown. AT2 and test_families 86/86 green. Study rows with a Model line: 31,287; Unknown 4.5%.
 - AT3 sample drawn (seed 17, 200 notes); five fresh-context Opus auditors scoring. Wisdom waived the 20-note spot-check (2026-10-18: "dw, its all good, i approve").
 - AT3 recorded: 69 agree, 5 contradict, 126 silent; 93.2% model-level (below the 95% bar; AT3 is recorded, not a gate), 94.6% family-level. Auditors: claude-opus-5-5. families/audit/RESULT.md.
+- Wisdom approved the prereg-v1 lock in advance (2026-10-18: "i approve the lock approval"). Condition kept: lock only once AT2, AT4, AT5, AT15 are green and the power gate has run; any failure there goes back to Wisdom before tagging.
