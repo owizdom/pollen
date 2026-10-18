@@ -413,3 +413,76 @@ def test_min_rows_returns_smaller_arms_row_count():
     flipped = cells.assign(cross_family=cells.cross_family.map(
         lambda v: None if v is None else (not v)))
     assert power.min_rows(flipped) == 7
+
+
+# ---------------------------------------------------------------- spline knots (E-review round 2, N1)
+
+KNOT_COLS = [f"spline_knot_{i}" for i in range(5)]
+
+
+def test_n1_build_emits_spline_knots_from_all_analysis_rows(tmp_path):
+    import numpy as np
+    hours = [0, 6, 12, 36, 60, 120, 300]
+    subs = [sub(f"r{i}", h, "alice" if i % 2 else "bob", GPT if i % 3 else CLAUDE)
+            for i, h in enumerate(hours)]
+    subs.append(sub("cx", 5000, "carol", GPT, cancelled=True))      # not an analysis row
+    df = build(subs, {}, tmp_path)
+    assert set(df.index) == {f"r{i}" for i in range(len(hours))}
+    want = np.quantile(np.array(hours) / 24.0, [0, 0.25, 0.5, 0.75, 1.0])
+    for c, w in zip(KNOT_COLS, want):
+        assert c in df.columns, c
+        assert df[c].nunique() == 1
+        assert df[c].iloc[0] == pytest.approx(w)
+
+
+def test_n1_power_builds_the_spline_from_the_carried_knots(monkeypatch):
+    import numpy as np
+    from analysis import design, power
+    cells = cells_frame(12, 6, seed=1)
+    knots = [0.0, 10.0, 20.0, 30.0, 80.0]        # analysis-row knots; the primary rows lie in 1..52.5
+    for c, v in zip(KNOT_COLS, knots):
+        cells[c] = v
+    own = np.quantile(cells["days_since_open"], [0, 0.25, 0.5, 0.75, 1.0])
+    assert not np.allclose(own, knots)
+    seen = []
+    real = design.time_spline
+
+    def spy(x, knots=None):
+        seen.append(None if knots is None else list(np.asarray(knots, float)))
+        return real(x, knots)
+
+    monkeypatch.setattr(design, "time_spline", spy)
+    power.equivalence_power(cells, 0.3, sims=2, seed=3)
+    assert seen
+    for k in seen:
+        assert k is not None and k == pytest.approx(knots)
+
+
+def test_n1_power_on_a_dataset_frame_uses_dataset_knots(tmp_path, monkeypatch):
+    """A late window: the early analysis rows stretch the knots beyond the primary rows' range."""
+    import numpy as np
+    from analysis import design, power
+    subs, mapping = [], {}
+    for i in range(6):                                  # early rows with no parent: not primary
+        subs.append(sub(f"e{i}", 2 * i, "early", GPT))
+    for i in range(24):                                 # late cross-solver rows with parents
+        pid = f"e{i % 6}"
+        subs.append(sub(f"l{i}", 2000 + 3 * i, f"s{i % 6}", CLAUDE if i % 2 else GPT))
+        mapping[f"l{i}"] = declared(pid)
+    df = build(subs, mapping, tmp_path).reset_index(drop=True)
+    df["in_window"] = df["id"].str.startswith("l")      # the window opens late
+    prim = design.primary_rows(df)
+    assert 0 < len(prim) < len(df)
+    all_days = df["days_since_open"].to_numpy(float)
+    want = list(np.quantile(all_days, [0, 0.25, 0.5, 0.75, 1.0]))
+    assert not np.allclose(want, np.quantile(prim["days_since_open"], [0, 0.25, 0.5, 0.75, 1.0]))
+    seen = []
+    real = design.time_spline
+
+    def spy(x, knots=None):
+        seen.append(None if knots is None else list(np.asarray(knots, float)))
+        return real(x, knots)
+
+    monkeypatch.setattr(design, "time_spline", spy)
+    power.equivalence_power(df, 0.3, sims=1, seed=1)
+    assert seen and all(k is not None and k == pytest.approx(want) for k in seen)

@@ -1111,3 +1111,114 @@ def test_f11_spline_knots_are_analysis_row_quartiles(pristine, fresh, monkeypatc
         other = analysis_basis(xs, xs)
         mine = analysis_basis(xs, full["days_since_open"].to_numpy(float))
         assert span_gap(other, mine) > 1e-3
+
+
+# ================================================================== E-review round 2 (N2, N3)
+
+def synthetic_h2_frame(prefix, per_solver=12):
+    """Own-lineage rows where every solver always (or never) switches family: the treatment is
+    constant inside each stratum, so the conditional fit has nothing to identify."""
+    rows = []
+    for s in range(10):
+        switch = s < 5
+        for j in range(per_solver):
+            rows.append({
+                "id": f"{prefix}{s:02d}{j:02d}", "solver": f"u{s}", "cross_solver": False,
+                "cross_family": switch, "in_window": True, "parent_method": "declared",
+                "days_since_open": float(2 + 3 * j + s), "child_family_folded": "OpenAI",
+                "parent_family_folded": "Anthropic" if switch else "OpenAI",
+                "parent_is_current_best": float(j % 4 == 0), "log_prior_rows": float(np.log1p(j)),
+                "y": float(j % 2)})
+    return pd.DataFrame(rows)
+
+
+def test_n2_precondition_the_synthetic_frame_is_unidentified():
+    frame = synthetic_h2_frame("zz")
+    confirmatory = drv("confirmatory")
+    est = confirmatory.fit_rows(frame, outcome=frame["y"])
+    assert est.method == "unidentified"
+    switch = frame["cross_family"].astype(bool)
+    assert min(((frame["y"] > 0) & switch).sum(), ((frame["y"] > 0) & ~switch).sum()) >= 20
+
+
+def test_n2_nonempty_unidentified_test_stays_in_the_family(fresh, done_factory, monkeypatch):
+    secondary = drv("secondary")
+    real = secondary._own_rows
+
+    def own(df):
+        if str(df["id"].iloc[0]).startswith(TAG[ECDSA]):
+            return synthetic_h2_frame(TAG[ECDSA])
+        return real(df)
+
+    monkeypatch.setattr(secondary, "_own_rows", own)
+    secondary.run(fresh, draws=20, boot=10)
+    sec = jload(fresh / "results" / "secondary.json")
+    e = entries(sec, "H2")[ECDSA]
+    assert e["min_arm_events"] >= 20
+    assert e["status"] == "confirmatory"
+    assert e["p"] == 1.0
+    assert e["method"] == "unidentified"
+    conf = {f"{t['hypothesis']}:{t['benchmark']}": t for t in sec["tests"]
+            if t["status"] == "confirmatory"}
+    assert f"H2:{ECDSA}" in conf
+    assert all(t["p"] is not None for t in conf.values())
+    adj = models.holm({k: t["p"] for k, t in conf.items()})
+    for k, t in conf.items():
+        assert t["p_holm"] == pytest.approx(adj[k], rel=1e-4, abs=1e-6), k
+    assert e["p_holm"] == 1.0
+    base = jload(done_factory() / "results" / "secondary.json")
+    assert len(conf) == sum(1 for t in base["tests"] if t["status"] == "confirmatory")
+
+
+def test_n2_empty_frame_is_unidentified_and_outside_the_family(fresh, monkeypatch):
+    secondary = drv("secondary")
+    real = secondary._own_rows
+
+    def own(df):
+        out = real(df)
+        if str(df["id"].iloc[0]).startswith(TAG[BENCH_A]):
+            return out.iloc[0:0]
+        return out
+
+    monkeypatch.setattr(secondary, "_own_rows", own)
+    secondary.run(fresh, draws=20, boot=10)
+    sec = jload(fresh / "results" / "secondary.json")
+    e = entries(sec, "H2")[BENCH_A]
+    assert "unidentified" in (e.get("status"), e.get("method"))
+    assert e["p"] is None and e["p_holm"] is None
+    conf = {f"{t['hypothesis']}:{t['benchmark']}": t for t in sec["tests"]
+            if t["status"] == "confirmatory"}
+    assert f"H2:{BENCH_A}" not in conf
+    adj = models.holm({k: t["p"] for k, t in conf.items()})
+    for k, t in conf.items():
+        assert t["p_holm"] == pytest.approx(adj[k], rel=1e-4, abs=1e-6), k
+
+
+NONCE_PHRASES = {
+    # round 1
+    "Changed only the nonce.": True,
+    "Nonce-only change.": True,
+    "Only change: new validation draw.": True,
+    "Re-roll of the validation draw only.": True,
+    "Only the draw-call batching changed in the kernel.": False,
+    # round 2 (negatives only)
+    "Not only the nonce: the whole adder was rewritten.": False,
+    "Rewrote the reducer; the nonce only seeds the validation draw.": False,
+}
+
+
+def test_n3_nonce_phrasings_round_two(pristine, tmp_path):
+    root = copy_root(pristine.root, tmp_path / "repo")
+    base = base_ids(pristine, pristine.root)[ECDSA]
+    nonce = facts(pristine, "nonce")
+    pick = sorted(base - nonce - facts(pristine, "failed"))[:len(NONCE_PHRASES)]
+    mapping = dict(zip(pick, NONCE_PHRASES))
+    edit_notes(root, ECDSA, mapping)
+    res, _ = run_sens_spy(root)
+    assert "s3" in res
+    kept = res["s3"]["ids"]
+    for i, ph in mapping.items():
+        assert (i not in kept) == NONCE_PHRASES[ph], ph
+    allbase = set().union(*base_ids(pristine, pristine.root).values())
+    dropped = {i for i, ph in mapping.items() if NONCE_PHRASES[ph]} | nonce
+    assert kept == allbase - dropped
