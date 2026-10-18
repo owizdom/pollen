@@ -1222,3 +1222,33 @@ def test_n3_nonce_phrasings_round_two(pristine, tmp_path):
     allbase = set().union(*base_ids(pristine, pristine.root).values())
     dropped = {i for i, ph in mapping.items() if NONCE_PHRASES[ph]} | nonce
     assert kept == allbase - dropped
+
+
+# ---- R3-2: nonce-only phrasings that b5c9cd0 matched, plus the two N3 negatives
+
+NONCE_R3 = {
+    "Nonce only change.": True,
+    "Nonce only tweak.": True,
+    "Nonce only (same code).": True,
+    "Nonce only - nothing else touched.": True,
+    "Validation draw only change; same circuit.": True,
+    "Not only the nonce: the whole adder was rewritten.": False,
+    "Rewrote the reducer; the nonce only seeds the validation draw.": False,
+}
+
+
+def test_r3_2_nonce_only_phrasings(pristine, tmp_path):
+    root = copy_root(pristine.root, tmp_path / "repo")
+    base = base_ids(pristine, pristine.root)[ECDSA]
+    nonce = facts(pristine, "nonce")
+    pick = sorted(base - nonce - facts(pristine, "failed"))[:len(NONCE_R3)]
+    mapping = dict(zip(pick, NONCE_R3))
+    edit_notes(root, ECDSA, mapping)
+    res, _ = run_sens_spy(root)
+    assert "s3" in res
+    kept = res["s3"]["ids"]
+    for i, ph in mapping.items():
+        assert (i not in kept) == NONCE_R3[ph], ph
+    allbase = set().union(*base_ids(pristine, pristine.root).values())
+    dropped = {i for i, ph in mapping.items() if NONCE_R3[ph]} | nonce
+    assert kept == allbase - dropped
