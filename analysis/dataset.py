@@ -13,8 +13,10 @@ import math
 from collections import Counter
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
+from analysis.design import KNOT_COLS
 from families import mapper
 from lineage import window
 from lineage.build import tree_sha
@@ -137,6 +139,10 @@ def build(benchmark, *, snapshot=None, lineage_root=None) -> pd.DataFrame:
         })
         prior[s.solver] += 1
     df = pd.DataFrame(recs)
+    if len(df):  # spline knots of the benchmark's analysis rows (spec 5.1)
+        knots = np.quantile(df["days_since_open"].to_numpy(float), [0, 0.25, 0.5, 0.75, 1.0])
+        for c, v in zip(KNOT_COLS, knots):
+            df[c] = float(v)
     for c in ("cross_solver", "cross_family", "cell", "parent_family", "parent_solver",
               "parent_family_folded", "tree_parent_id"):
         df[c] = df[c].astype(object)

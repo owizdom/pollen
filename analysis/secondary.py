@@ -55,7 +55,7 @@ def _fit_entry(h, bench, rows, outcome_col):
     except Exception:
         return _failed(h, bench, events, len(rows))
     if est.method == "unidentified":
-        return _unidentified(h, bench, est.n)
+        return _failed(h, bench, events, est.n, method="unidentified")
     if not confirmatory.valid(est):
         return _failed(h, bench, events, est.n)
     return _entry(h, bench, events, confirmatory.normal_p(est.log_or, est.se),
