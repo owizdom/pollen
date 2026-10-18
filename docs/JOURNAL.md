@@ -56,3 +56,4 @@
 - AT3 sample drawn (seed 17, 200 notes); five fresh-context Opus auditors scoring. Wisdom waived the 20-note spot-check (2026-10-18: "dw, its all good, i approve").
 - AT3 recorded: 69 agree, 5 contradict, 126 silent; 93.2% model-level (below the 95% bar; AT3 is recorded, not a gate), 94.6% family-level. Auditors: claude-opus-5-5. families/audit/RESULT.md.
 - Wisdom approved the prereg-v1 lock in advance (2026-10-18: "i approve the lock approval"). Condition kept: lock only once AT2, AT4, AT5, AT15 are green and the power gate has run; any failure there goes back to Wisdom before tagging.
+- v2.9 parent rule (Wisdom chose 'labels, then promoted' 2026-10-19). AT4 text 2,773/3,069 (90.4%) PASS; declared 18/24 reported. AT15 PASS on all 10. make check at 9acbd33: 454 passed, 0 failed, 0 skipped, 400 s. Lineage frozen: 10 benchmarks, 0 unfetchable commits, 315 MB.
