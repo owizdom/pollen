@@ -1,5 +1,7 @@
 # pollen
 
+[![Paper DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23465602.svg)](https://doi.org/10.5281/zenodo.23465602) [![Data DOI](https://img.shields.io/badge/data-10.5281%2Fzenodo.23464809-blue)](https://doi.org/10.5281/zenodo.23464809) [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![Pre-registered](https://img.shields.io/badge/pre--registered-prereg--v1-purple)](docs/prereg.md)
+
 Does cross-model pollination help open autoresearch?
 
 Paper: [doi.org/10.5281/zenodo.23465602](https://doi.org/10.5281/zenodo.23465602) · Data: [doi.org/10.5281/zenodo.23464809](https://doi.org/10.5281/zenodo.23464809)

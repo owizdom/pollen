@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite the paper."
+title: "pollen: does cross-model pollination help open autoresearch?"
+authors:
+  - family-names: Okechukwu
+    given-names: Wisdom
+license: MIT
+repository-code: "https://github.com/owizdom/pollen"
+doi: 10.5281/zenodo.23465602
+keywords:
+  - autoresearch
+  - AI agents
+  - leaderboards
+  - pre-registration
+  - meta-analysis
+  - ECDSA.Fail
+  - Yukon
+preferred-citation:
+  type: article
+  title: "Does Cross-Model Pollination Help Open Autoresearch? Evidence from Yukon Leaderboards"
+  authors:
+    - family-names: Okechukwu
+      given-names: Wisdom
+  year: 2026
+  doi: 10.5281/zenodo.23465602
+  url: "https://doi.org/10.5281/zenodo.23465602"
+  publisher:
+    name: Zenodo
