@@ -52,8 +52,8 @@ Strings that name the model being optimised rather than the model doing the work
 A row with no \field{Model:} line is Unknown.
 Lookup is exact: a declared string absent from the table raises an error, so every analysed string has a recorded decision.
 
-Of the 31,287 study-benchmark rows with a \field{Model:} line, 4.5\% map to Unknown (\file{docs/JOURNAL.md}).
-%TODO Confirm the denominator of the 4.5% Unknown share (rows with a Model line, or all study rows) and whether it is computed on all rows or analysis rows.
+Of the 32,574 study-benchmark rows, 32,386 carry a \field{Model:} line, and 1,453 of those, or 4.5\%, map to Unknown.
+Among analysis rows, counting rows with no \field{Model:} line, 5.1\% are Unknown.
 Unknown and Multi rows are excluded from the confirmatory tests.
 Sensitivity analysis 1 restores Unknown as a family of its own, and the exploratory analysis E1 studies Multi rows.
 Within a benchmark, a family with fewer than 30 analysis rows is folded into a single ``Other'' level for the family covariates of the model in Section~\ref{sec:model}.
@@ -75,7 +75,7 @@ The audit is recorded, not a gate, so the shortfall is a limitation of the label
 \label{sec:parents}
 
 A submission's parents are the earlier submissions it built on.
-The lineage code in \file{lineage/} finds them from two sources and keeps both for every analysis row.
+The lineage code in \file{lineage/} finds them from three sources, in a fixed order of precedence, and keeps the tree-distance parent for every analysis row as well.
 
 \paragraph{Declared parents.}
 When a row's attribution record has \field{declaration} equal to \field{provided} and lists dependencies, those are its declared parents.
@@ -84,11 +84,16 @@ Declared parents are checked against every snapshot row of the benchmark, so a d
 One remaining declared parent gives a single-parent row.
 Two or more give a multi-source row, which is excluded from the confirmatory tests and studied in E1.
 
+\paragraph{Bases named in the note.}
+Many notes name their starting point on a \field{Base:} line.
+The code reads that line and resolves it to an earlier submission of the benchmark by identifier prefix, submission commit or promoted commit (\file{lineage/declared.py}).
+A resolved base is the parent of a row that has no declared attribution.
+
 \paragraph{Tree-distance parents.}
 Each analysis row has a tree: the commit in \field{promotedSourceRef} for promoted rows, and the commit in \field{submissionCommitSha} otherwise.
 The build fetches each commit by hash from the benchmark's public repository and records unfetchable ones in \file{missing.json} (Appendix~\ref{app:trees}).
 The distance between two trees is the number of added plus removed text lines reported by \texttt{git diff -{}-numstat -{}-minimal -{}-no-renames} over the benchmark's editable paths, with each changed binary file counted as one line.
-The candidates are recent promoted rows and the child solver's own recent rows (Appendix~\ref{app:trees}).
+The candidates are the 50 most recent promoted rows whose promotion finished before the child was created (Appendix~\ref{app:trees}). A solver's own unpromoted rows are not candidates.
 The tree parent is the candidate at the smallest distance, with ties going to the most recent row and then to the identifier.
 
 \paragraph{Novel rows.}
@@ -97,18 +102,21 @@ Binary files do not count toward size.
 Novel rows are excluded from H1 and H2 and reported descriptively.
 
 \paragraph{Primary parent and freeze.}
-The primary parent is the declared one when it exists, and the tree parent otherwise.
+The primary parent is the declared one when it exists, then the base named in the note when it resolves to an earlier row, and the tree parent otherwise.
 Sensitivity analysis 2 uses the tree parent for every row, which estimates a different quantity: the immediate code parent rather than the declared origin.
 The build writes, per benchmark, the tree manifests (path to blob hash), the distance table, the parent links and \file{missing.json} under \file{lineage/frozen/}, with their own \file{SHA256SUMS}.
 The analysis rebuilds from these files offline.
 The build refuses to overwrite a frozen benchmark when commits it already holds can no longer be fetched.
-%TODO Add the per-benchmark count of unfetchable tree commits from lineage/frozen/<slug>/missing.json once the lineage freeze is final (descriptive, no outcome).
+The final build recorded no unfetchable commit on any study benchmark.
 
 \paragraph{Validation.}
 Acceptance test AT4 checks the inferred treatment cell, not the parent identifier, against two labelled sets: declared attribution edges, and notes that name a base in text.
-A base named in text is read from a \field{Base:} line and resolved to a submission by identifier prefix, submission commit or promoted commit (\file{lineage/declared.py}).
-The pre-registered bar is 85\% agreement on each set.
-Agreement was \ATFourDeclaredAgree{} against declared edges and \ATFourTextAgree{} against text-declared bases, and \ATFourFrontierAgree{} and \ATFourNonFrontierAgree{} for frontier and non-frontier parents.
+The bar is 85\% agreement on text-declared bases; declared edges are reported but not gated, because only a few dozen of them can be checked.
+Agreement was \ATFourTextAgree{} against text-declared bases and \ATFourDeclaredAgree{} against declared edges.
+Split by whether the labelled parent was the current best when the child was created, agreement was \ATFourFrontierAgree{} for current-best parents and \ATFourNonFrontierAgree{} for the others.
+The parent rule took its final form after a first AT4 run failed before the lock.
+That run let a solver's own unpromoted rows compete as candidates even when a different base was named, and agreement on text-declared bases was 1,555 of 3,106, or 50\%, mostly because a solver's own sibling attempt won the distance comparison (\file{docs/JOURNAL.md}).
+The revised rule, recorded in the specification before the lock, takes a declared parent first, then a base named in the note, and then the nearest promoted row.
 
 \subsection{Treatment cells}
 \label{sec:cells}

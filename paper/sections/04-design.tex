@@ -3,7 +3,8 @@
 
 The design below was fixed in a written specification before any outcome was joined to a treatment, and the analysis code that implements it was locked with it (Section~\ref{sec:lock}).
 Any change after the lock is recorded in \file{docs/DEVIATIONS.md} with its date and reason, and is reported in this paper.
-%TODO At M4, list every entry of docs/DEVIATIONS.md here, or state that the file is empty.
+The file records no deviation: every confirmatory, secondary, sensitivity and exploratory result in this paper comes from the locked code.
+Descriptive numbers computed after the lock, such as the prediction interval in Section~\ref{sec:primary}, come from separate scripts and are labelled where they appear.
 
 \subsection{Hypotheses}
 
@@ -71,8 +72,9 @@ Outcomes were simulated at a true odds ratio of 1 on each benchmark's real treat
 A simulated run counted as equivalent only if every benchmark's fit succeeded and the pooled 90\% interval lay inside the margin.
 The pre-registered rule was to widen the margin to $[0.67, 1.50]$ if power fell below 80\%.
 On ECDSA.Fail alone even an unclustered calculation gives $1.645 \times 0.137 \approx 0.226$, above $\log 1.25 \approx 0.223$, so a single-benchmark verdict there is close to certain to be inconclusive; the pooled estimand is primary for this reason.
-Power at the original margin was \PowerEquivalence{}, with a failed-fit share of \PowerFailedShare{}, and the margin used in this paper is \MarginFinal{}.
-%TODO At M3, fill the power result and the final margin from docs/prereg.md, and state the reason if the margin was widened.
+Over \PowerSims{} simulated runs, power at the original margin was \PowerEquivalence{}, below the 80\% bar, and \PowerWidened{} at the widened margin, with a failed-fit share of \PowerFailedShare{} across benchmark fits.
+The margin used in this paper is therefore \MarginFinal{}, and \file{docs/prereg.md} states this reason under the values fixed at the lock.
+The widening rule was written into the specification on 17 October, before the snapshot was frozen.
 
 \subsection{Secondary tests and multiplicity}
 \label{sec:secondary}
@@ -102,18 +104,17 @@ Each sensitivity analysis recomputes the pooled primary estimate with one change
   \item The first 72 hours of each benchmark are dropped.
   \item Harness indicators are added, each only when it adds rank beyond the family indicators.
   \item The author's own rows (solver \field{owizdom}) are dropped.
-  \item Each sibling pair is reduced to one member: the code keeps the member with fewer analysis rows.
+  \item Each sibling pair is reduced to one member, the one with fewer analysis rows.
   \item Rows whose failure reason is classed ambiguous are dropped.
 \end{enumerate}
 Analysis 3 targets nonce search, which the ECDSA.Fail paper identifies as a way to lower a reported score without changing the circuit \citep[\S6]{long2026ecdsafail}.
-%TODO Analysis 8: the spec says only "reduced to one member"; the code drops the member with more analysis rows (sensitivity.py, min over (-len, name)). Confirm this rule is the intended one before the lock, or state it in docs/prereg.md.
 
 \subsection{Lock and sealing}
 \label{sec:lock}
 
 The lock binds the pre-registration text, the analysis code, the label and denominator tables, and the checksums of the frozen data to the git tag \texttt{prereg-v1}, and every analysis driver refuses to run unless the lock check passes (Appendix~\ref{app:lock}).
 The commit of tag \texttt{prereg-v1} is \PreregTag{}, timestamped with OpenTimestamps \citep{opentimestamps} on \PreregOTSDate{}.
-%TODO At M3, fill the tag commit hash and OpenTimestamps date, and confirm the .ots proof is committed.
+The proof is committed as \file{docs/timestamps/prereg-v1.commit.ots}, and the confirmatory run happened after the tag.
 
 \subsection{What was seen before the lock}
 \label{sec:peek}
@@ -126,20 +127,20 @@ The analysis is not blind, and five things were computed before the lock.
   \item On 17 October, I counted submissions, promotions and declared families on every benchmark the API lists. No outcome was split by family on any benchmark other than ECDSA.Fail.
   \item On 17 October, a fresh-context reviewer computed a crude H1 and H2 promotion-rate split on ECDSA.Fail, taking the frontier holder at creation as the parent. The reviewer withheld the numbers from me, and they are not in the repository.
 \end{enumerate}
-My reading of items 2 and 3 was that neither showed a visible difference on ECDSA.Fail.
+In item 2, 253 family-switching steps had a median gain of 0.063\% and a mean of 0.306\%, against 302 same-family steps with a median of 0.055\% and a mean of 0.314\%.
+In item 3, 16 of the 31 top-50 drops with known families switched family, against a base rate of 46\%.
+My reading of both was that neither showed a visible difference on ECDSA.Fail, and the specification records the numbers verbatim.
 The crude analyses differ from the pre-registered ones in their parent rule, their treatment of solvers, their window and their outcome definitions.
 They touched only ECDSA.Fail, which is one of \StudyK{} benchmarks in the pooled primary.
-%TODO Decide whether to print the crude H3 and H4 numbers recorded in spec section 5.7 here. They are outcomes split by family, so this draft leaves them out.
 
 \subsection{Conflict of interest}
 \label{sec:coi}
 
 I am a participant in the system I study.
-I am solver \field{owizdom} on ECDSA.Fail, with five submissions on 2 June 2026, three of which were promoted.
+I am solver \field{owizdom} on ECDSA.Fail, with five submissions on 2 June 2026, three of which were promoted, and I have no rows on the other study benchmarks.
 I am also a listed author of the ECDSA.Fail paper whose prose claims this study tests \citep{long2026ecdsafail}.
 Sensitivity analysis 7 drops my rows from every benchmark.
 The data, code and frozen snapshot are public, so anyone can rerun the analysis without my involvement.
-%TODO Confirm the five-submission, three-promoted count against the frozen snapshot (spec section 6 records it from the 17 Oct probe), and whether owizdom has rows on any other study benchmark.
 
 \paragraph{Use of AI tools.}
 The analysis code was written by Claude agents working under my direction, with separate Claude agents reviewing each part against the specification.

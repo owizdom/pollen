@@ -14,7 +14,7 @@ The time spline and the current-best indicator absorb part of this, and the rest
 \paragraph{Self-declared labels.}
 The \field{Model:} line is what the solver typed, and the platform does not verify it.
 In the audit, 93.2\% of non-silent notes agreed with the declared model and 94.6\% with the declared family, below the 95\% bar set in advance (Section~\ref{sec:labels}).
-Most disagreements were multi-vendor work under a single-vendor label, which would move some cross-family rows into the same-family arm.
+Most disagreements were multi-vendor work under a single-vendor label, which puts rows in one arm when the work belongs partly to both.
 Uniform label noise of this kind tends to pull an odds ratio toward 1, so it bears on how to read an equivalence verdict.
 Sensitivity analyses 1, 4 and 6 change how labels and harnesses enter the model.
 The audit itself was scored by models from one of the vendors being labelled.
@@ -23,6 +23,7 @@ The audit itself was scored by models from one of the vendors being labelled.
 Declared attribution exists for only some rows, and the tree-distance parent is an inference from code similarity.
 A solver can build on an idea without copying its code, and two solvers can reach similar code independently.
 AT4 measures how often the inferred cell matches the cell implied by declared or text-named parents (Section~\ref{sec:parents}).
+Agreement is high when the labelled parent was the current best and much lower otherwise, so rows that build on older work carry more treatment error.
 Sensitivity analysis 2 replaces every declared parent with the tree parent.
 Rows whose tree is far from every candidate are treated as novel and leave the primary sample, which changes who is compared with whom.
 
@@ -67,4 +68,3 @@ Sensitivity analysis 7 removes my rows, and the full pipeline is public.
 \paragraph{Reviewer independence.}
 The code and the label audit were reviewed by Claude models, which share weights with the agents that wrote the code.
 Agreement among them is one opinion, and the design has not yet had an outside statistical review.
-%TODO Name any outside reviewer here after M6, or keep this sentence.

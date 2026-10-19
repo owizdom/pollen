@@ -4,7 +4,6 @@
 On 16 October 2026, Sreeram Kannan compared two circuit searches for elliptic-curve point addition in a public post \citep{kannan2026post}:
 ``anons beat anthropic by 2x / anthropic gets 21M gates at 843 qubits / ecdsa.fail gets 11.9M gates at 843 qubits.''
 Kydo replied that this was ``also a good case study of how cross modal pollination might produce better results'' \citep{kydo2026reply}.
-%TODO Verify both quotations verbatim against the posts and add the URLs to refs.bib.
 
 The two searches differ in how they were organised.
 The first is the evolutionary framework of \citet{gu2026discovering}, in which a single model, Claude Mythos~5, proposes circuit-generating programs inside OpenEvolve and an independent evaluator scores them.
@@ -46,7 +45,7 @@ The contributions are as follows.
   \item A frozen, checksummed snapshot of the public Yukon API, with a rebuild path that runs offline from it (Section~\ref{sec:data}).
   \item A per-submission dataset for \StudyK{} study benchmarks chosen by a fixed rule, with declared model families, declared and tree-inferred parents, and treatment cells (Sections~\ref{sec:setting} and~\ref{sec:data}).
   \item A pre-registered test of whether building on another solver's work from a different model family changes the odds of promotion, estimated within solver and pooled across benchmarks, with an equivalence verdict (Section~\ref{sec:design}).
-  \item Per-benchmark results, nine fixed sensitivity analyses, and three case studies, including the 843-qubit lineage that the post above quoted (Sections~\ref{sec:results} to~\ref{sec:cases}).
+  \item Per-benchmark results, nine fixed sensitivity analyses, and case studies, including the lineage of the 843-qubit point that the post above quoted (Sections~\ref{sec:results} to~\ref{sec:cases}).
 \end{itemize}
 
 Section~\ref{sec:setting} describes Yukon and the study benchmarks.

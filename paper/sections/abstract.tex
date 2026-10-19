@@ -1,11 +1,16 @@
 \begin{abstract}
-%TODO Abstract. Write after M4 from paper/numbers.tex only. Planned content, in order:
-% the question (does building on another solver's work from a different model vendor change
-% the odds of promotion on Yukon leaderboards); the data (frozen public snapshot, \StudyK{}
-% study benchmarks, declared model lines, declared and tree-inferred parents); the design
-% (pre-registered, solver-stratified conditional logistic regression per benchmark, HKSJ
-% pooling, equivalence margin \MarginLow{} to \MarginHigh{}); the primary result
-% (\PooledOR{}, 95\% interval \PooledORLow{} to \PooledORHigh{}, verdict \PooledVerdict{});
-% the ecdsa.fail case verdict (\CaseStudyVerdict{}); and one sentence on what a platform
-% would need to log to answer the causal version. No claim beyond numbers.tex and cited sources.
+Open autoresearch leaderboards let many participants, each using their own AI models, build on one another's public submissions.
+A common explanation for their success is cross-model pollination: work from one vendor's model improves when a different vendor's model builds on it.
+I test this on a frozen public snapshot of \StudyK{} Yukon leaderboards, including ECDSA.Fail, with \AnalysisRowsTotal{} scored submissions.
+Each submission carries a declared model family, and its parent comes from declared attribution, a base named in its note, or code-tree distance.
+The pre-registered analysis works within each participant.
+It compares attempts that build on another participant's work from a different model family with attempts that build on same-family work.
+Per-benchmark conditional logistic regressions, stratified by participant, are pooled by random-effects meta-analysis with an equivalence margin fixed before outcomes were joined.
+The pooled odds ratio of promotion is \PooledOR{} (95\% interval \PooledORLow{} to \PooledORHigh{}; 90\% interval \PooledORNinetyLow{} to \PooledORNinetyHigh{}).
+The 90\% interval lies inside the margin of \MarginLow{} to \MarginHigh{}, so the verdict is \PooledVerdict{} on average across benchmarks.
+The margin was widened from $[0.80, 1.25]$ by a pre-registered power rule; under the original margin the result is inconclusive.
+On ECDSA.Fail alone the estimate is \BenchJOR{} (95\% interval \BenchJORLow{} to \BenchJORHigh{}), which is inconclusive.
+All nine sensitivity analyses agree with the primary.
+The point quoted in the post that motivated this study came from a cross-family step, which shows that such steps happen, not that they help on average.
+Testing the causal version would need platforms to log every attempt and the models behind it.
 \end{abstract}

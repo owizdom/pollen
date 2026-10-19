@@ -1,14 +1,79 @@
 \section{Case studies}
 \label{sec:cases}
 
-% Planned content (spec section 12 item 7). Source-backed only: public notes, commits and API
-% fields, each cited by submission id and commit; no private transcripts or traces.
-% 7.1 The 843-qubit lineage on ECDSA.Fail: the chain of parents behind the point quoted in the
-%     16 Oct post, which the spec records as jieyilong running GPT-5, across GPT-5 and
-%     Claude Opus 5.5 with a GPT-6 Sol sub-agent. For each step: solver, declared model,
-%     declared or tree parent, and what the note says changed.
-%     %TODO Verify the GPT-5 attribution and the chain against the frozen snapshot before writing.
-% 7.2 The ping-pong divider: the comparison-free ping-pong dialog-GCD that the ECDSA.Fail paper
-%     describes in its sections 5.3.3 and 6, traced through its public submissions.
-% 7.3 The largest single drop on ECDSA.Fail by Y3: its parent, both families and the note.
-% Each case states what it can and cannot show; none is evidence for or against H1.
+The cases below are read from public notes and API fields in the frozen snapshot, each cited by submission identifier.
+They show how the measurement behaves on individual rows, and none of them is evidence for or against H1.
+
+\subsection{The 843-qubit point}
+\label{sec:case843}
+
+The post that motivated this study quotes 11.9 million gates at 843 qubits for ECDSA.Fail.
+The snapshot holds that point as submission \texttt{4a8ade44} by solver \field{jieyilong}, created on 11 October 2026, with 843 qubits and 11,947,178 average executed Toffoli gates.
+Its declared model is GPT-5, and its note names the coding agent as Codex with separate builder and auditor roles.
+Figure~\ref{fig:case843} shows the chain behind it as the notes describe it.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  node distance=6mm and 7mm,
+  box/.style={draw, rounded corners=2pt, align=flush left, font=\scriptsize, inner sep=3pt, text width=38mm},
+  arr/.style={-{Stealth[length=2mm]}, thick},
+  noted/.style={-{Stealth[length=2mm]}, densely dashed}]
+\node[box] (bw1) {\texttt{8f53dab1} BitWonka\\Claude Opus 5.5, 9 Oct\\940 qubits, 8.74M Toffoli};
+\node[box, below=of bw1] (bw2) {\texttt{4adf9ec1} BitWonka\\Claude Opus 5.5, 9 Oct\\836 qubits, 15.93M Toffoli};
+\node[box, right=of bw1, yshift=-6mm] (gn) {\texttt{3f1c7ce5} gnuchev\\Claude Opus 5.5, 9 Oct\\843 qubits, 13.01M Toffoli};
+\node[box, right=of gn] (jy) {\texttt{4a8ade44} jieyilong\\GPT-5, 11 Oct\\843 qubits, 11.95M Toffoli};
+\node[box, below=of jy] (jy0) {\texttt{ba4fda87} jieyilong\\GPT-5 Codex, 10 Oct\\975 qubits, 2.99M Toffoli};
+\node[box, above=of jy] (lc) {\texttt{dfb1aec2} leech1996, promoted\\Claude Opus 5.5, 8 Oct\\1,237 qubits, 0.79M Toffoli};
+\draw[arr] (bw1) -- (gn);
+\draw[arr] (bw2) -- (gn);
+\draw[arr] (gn) -- node[above, font=\scriptsize] {base} (jy);
+\draw[arr] (jy0) -- node[right, font=\scriptsize] {pattern} (jy);
+\draw[noted] (lc) -- node[right, font=\scriptsize, align=left] {tree parent\\(this study)} (jy);
+\end{tikzpicture}
+\caption{The chain behind the 843-qubit, 11.9M-Toffoli point on ECDSA.Fail. Solid arrows are bases and transferred patterns named in the notes, through gnuchev's own 849-qubit step, which is not drawn. The dashed arrow is the parent that the tree-distance rule assigns. None of the rows except \texttt{dfb1aec2} was promoted. Source: frozen snapshot notes and \file{lineage/frozen}.}
+\label{fig:case843}
+\end{figure}
+
+The note says the submission ``starts from gnuchev's public Froghop-One submission \texttt{3f1c7ce}'', at 843 qubits and 13,010,600 Toffoli gates.
+That row, \texttt{3f1c7ce5}, was created on 9 October and declares Claude Opus~5.5 in Claude Code.
+Its own note names its base as gnuchev's earlier 849-qubit circuit, built on two rows by BitWonka from the same day, both declared Claude Opus~5.5.
+The jieyilong note makes two changes at the same qubit count.
+It says the second transfers a measurement and phase-repair pattern from BitWonka's Frogstrip line and from jieyilong's own 975-qubit submission \texttt{ba4fda87}, declared GPT-5 Codex.
+It also says that its builder and auditor roles ``used the same model family; no model-diversity claim is made.''
+
+By the notes, then, the quoted point is a cross-solver, cross-family step: an OpenAI model building on another solver's Anthropic-model circuit.
+Within each solver the chain is single-vendor, and the step that produced the point names one family.
+This is the pattern Kydo's reply describes, and it is one step.
+
+The case also shows two limits of the measurement.
+First, none of these rows promoted.
+Promotion on ECDSA.Fail follows the product of qubits and Toffoli gates, and the best promoted product just before \texttt{4a8ade44} was 943,306,548, about eleven times lower than its own.
+The 843-qubit rows are low-width Pareto points, so under Y1 the step the post quotes is a failure, and only H5 on Pareto gain could count it.
+Second, the tree-distance rule did not find the base the note names.
+Its candidates are promoted rows only (Appendix~\ref{app:trees}), so an unpromoted row such as \texttt{3f1c7ce5} can never be a tree parent.
+The note also names its base in prose rather than on a \field{Base:} line, which is the only form the text rule reads.
+The rule assigned \texttt{dfb1aec2}, a promoted Claude Opus~5.5 row by leech1996.
+The parent identifier is wrong, but the treatment cell is the same, cross-solver and cross-family, because both candidate parents declare an Anthropic model.
+AT4 measures exactly this agreement of cells rather than identifiers.
+On 17 October, after the post and before the freeze, solver \field{jackylee0424} reached 843 qubits with 9,382,317 Toffoli gates, declaring Claude Opus~5.5; that row was not promoted either.
+
+\subsection{The largest gains}
+\label{sec:casegains}
+
+The largest promotion on ECDSA.Fail by Y3 is \texttt{0c1d4d95} by \field{pldallairedemers} on 2 June, declared GPT-5, which lowered the best score by 18.8\%.
+The tree rule classes it as novel, with no parent, and it predates the confirmatory window, so it is outside the primary sample.
+
+The two largest promotions inside the window point in opposite directions.
+On 21 August, \texttt{3616dbf2} by \field{teddyjfpender}, declared GPT-5.6 Sol in a Codex multi-agent loop, lowered the best score by 14.8\%.
+It replaced the point-addition circuit with one built around a fixed-depth ping-pong binary division.
+Its tree parent is a promoted row by \field{jackylee0424} declared GPT-5, so it counts as a same-family step.
+On 7 October, \texttt{53986ea4} by BitWonka, declared Claude Opus~5.5 with Claude sub-agents, lowered the best score by 9.7\% with a new division walk.
+Its note names its base as the ``GCD Skywalk line'', which is the promoted row \texttt{73c5e2a8} by \field{jackylee0424}, and the tree rule assigns the same row.
+That parent declares GPT-6.1, so the step counts as cross-family.
+
+The parent's own note complicates the label.
+It credits GPT-6.1 Sol in Codex for the final search and packaging, and Claude Opus~5.5 in Claude Code for route development.
+Under its single-vendor label, the parent is OpenAI work; by its own description it is work by two vendors.
+This is the most common disagreement in the label audit (Section~\ref{sec:labels}): a single-vendor label on multi-vendor work blurs the line between the two arms in a way the \field{Model:} line cannot show.
+Large gains occur on both sides of the treatment, and the two cases here differ in parent family and in nearly everything else.

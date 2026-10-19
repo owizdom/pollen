@@ -1,12 +1,62 @@
 \section{Per-benchmark results and sensitivity}
 \label{sec:perbench}
 
-% Planned content (spec sections 5.5, 5.6, 12 item 6).
-% 6.1 Table: one row per study benchmark (Bench A..J macros): analysis rows, fit rows,
-%     strata kept, strata without treatment variation, strata dropped, method (clogit or Firth),
-%     odds ratio with 95% interval. AT5 status per benchmark ("promotion rule not reproduced"
-%     where it applies, with the minScoreImprovementBips value).
-% 6.2 Sensitivity table and forest plot (paper/figures/forest_sensitivity.pdf): analyses 1 to 9
-%     (Sens...OR, ...ORLow, ...ORHigh), each against the primary. Analysis 2 described as a
-%     different estimand (immediate code parent). Analyses that do not apply say why.
-% 6.3 Sibling pairs (analysis 8) and the author's rows (analysis 7) discussed briefly.
+\subsection{Per benchmark}
+
+Table~\ref{tab:perbench} gives each benchmark's sample and estimate.
+Five point estimates lie above 1 and five below, and they range from \BenchJOR{} on \bench{gpsanant/ecdsafail-challenge} to \BenchCOR{} on \bench{eigenlabs/eip8200-challenges/modexp}.
+Informative solvers per benchmark range from 19 to 46. On nine benchmarks some of them have primary rows that are all cross-family or all same-family, and those solvers inform the covariates only.
+
+The promotion rule was reproduced on \ATFiveReproduced{} benchmarks (Section~\ref{sec:outcomes}).
+On \ATFiveNotReproducedList{}, recomputation disagrees with the recorded status on more than 1\% of rows, and Y1 comes from the recorded status as the pre-registration requires.
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\caption{Per-benchmark primary results. Names omit the setter prefix of Table~\ref{tab:benchmarks}. Analysis rows are all scored submissions; fit rows are primary rows from solvers with outcome variation. Strata kept are informative solvers; the next column counts those with no treatment variation. Odds ratios carry 95\% intervals. Source: \file{results/confirmatory.json}.}
+\label{tab:perbench}
+\begin{tabular}{lrrrrll}
+\toprule
+Benchmark & Analysis & Fit & Strata & No treat. & Method & Odds ratio [95\%] \\
+\midrule
+\tabinput{tables/perbench.tex}
+\midrule
+Pooled (HKSJ) & \AnalysisRowsTotal{} & \FitRowsTotal{} & & & & \PooledOR{} [\PooledORLow{}, \PooledORHigh{}] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Sensitivity analyses}
+
+Table~\ref{tab:sensitivity} and Figure~\ref{fig:sens} recompute the pooled estimate under each of the nine pre-registered changes.
+Every pooled odds ratio lies between 1.01 and 1.03, and every 90\% interval lies inside the margin, so no single change moves the verdict.
+Analysis 2 estimates a different quantity, the effect of the immediate code parent rather than the declared origin, and agrees with the primary.
+Analysis 7 is identical to the primary: the author's \AuthorRows{} submissions are all on ECDSA.Fail, and the three that are analysis rows predate its confirmatory window.
+Analysis 8 keeps one member of each sibling pair and pools eight benchmarks.
+
+Unknown labels concentrate on one benchmark.
+On \bench{eigenlabs/flock-challenge}, \FlockUnknownCell{} of \FlockAnalysisRows{} analysis rows are cross-solver rows with an Unknown or Multi family on one side, and in \FlockUnknownParent{} of them it is the parent's family that is missing.
+Analysis 1, which treats Unknown as a family of its own, moves that benchmark's odds ratio from \BenchEOR{} [\BenchEORLow{}, \BenchEORHigh{}] to \FlockSOneOR{} [\FlockSOneLow{}, \FlockSOneHigh{}].
+This per-benchmark figure is descriptive; the pre-registered analysis 1 reports only the pooled value.
+
+\begin{table}[t]
+\centering
+\small
+\caption{Pooled odds ratio under each sensitivity analysis, with the number of benchmarks pooled and 95\% and 90\% intervals. Source: \file{results/sensitivity.json}.}
+\label{tab:sensitivity}
+\begin{tabular}{lrll}
+\toprule
+Analysis & $k$ & Odds ratio [95\%] & 90\% interval \\
+\midrule
+\tabinput{tables/sensitivity.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/paper_forest_sensitivity.pdf}
+\caption{Pooled odds ratio and 90\% interval under the primary analysis and each sensitivity analysis. The shaded band is the margin. Source: \file{results/sensitivity.json}.}
+\label{fig:sens}
+\end{figure}

@@ -19,13 +19,16 @@ It also refuses a listed file that is missing and a data file that is not listed
 The build in \file{lineage/build.py} fetches every tree commit by its hash into a local bare mirror, never by branch name.
 A failing batch of hashes is split in halves until the unfetchable hashes are isolated, and those are written to \file{missing.json}.
 The candidates for a child are earlier analysis rows with a tree, collapsed by tree identity so that only the most recent row with each tree remains.
-From them the build keeps the 50 most recent promoted rows whose promotion finished before the child was created, and the child solver's own 50 most recent earlier rows.
+From them the build keeps the 50 most recent promoted rows whose promotion finished before the child was created. A solver's own unpromoted rows are not candidates; an earlier rule that admitted them failed AT4 before the lock (Section~\ref{sec:parents}).
 
 \subsection{Lock check}
 \label{app:lock}
 
-The lock is a manifest, \file{docs/prereg-manifest.json}, holding the SHA-256 of the pre-registration text, every code file under \file{snapshot/}, \file{families/}, \file{lineage/}, \file{outcomes/} and \file{analysis/}, the family table, the denominator classes, and the checksum files of the frozen snapshot and lineage data.
-The lock check in \file{analysis/lock.py} recomputes every hash, verifies every frozen data file against its checksum file, rejects unlisted data files, symbolic links and compiled files without source, and requires the manifest to equal the copy under the git tag \texttt{prereg-v1}.
+The lock is a manifest, \file{docs/prereg-manifest.json}.
+It holds the SHA-256 of the pre-registration text, every code file under \file{snapshot/}, \file{families/}, \file{lineage/}, \file{outcomes/} and \file{analysis/}, the family table, the denominator classes, and the checksum files of the frozen snapshot and lineage data.
+The lock check in \file{analysis/lock.py} recomputes every hash and verifies every frozen data file against its checksum file.
+It rejects unlisted data files, symbolic links and compiled files without source.
+It also requires the manifest to equal the copy under the git tag \texttt{prereg-v1}.
 Every analysis driver runs the check first, and the confirmatory script exits with an error if it fails.
 The equivalence margin is read from a single line of \file{docs/prereg.md}.
 
@@ -38,3 +41,28 @@ A correct 95\% interval falls below 90 of 100 with probability about 0.03 under 
 In AT14, shuffling family within solver must give an H1 interval that covers 1 in at least 90 of 100 fixed seeds.
 At the lock, coverage was \ATThirteenCoverage{} for AT13 and \ATFourteenCoverage{} for AT14.
 
+
+\section{Secondary tests}
+\label{app:secondary}
+
+Table~\ref{tab:secondary} lists every secondary test from \file{results/secondary.json}.
+Events are outcome events in the smaller arm; a test enters the Holm family (C) only with at least 20, and is otherwise descriptive (D).
+Estimates are log odds ratios for H1, H2 and H5, the share of cross-family promotions that are large jumps for H3a, and the median-regression coefficient on log gain for H4.
+H3b, plateau breaks, had at most one event in the smaller arm on every benchmark, and all its tests are descriptive; its rows are omitted.
+
+\begin{small}
+\begin{longtable}{llrrrrc}
+\caption{Secondary tests. A dash marks a value that does not exist, such as an adjusted $p$ for a descriptive test or an estimate for an unidentified fit.}
+\label{tab:secondary}\\
+\toprule
+Test & Benchmark & Events & Estimate & $p$ & Holm $p$ & Status \\
+\midrule
+\endfirsthead
+\toprule
+Test & Benchmark & Events & Estimate & $p$ & Holm $p$ & Status \\
+\midrule
+\endhead
+\tabinput{tables/secondary.tex}
+\bottomrule
+\end{longtable}
+\end{small}

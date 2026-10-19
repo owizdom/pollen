@@ -19,7 +19,7 @@ Each benchmark object carries a field \field{minScoreImprovementBips}, the small
 Normal synchronisation restores the editable paths from the best promoted submission, so the current best is the default starting point for new work \citep{yukoncli2026}.
 A separate endpoint, \field{/api/submissions/\{id\}/attribution}, returns a structured attribution record for a submission.
 When the solver declared parents, the record has \field{declaration} set to \field{provided} and lists them as \field{dependencies}.
-%TODO Cite a public Yukon page that documents the attribution endpoint and minScoreImprovementBips, if one exists; both are described here from the API responses and the CLI skill.
+Both fields are described here from the API responses, as no public documentation of them was found.
 
 \subsection{ECDSA.Fail}
 
@@ -42,14 +42,13 @@ ECDSA.Fail is included whatever the rule says.
 
 Ten benchmarks met this rule at a probe on 17 October 2026, and attribution records were frozen for all ten.
 Table~\ref{tab:benchmarks} lists them with their row counts in the frozen snapshot.
-The final rule runs again on the frozen data before the confirmatory analysis, so the study contains \StudyK{} benchmarks.
-%TODO After lineage freeze and the M3 lock, confirm that study.study_names() returns exactly these ten; if not, edit Table 1 and record the change in docs/DEVIATIONS.md.
+The rule ran again on the frozen snapshot and lineage before the confirmatory analysis and returned the same \StudyK{} benchmarks.
 Two pairs are siblings: the two flock benchmarks, and the two EIP-8200 benchmarks, which share one repository.
 Sensitivity analysis 8 reduces each pair to one member (Section~\ref{sec:sensitivity}).
 
 \begin{table}[t]
 \centering
-\caption{Study benchmarks at the 17 October probe. Rows are all submissions in the frozen snapshot, cancelled included; attribution 404 counts the rows whose attribution endpoint returned HTTP 404 at the freeze. Source: \file{snapshot/FREEZE.md}.}
+\caption{Study benchmarks. Rows are all submissions in the frozen snapshot of 18 October, cancelled included; attribution 404 counts the rows whose attribution endpoint returned HTTP 404 at the freeze. Source: \file{snapshot/FREEZE.md}.}
 \label{tab:benchmarks}
 \begin{tabular}{lrr}
 \toprule
@@ -70,4 +69,3 @@ Total & 32,574 & 2,150 \\
 \bottomrule
 \end{tabular}
 \end{table}
-%TODO Add a column with a one-line task description per benchmark, taken from each benchmark object in the snapshot.
