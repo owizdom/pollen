@@ -649,3 +649,27 @@ def test_cond_logit_is_fast_on_a_power_sized_frame(models, simulate):
     assert r.method == "clogit"
     assert time.time() - t < 5.0
 
+
+def _sparse_spline_design(seed):
+    """Strata dummies, a spline-like time basis and a sparse quasi-separated dummy."""
+    rng = np.random.default_rng(seed)
+    G, n = 22, 470
+    g = rng.integers(0, G, n)
+    sp = rng.exponential(1, (n, 1)) ** np.array([1, 2, 3, 4])
+    sparse = np.zeros(n)
+    sparse[:9] = 1
+    X = np.column_stack([rng.integers(0, 2, n), sp, sparse, rng.integers(0, 2, (n, 4)),
+                         rng.normal(size=n), np.eye(G)[g]])
+    y = (rng.uniform(size=n) < 0.45).astype(float)
+    y[:9] = 1
+    return X, y
+
+
+@pytest.mark.parametrize("seed", [4, 10, 15, 35])
+def test_firth_converges_where_full_fisher_steps_cycle(models, seed):
+    X, y = _sparse_spline_design(seed)
+    beta, cov, ok = models._firth(X, y)
+    assert ok
+    Q, R = np.linalg.qr(X)
+    score, _ = models._penalised_score(Q * np.sqrt(len(y)), y, R @ beta / np.sqrt(len(y)))
+    assert np.max(np.abs(score)) < 1e-8

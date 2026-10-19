@@ -36,6 +36,7 @@ class Pooled:
 # ------------------------------------------------------------------ cond_logit
 
 FIRTH_MAX_ITER = 1000
+FIRTH_STALL_TOL = 1e-6
 CLOGIT_MAX_ITER = 2000
 _NAN = float("nan")
 
@@ -100,15 +101,26 @@ def _firth_core(X: np.ndarray, y: np.ndarray, max_iter=None, tol: float = 1e-9):
             break
         if mx > 5:
             step = step * (5 / mx)
+        # Fisher information is not the Hessian of the penalised likelihood, so a full step
+        # can cycle around the optimum. A step must raise the likelihood sufficiently
+        # (Armijo), or, where the change is float noise, shrink the score by a set fraction.
+        slope = float(score @ step)
+        norm = np.linalg.norm(score)
         t = 1.0
         for _ in range(40):
             new = beta + t * step
             new_ll = _penalised_ll(X, y, new)
-            if new_ll >= ll - 1e-10 * (1 + abs(ll)):
+            gain = new_ll - ll
+            if gain >= 1e-4 * t * slope:
+                break
+            if (gain >= -1e-10 * (1 + abs(ll))
+                    and np.linalg.norm(_penalised_score(X, y, new)[0]) <= (1 - 0.1 * t) * norm):
                 break
             t /= 2
         else:
-            break  # no improving step found
+            # no acceptable step: the score is at float resolution if it is this small
+            converged = bool(np.max(np.abs(score)) < FIRTH_STALL_TOL)
+            break
         beta, ll = new, new_ll
     else:
         score, info = _penalised_score(X, y, beta)
