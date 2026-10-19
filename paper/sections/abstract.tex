@@ -5,7 +5,8 @@ I test this on a frozen public snapshot of \StudyK{} Yukon leaderboards, includi
 Each submission carries a declared model family, and its parent comes from declared attribution, a base named in its note, or code-tree distance.
 The pre-registered analysis works within each participant.
 It compares attempts that build on another participant's work from a different model family with attempts that build on same-family work.
-Per-benchmark conditional logistic regressions, stratified by participant, are pooled by random-effects meta-analysis with an equivalence margin fixed before outcomes were joined.
+Per-benchmark logistic regressions with participant effects are pooled by random-effects meta-analysis, with an equivalence margin fixed before outcomes were joined.
+The pre-registered conditional fit fell back to Firth's penalised likelihood with participant fixed effects on every benchmark.
 The pooled odds ratio of promotion is \PooledOR{} (95\% interval \PooledORLow{} to \PooledORHigh{}; 90\% interval \PooledORNinetyLow{} to \PooledORNinetyHigh{}).
 The 90\% interval lies inside the margin of \MarginLow{} to \MarginHigh{}, so the verdict is \PooledVerdict{} on average across benchmarks.
 The margin was widened from $[0.80, 1.25]$ by a pre-registered power rule; under the original margin the result is inconclusive.

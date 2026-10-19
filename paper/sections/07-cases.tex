@@ -7,7 +7,7 @@ They show how the measurement behaves on individual rows, and none of them is ev
 \subsection{The 843-qubit point}
 \label{sec:case843}
 
-The post that motivated this study quotes 11.9 million gates at 843 qubits for ECDSA.Fail.
+The post that motivated this study quotes 11.9 million gates at 843 qubits for ECDSA.Fail \citep{kannan2026post}.
 The snapshot holds that point as submission \texttt{4a8ade44} by solver \field{jieyilong}, created on 11 October 2026, with 843 qubits and 11,947,178 average executed Toffoli gates.
 Its declared model is GPT-5, and its note names the coding agent as Codex with separate builder and auditor roles.
 Figure~\ref{fig:case843} shows the chain behind it as the notes describe it.
@@ -48,7 +48,7 @@ This is the pattern Kydo's reply describes, and it is one step.
 
 The case also shows two limits of the measurement.
 First, none of these rows promoted.
-Promotion on ECDSA.Fail follows the product of qubits and Toffoli gates, and the best promoted product just before \texttt{4a8ade44} was 943,306,548, about eleven times lower than its own.
+Promotion on ECDSA.Fail follows the product of qubits and Toffoli gates, and the best promoted product just before \texttt{4a8ade44} was 943,306,548, about 10.7 times lower than its own.
 The 843-qubit rows are low-width Pareto points, so under Y1 the step the post quotes is a failure, and only H5 on Pareto gain could count it.
 Second, the tree-distance rule did not find the base the note names.
 Its candidates are promoted rows only (Appendix~\ref{app:trees}), so an unpromoted row such as \texttt{3f1c7ce5} can never be a tree parent.
@@ -73,7 +73,7 @@ Its note names its base as the ``GCD Skywalk line'', which is the promoted row \
 That parent declares GPT-6.1, so the step counts as cross-family.
 
 The parent's own note complicates the label.
-It credits GPT-6.1 Sol in Codex for the final search and packaging, and Claude Opus~5.5 in Claude Code for route development.
+It credits GPT-6.1 Sol in Codex for the final search and packaging, and Claude Opus~5.5 in Claude Code, together with earlier Codex agents, for route and formal-lever development.
 Under its single-vendor label, the parent is OpenAI work; by its own description it is work by two vendors.
 This is the most common disagreement in the label audit (Section~\ref{sec:labels}): a single-vendor label on multi-vendor work blurs the line between the two arms in a way the \field{Model:} line cannot show.
-Large gains occur on both sides of the treatment, and the two cases here differ in parent family and in nearly everything else.
+Large gains occur on both sides of the treatment: the two cases here share a parent family, OpenAI, and differ in the child's family.

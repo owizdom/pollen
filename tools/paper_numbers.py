@@ -129,8 +129,8 @@ def main():
                                     if rep["not_reproduced"] else "none")
 
     # power, margin, lock
-    m["PowerEquivalence"] = f"{pw['power']:.3f}"
-    m["PowerWidened"] = f"{pw['power_widened']:.3f}"
+    m["PowerEquivalence"] = f"{pw['power']:.4f}"
+    m["PowerWidened"] = f"{pw['power_widened']:.4f}"
     m["PowerFailedShare"] = f"{pw['failed_share']:.4f}"
     m["PowerSims"] = thousands(pw["sims"])
     lo, hi = conf["margin"]

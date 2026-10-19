@@ -19,7 +19,7 @@ The audit found 93.2\% agreement among notes that mention a model, so the pull i
 
 \subsection{Relation to the ECDSA.Fail paper}
 
-The ECDSA.Fail paper describes cross-pollination in prose at four places.
+The ECDSA.Fail paper describes cross-pollination in prose at four places \citep{long2026ecdsafail}, quoted in Section~\ref{sec:intro}.
 Its \S5.4.1 observes that plateau-ending advances often came from other participants.
 This study holds the participant fixed and asks only about the model, and in that sense it tests a narrower claim than the paper makes.
 The two are compatible: different people can matter even if different models, as declared, do not.
@@ -33,10 +33,10 @@ Read in context, it refers to models from different vendors, and this paper uses
 
 \subsection{What else could explain the 2x}
 
-The comparison in the motivating post is between one model in a closed evolutionary loop and an open swarm of participants.
+The comparison in the motivating post \citep{kannan2026post} is between one model in an evolutionary loop \citep{gu2026discovering} and an open swarm of participants \citep{long2026ecdsafail}.
 This study finds that, within the swarm, the vendor mix of a parent and child does not predict promotion.
 That leaves the swarm's other features as candidates: many independent people with their own tools and objectives, a public frontier that everyone restarts from, and an evaluator that runs around the clock.
-Every new attempt on Yukon starts by default from the best promoted submission (Section~\ref{sec:setting}), and the current-best indicator enters the primary model as a covariate for this reason.
+Every new attempt on Yukon starts by default from the best promoted submission (Section~\ref{sec:setting}), and the primary model holds that choice fixed through its current-best covariate.
 Which of these features drove the difference between the two searches is a separate question, and the data here do not answer it.
 
 \subsection{What a platform would need to log}
@@ -56,4 +56,4 @@ Yukon already records traces privately and links them to submissions \citep{yuko
 Section~\ref{sec:threats} lists the threats in full.
 The most important are self-selection within solvers, self-declared labels, and parent inference whose cell agrees with a labelled parent on 98.3\% of rows where that parent was the current best, but on only 59.8\% of the others.
 The code and the label audit were reviewed by Claude models, and the analysis would benefit from outside statistical review.
-The snapshot, the lineage files, the code and the pre-registration are public, so every number here can be rebuilt offline.
+The release that accompanies this paper holds the snapshot, the lineage files, the code and the pre-registration, so every number here can be rebuilt offline.

@@ -42,6 +42,7 @@ Strata with outcome variation but no treatment variation stay, because they info
 Before fitting, \file{analysis/models.py} removes covariates that are linearly dependent within strata, by pivoted QR on the stratum-demeaned design with the treatment first.
 If the treatment itself is dependent, the benchmark has no estimate.
 The conditional fit uses Newton's method and is checked for convergence through the score and for an unbounded likelihood.
+The locked code also rejects a fit in which any coefficient or standard error exceeds 15; the specification text does not state this rule, and Section~\ref{sec:primary} reports where it applied.
 If the data show separation or the fit fails these checks, Firth's penalised likelihood with solver indicators replaces it \citep{firth1993}, and the paper says so for that benchmark.
 A fit that still does not converge is a failure, with no estimate, and is never reported as one.
 Planted-effect and placebo tests of the whole pipeline are described in Appendix~\ref{app:checks}.

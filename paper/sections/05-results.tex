@@ -1,14 +1,14 @@
 \section{Results}
 \label{sec:results}
 
-Every number in this section is generated from \file{results/*.json} by \file{analysis/numbers.py}, which is locked, or by \file{tools/paper_numbers.py}, which computes descriptive counts only.
+Every number in this section is generated from \file{results/*.json} by \file{analysis/numbers.py}, which is locked, or by \file{tools/paper_numbers.py}, which computes descriptive quantities outside the lock: counts, a prediction interval, the ECDSA.Fail 90\% interval and one per-benchmark refit.
 
 \subsection{Sample}
 \label{sec:sample}
 
 The \StudyK{} study benchmarks hold \AnalysisRowsTotal{} analysis rows.
 Five reasons remove a row from the primary sample, applied in a fixed order so that each row is counted once.
-Own-lineage rows, whose primary parent was the same solver, number \ExclOwnLineage{}; they are the sample for H2.
+Own-lineage rows, whose primary parent was the same solver, number \ExclOwnLineage{}; those with both families known inside the window are the sample for H2.
 Multi-source rows number \ExclMultiParent{}, and rows that are novel or have no parent number \ExclNovel{}.
 Cross-solver rows in which the child's or the parent's family is Unknown or Multi number \ExclUnknownFamily{}.
 Rows before the confirmatory window number \ExclOutsideWindow{}.
@@ -40,7 +40,7 @@ Figure~\ref{fig:forest} shows the per-benchmark estimates and the pooled interva
 
 The verdict depends on the widened margin.
 Under the original margin of $[0.80, 1.25]$, the upper end of the 90\% interval, \PooledORNinetyHighFine{}, lies above 1.25, and the verdict would be inconclusive.
-The margin was widened by the rule fixed in the specification before any analysis: the power gate, run on treatment counts and simulated outcomes only, gave \PowerEquivalence{} at the original margin and \PowerWidened{} at the widened one (Section~\ref{sec:equivalence}).
+The margin was widened by a rule fixed in the specification on 17 October, before the lock and before outcomes were joined: the power gate, run on treatment counts and simulated outcomes only, gave \PowerEquivalence{} at the original margin and \PowerWidened{} at the widened one (Section~\ref{sec:equivalence}).
 The widened margin and its reason are part of the text locked by \texttt{prereg-v1}, and the confirmatory run happened after the tag.
 
 The between-benchmark variance is $\tau^2 = \PooledTauSquared{}$, with a Q-profile interval of \PooledTauSquaredLow{} to \PooledTauSquaredHigh{}.
@@ -50,7 +50,10 @@ This interval was not pre-registered.
 The data are consistent with no effect on average while leaving room for modest effects, in either direction, on individual benchmarks.
 
 Every benchmark's fit used Firth's penalised likelihood rather than the conditional fit.
-In each benchmark the conditional fit showed separation or failed its convergence checks, which is the condition the pre-registration names for the fallback (Section~\ref{sec:model}). In the frames examined, the separation came from sparse family indicators and spline terms, not from the treatment.
+The conditional fit converged on every benchmark, and the treatment was never separated.
+On eight benchmarks, sparse family indicators with no events or all events were separated, which is the condition the pre-registration names for the fallback (Section~\ref{sec:model}).
+On \bench{davidtai/qwen38-125b-a6b-cuda-v1} and \bench{eigenlabs/eip8200-challenges/modexp}, the fallback was triggered by a rule in the locked code that the pre-registration text does not state: any coefficient or standard error above 15 sends the fit to Firth, and spline terms crossed it there.
+That is a mismatch between the locked text and the locked code, fixed before outcomes were joined, and the reported estimates follow the code.
 With Firth, solver indicators enter as fixed effects instead of being conditioned out.
 
 \begin{figure}[t]
