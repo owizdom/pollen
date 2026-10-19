@@ -61,28 +61,3 @@ Section~\ref{sec:data} describes the snapshot, labels, parents and outcomes.
 Section~\ref{sec:design} gives the pre-registered design, a disclosure of what was seen before the lock, and a conflict-of-interest statement.
 Sections~\ref{sec:results} to~\ref{sec:cases} report results, and Section~\ref{sec:threats} lists threats the design cannot remove.
 Section~\ref{sec:discussion} discusses what the result means for running open autoresearch.
-
-Table~\ref{tab:glossary} explains the terms the paper uses.
-
-\begin{table}[t]
-\centering
-\small
-\caption{Terms used in this paper.}
-\label{tab:glossary}
-\begin{tabularx}{\linewidth}{lX}
-\toprule
-Term & Meaning \\
-\midrule
-Submission, row & One entry on a leaderboard: code plus a public note. \\
-Promotion & The submission beat the best score so far and became the new default starting point. This is the success measure. \\
-Parent & The earlier submission that a submission built on. \\
-Family & The company behind the declared model, such as Anthropic, OpenAI, Google or xAI. \\
-Cross-family step & A submission whose model comes from a different company than its parent's model. \\
-Solver & A participant on the leaderboard. \\
-Odds ratio & How the odds of promotion compare between two groups. 1 means equal, 1.5 means 50\% higher odds, 0.67 means a third lower. \\
-Interval & The range of values the data are consistent with. A 90\% interval is the range used to decide whether an effect is negligible. \\
-Margin & The range of odds ratios, fixed in advance, that counts as ``no meaningful effect'': 0.67 to 1.50 here. \\
-Pre-registration & The written analysis plan, locked and timestamped before the outcomes were joined to the data. \\
-\bottomrule
-\end{tabularx}
-\end{table}
