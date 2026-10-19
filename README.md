@@ -2,7 +2,7 @@
 
 Does cross-model pollination help open autoresearch?
 
-Paper: [doi.org/10.5281/zenodo.23465603](https://doi.org/10.5281/zenodo.23465603) · Data: [doi.org/10.5281/zenodo.23464809](https://doi.org/10.5281/zenodo.23464809)
+Paper: [doi.org/10.5281/zenodo.23465602](https://doi.org/10.5281/zenodo.23465602) · Data: [doi.org/10.5281/zenodo.23464809](https://doi.org/10.5281/zenodo.23464809)
 
 On open leaderboards like [ECDSA.Fail](https://ecdsa.fail), hundreds of people point their own AI agents at one shared problem and build on each other's public submissions. A common story for why this works so well is cross-model pollination: work produced by one vendor's model gets better when a different vendor's model picks it up. This repository tests that story on the public record of ten [Yukon](https://yukon.org) leaderboards, with a pre-registered design, and holds the paper, the code, the frozen data checksums and the lock that proves the analysis was fixed before the outcomes were looked at.
 
@@ -114,8 +114,8 @@ The code was written by Claude agents under my direction and reviewed by separat
   author = {Okechukwu, Wisdom},
   title  = {Does Cross-Model Pollination Help Open Autoresearch? Evidence from Yukon Leaderboards},
   year   = {2026},
-  doi    = {10.5281/zenodo.23465603},
-  url    = {https://doi.org/10.5281/zenodo.23465603}
+  doi    = {10.5281/zenodo.23465602},
+  url    = {https://doi.org/10.5281/zenodo.23465602}
 }
 ```
 
