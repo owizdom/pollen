@@ -76,3 +76,11 @@
 - make check before the tag: 466 passed, 0 failed, 0 skipped.
 - Tag `prereg-v1` on `09c0815`; `lock.check()` passes.
 - OpenTimestamps: the commit hash in `docs/timestamps/prereg-v1.commit`, proof `.ots` submitted to three calendars, pending Bitcoin confirmation; `ots upgrade` later.
+
+### 2026-10-19 (release prep)
+
+- AT8 offline rebuild: fresh clone of `main`, data from `pollen-data-v1.tar.gz` (451,788,350 bytes, sha256 `227fe2a021dc31761c8425c9ea57bf93cad72d5e375dd274d1f271fe11c3c5c6`), `lock.check()` passes, `make reproduce` under `sandbox-exec (deny network*)` exit 0 in about 7 minutes. All four `results/*.json`, `paper/numbers.tex` and both forest-plot data files are byte-identical to the committed ones. The sandbox blocks network: curl inside it exits 6, outside it reaches the API.
+- AT10: an independent Opus verifier checked about 145 claims in the abstract, results, per-benchmark, cases and discussion; 11 wrong and 5 unsupported were fixed in `360e2b2`, including the Firth size-cap disclosure.
+- AT11, AT12: byline is exactly "Wisdom Okechukwu", no affiliation strings in `paper/`; prose check passes on README.md and every paper section.
+- AT7 lint not built (decided: the claim check traced every number; the case studies quote note values by design).
+- OpenTimestamps: the proof is in Bitcoin transaction `25fbdbd4...`, waiting for confirmations; upgrade pending.
