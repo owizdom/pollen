@@ -1,0 +1,27 @@
+{
+  "benchmarks": [
+    "davidtai/mlxfast-gemma4-26b-a4b",
+    "davidtai/qwen38-125b-a6b-cuda-v1",
+    "eigenlabs/eip8200-challenges/modexp",
+    "eigenlabs/eip8200-challenges/ripemd160",
+    "eigenlabs/flock-challenge",
+    "eigenlabs/flock-challenge-multi/x86",
+    "eigenlabs/lighter-prover-challenge",
+    "eigenlabs/mlxfast-challenge",
+    "eigenlabs/sig-golf/full",
+    "gpsanant/ecdsafail-challenge"
+  ],
+  "sims": 2000,
+  "margin": [
+    0.8,
+    1.25
+  ],
+  "power": 0.6345,
+  "failed_share": 0.0005,
+  "seconds": 4038,
+  "widened_margin": [
+    0.67,
+    1.5
+  ],
+  "power_widened": 0.9905
+}
