@@ -1,94 +1,106 @@
 \section{Results}
 \label{sec:results}
 
-Every number in this section is generated from \file{results/*.json} by \file{analysis/numbers.py}, which is locked, or by \file{tools/paper_numbers.py}, which computes descriptive quantities outside the lock: counts, a prediction interval, the ECDSA.Fail 90\% interval and one per-benchmark refit.
+The short version: building on another company's model neither helps nor hurts, on average.
+The rest of this section gives the numbers behind that sentence.
+Every number is generated from \file{results/*.json}, either by the locked analysis code (\file{analysis/numbers.py}) or, for descriptive extras such as raw rates and the prediction interval, by \file{tools/paper_numbers.py}, which sits outside the lock.
 
-\subsection{Sample}
+\subsection{Who builds on whom}
 \label{sec:sample}
 
-The \StudyK{} study benchmarks hold \AnalysisRowsTotal{} analysis rows.
-Five reasons remove a row from the primary sample, applied in a fixed order so that each row is counted once.
-Own-lineage rows, whose primary parent was the same solver, number \ExclOwnLineage{}; those with both families known inside the window are the sample for H2.
-Multi-source rows number \ExclMultiParent{}, and rows that are novel or have no parent number \ExclNovel{}.
-Cross-solver rows in which the child's or the parent's family is Unknown or Multi number \ExclUnknownFamily{}.
-Rows before the confirmatory window number \ExclOutsideWindow{}.
-That leaves \PrimaryRowsTotal{} primary rows.
-Solvers whose primary rows all share one outcome carry no information in the conditional model, and the fits use the remaining \FitRowsTotal{} rows.
+The \StudyK{} leaderboards hold \AnalysisRowsTotal{} scored submissions.
+The main analysis keeps only submissions that built on one earlier submission by a different participant, with a known company on both sides, inside the period where parents can be traced fairly (Section~\ref{sec:window}).
+Five reasons remove the rest, counted once each in a fixed order:
+\begin{itemize}
+  \item \ExclOwnLineage{} built on the participant's own earlier work (these are used for H2);
+  \item \ExclMultiParent{} declared more than one parent;
+  \item \ExclNovel{} were new enough code to have no parent, or had no candidate parent;
+  \item \ExclUnknownFamily{} had an unknown or mixed company on one side;
+  \item \ExclOutsideWindow{} came before the traceable period.
+\end{itemize}
+That leaves \PrimaryRowsTotal{} submissions.
+Participants whose submissions all succeeded or all failed tell the model nothing about the difference, so the fits use the remaining \FitRowsTotal{}.
 
-Among analysis rows, the primary parent came from declared attribution for \DeclaredShare{}, from a base named in the note for \TextShare{}, and from tree distance for \TreeShare{}.
-Novel rows are \NovelShare{}, rows with no candidate parent \NoParentShare{}, and multi-source rows \MultiShare{}.
-Across all analysis rows with a single parent and two known families, the four treatment cells hold \CellOwnSame{} own-lineage same-family rows, \CellOwnSwitch{} own-lineage switches, \CellOtherSame{} cross-solver same-family rows and \CellOtherSwitch{} cross-solver cross-family rows.
-Building on another vendor's work is therefore the common case on these leaderboards, not the exception.
-Figure~\ref{fig:flow} breaks the cross-solver rows down by parent and child family.
-Anthropic and OpenAI models dominate both sides, and the largest cross-family flows run between them.
+Most parents were found from the code itself: \TreeShare{} by comparing code trees, \TextShare{} from a base named in the note, and \DeclaredShare{} from Yukon's structured attribution record.
+
+Building on another company's model is the normal case on these leaderboards.
+Among all submissions with one parent and known companies, \CellOtherSwitch{} built on another participant's work made with a different company's model, and \CellOtherSame{} on another participant's work made with the same company's.
+Within a participant's own line of work, switching company was rare: \CellOwnSwitch{} switches against \CellOwnSame{} that kept the same company.
+Figure~\ref{fig:flow} shows the flows between companies; Anthropic and OpenAI dominate both sides, and the largest cross-company flows run between them.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.62\linewidth]{figures/paper_family_flow.pdf}
-\caption{Cross-solver single-parent rows with two known families, by parent family (rows) and child family (columns), pooled over the \StudyK{} study benchmarks. The six largest families are shown; ``other'' folds the rest, so its diagonal cell mixes families. Off-diagonal cells are cross-family steps. Source: treatment frames from \file{analysis/dataset.py}; figure by \file{tools/paper_figures.py}.}
+\caption{Who builds on whom. Each cell counts submissions that built on another participant's work, by the company behind the parent's model (rows) and the new submission's model (columns), over the \StudyK{} leaderboards. Off-diagonal cells are cross-company steps. The six largest companies are shown; ``other'' groups the rest, so its diagonal cell mixes companies. Source: \file{analysis/dataset.py}; figure by \file{tools/paper_figures.py}.}
 \label{fig:flow}
 \end{figure}
 
-\subsection{Primary estimate}
+\subsection{The main result}
 \label{sec:primary}
 
-Pooled across all \PooledK{} benchmarks, the odds ratio of promotion for cross-family against same-family rows is \PooledOR{}, with a 95\% interval of \PooledORLow{} to \PooledORHigh{} and a 90\% interval of \PooledORNinetyLow{} to \PooledORNinetyHigh{}.
-The 90\% interval lies inside the margin of \MarginLow{} to \MarginHigh{}, and the 95\% interval includes 1.
-The pre-registered verdict is \emph{\PooledVerdict{}}.
-No benchmark was excluded for lack of a finite estimate.
-Figure~\ref{fig:forest} shows the per-benchmark estimates and the pooled interval.
+Raw promotion rates point slightly against cross-company building.
+Of the \RawCrossRows{} submissions that built on another company's model, \RawCrossPromoted{} were promoted (\RawCrossRate{}).
+Of the \RawSameRows{} that built on the same company's model, \RawSamePromoted{} were promoted (\RawSameRate{}).
+These raw rates mix together who submitted, when, and from which starting point, so they are not the test.
 
-The verdict depends on the widened margin.
-Under the original margin of $[0.80, 1.25]$, the upper end of the 90\% interval, \PooledORNinetyHighFine{}, lies above 1.25, and the verdict would be inconclusive.
-The margin was widened by a rule fixed in the specification on 17 October, before the lock and before outcomes were joined: the power gate, run on treatment counts and simulated outcomes only, gave \PowerEquivalence{} at the original margin and \PowerWidened{} at the widened one (Section~\ref{sec:equivalence}).
-The widened margin and its reason are part of the text locked by \texttt{prereg-v1}, and the confirmatory run happened after the tag.
+The pre-registered test compares each participant with themselves: their cross-company attempts against their own same-company attempts, at the same stage of the leaderboard, with the same starting-point information (Section~\ref{sec:model}).
+Done separately on each leaderboard and then combined, it gives an odds ratio of \PooledOR{}.
+In words, the odds of promotion are about \PlainPointPct{} higher when building on another company's model, which is no real difference.
+The 90\% interval runs from \PooledORNinetyLow{} to \PooledORNinetyHigh{}: the data rule out a disadvantage bigger than about \PlainLowPct{} or an advantage bigger than about \PlainHighPct{}.
+The 95\% interval is \PooledORLow{} to \PooledORHigh{}.
 
-The between-benchmark variance is $\tau^2 = \PooledTauSquared{}$, with a Q-profile interval of \PooledTauSquaredLow{} to \PooledTauSquaredHigh{}.
-The equivalence verdict is a statement about the average effect across benchmarks.
-A 90\% prediction interval for the effect on a new benchmark, computed from $\tau^2$ and the pooled standard error of \PooledSE{} with a $t$ distribution on $k-2$ degrees of freedom, runs from \PredLow{} to \PredHigh{} and extends past the margin at both ends.
-This interval was not pre-registered.
-The data are consistent with no effect on average while leaving room for modest effects, in either direction, on individual benchmarks.
+The plan fixed in advance that an effect counts as negligible if the 90\% interval sits entirely inside 0.67 to 1.50.
+It does, so the pre-registered verdict is \emph{\PooledVerdict{}}.
+Figure~\ref{fig:forest} shows each leaderboard and the combined estimate.
 
-Every benchmark's fit used Firth's penalised likelihood rather than the conditional fit.
-The conditional fit converged on every benchmark, and the treatment was never separated.
-On eight benchmarks, sparse family indicators with no events or all events were separated, which is the condition the pre-registration names for the fallback (Section~\ref{sec:model}).
-On \bench{davidtai/qwen38-125b-a6b-cuda-v1} and \bench{eigenlabs/eip8200-challenges/modexp}, the fallback was triggered by a rule in the locked code that the pre-registration text does not state: any coefficient or standard error above 15 sends the fit to Firth, and spline terms crossed it there.
-That is a mismatch between the locked text and the locked code, fixed before outcomes were joined, and the reported estimates follow the code.
-With Firth, solver indicators enter as fixed effects instead of being conditioned out.
+That bar was not the first one.
+The plan began with a stricter bar of 0.80 to 1.25, and under it the result would be undecided, because the upper end, \PooledORNinetyHighFine{}, sits just above 1.25.
+Before any outcome was joined to the data, a simulation using only the structure of the data showed that the stricter bar would reach a verdict only \PowerEquivalence{} of the time even if there were truly no effect, against \PowerWidened{} for the wider bar.
+A rule written on 17 October, before the data were frozen, said to switch to the wider bar in that case, and the switch is recorded in the locked plan (Section~\ref{sec:equivalence}).
+
+Two further points sharpen what the verdict covers.
+First, it is about the average across leaderboards.
+Leaderboards differ a little from each other (between-leaderboard variance $\tau^2 = \PooledTauSquared{}$), and a 90\% prediction interval for the effect on a new leaderboard runs from \PredLow{} to \PredHigh{}.
+So the data are consistent with no effect on average while leaving room for modest effects, either way, on a single leaderboard; this interval was not part of the plan.
+Second, every leaderboard was fitted with Firth's method, a standard correction for small or lopsided groups, instead of the planned conditional model.
+On eight leaderboards the reason was the one the plan names: some rarely used companies had no promoted submissions at all, or only promoted ones, which breaks the planned model.
+On \bench{davidtai/qwen38-125b-a6b-cuda-v1} and \bench{eigenlabs/eip8200-challenges/modexp} the switch came from a safety rule in the locked code, not stated in the plan's text, that rejects any fit with a coefficient or standard error above 15; the time-trend terms crossed it there.
+The planned model never failed on the cross-company comparison itself.
+The estimates follow the locked code, and \file{docs/DEVIATIONS.md} records the mismatch.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.92\linewidth]{figures/paper_forest_primary.pdf}
-\caption{Odds ratio of promotion for cross-family against same-family cross-solver rows, by benchmark with 95\% intervals, and the pooled estimate with its 95\% (thin) and 90\% (thick) intervals. The shaded band is the margin $[0.67, 1.50]$. Source: \file{results/confirmatory.json}; figure by \file{tools/paper_figures.py}.}
+\caption{The main result. Each dot is one leaderboard's odds ratio of promotion for building on another company's model against the same company's, with its 95\% interval; 1 means no difference. The diamond is the combined estimate with its 95\% (thin) and 90\% (thick) intervals. The shaded band, 0.67 to 1.50, is the pre-registered range for ``no meaningful effect''. Source: \file{results/confirmatory.json}; figure by \file{tools/paper_figures.py}.}
 \label{fig:forest}
 \end{figure}
 
-\subsection{ECDSA.Fail}
+\subsection{ECDSA.Fail on its own}
 \label{sec:ecdsa}
 
-On ECDSA.Fail alone the odds ratio is \BenchJOR{}, with a 95\% interval of \BenchJORLow{} to \BenchJORHigh{} and a 90\% interval of \EcdsaNinetyLow{} to \EcdsaNinetyHigh{}, from \BenchJFitRows{} primary rows and \BenchJStrataKept{} informative solvers.
-The verdict is \emph{\CaseStudyVerdict{}}.
-The point estimate runs against pollination, but the interval is compatible with anything from a strong negative effect to a small positive one.
-Section~\ref{sec:equivalence} showed before the lock that a single-benchmark verdict there would almost surely be inconclusive.
-As a member of the secondary family, ECDSA.Fail's H1 test has $p = \SecHOneJP{}$ and a Holm-adjusted $p = \SecHOneJPHolm{}$.
+On ECDSA.Fail alone the odds ratio is \BenchJOR{}, from \BenchJFitRows{} submissions and \BenchJStrataKept{} informative participants.
+The 95\% interval runs from \BenchJORLow{} to \BenchJORHigh{} and the 90\% interval from \EcdsaNinetyLow{} to \EcdsaNinetyHigh{}.
+The best guess points against cross-company building, but the interval is wide enough to include anything from a large disadvantage to a small advantage, so the verdict is \emph{\CaseStudyVerdict{}}.
+This was expected: the plan noted before the lock that ECDSA.Fail alone is too small to settle the question (Section~\ref{sec:equivalence}), which is why the main test combines all ten leaderboards.
+As one of the secondary tests, its $p$-value is \SecHOneJP{}, or \SecHOneJPHolm{} after correcting for the number of tests.
 
-\subsection{Secondary tests}
+\subsection{Secondary questions}
 \label{sec:secondary-results}
 
-Table~\ref{tab:secondary} in Appendix~\ref{app:secondary} lists every secondary test.
-\HolmFamilySize{} tests passed the minimum-events gate and form the Holm family: ECDSA.Fail's H1, H4 on each of the \StudyK{} benchmarks, and H5.
-No member is significant after correction; the smallest Holm-adjusted $p$ is \HolmMinP{}.
-All H2 tests fell below the gate, because own-lineage family switches are rare and few of them were promoted, so H2 is descriptive on every benchmark.
-H3a and H3b were also below the gate everywhere.
-Large jumps among cross-solver promotions number between 1 and 10 per benchmark in the smaller arm, and plateau breaks at most one.
-The per-benchmark estimates in Figure~\ref{fig:forest} are components of the pooled estimate, not separate tests.
-One of them, \ExcludesOneBench{}, has a 95\% interval that excludes 1 (unadjusted $p = \ExcludesOneP{}$); among ten benchmarks, about half of one such interval is expected by chance.
+The plan also asked four narrower questions (Section~\ref{sec:secondary}); Table~\ref{tab:secondary} in Appendix~\ref{app:secondary} lists every test.
+A test only counts when the smaller group has at least 20 successes, so that it is not decided by a handful of events.
+\HolmFamilySize{} tests passed that bar: ECDSA.Fail's main test, the size-of-gain test (H4) on each of the \StudyK{} leaderboards, and the Pareto test (H5) on ECDSA.Fail.
+After correcting for running that many tests, none shows an effect; the smallest corrected $p$-value is \HolmMinP{}.
+Switching company within your own line of work (H2) was too rare, and the large-jump and plateau-break questions (H3a, H3b) had too few events, to be tested on any leaderboard, so they are reported only as description.
+Large jumps by other participants number between 1 and 10 per leaderboard in the smaller group, and plateau breaks at most one.
+
+One leaderboard, \ExcludesOneBench{}, has a 95\% interval that excludes 1 (uncorrected $p = \ExcludesOneP{}$).
+The per-leaderboard estimates are pieces of the combined estimate, not separate tests, and with ten leaderboards about one interval in twenty, so half of one, is expected to miss 1 by chance.
 
 \subsection{Exploratory analyses}
 \label{sec:exploratory}
 
-These analyses are exploratory and uncorrected.
-E1 compares \EOneMultiRows{} multi-family or multi-source rows with \EOneSingleRows{} single-family, single-parent rows.
-Most benchmarks have too few multi rows for a stable estimate, and the per-benchmark results are in \file{results/exploratory.json}.
-E2 splits each benchmark's analysis rows into thirds by time and pools H1 within each third.
-The pooled odds ratios are \ExploreEThirdOneOR{}, \ExploreEThirdTwoOR{} and \ExploreEThirdThreeOR{} for the first, second and last third.
+These were not part of the main plan and carry no correction.
+E1 compares the \EOneMultiRows{} submissions that mixed companies or declared several parents with the \EOneSingleRows{} that did not; most leaderboards have too few mixed submissions for a stable estimate, and the results are in \file{results/exploratory.json}.
+E2 asks whether the effect changes over a leaderboard's life by splitting each one into thirds by time.
+The combined odds ratios are \ExploreEThirdOneOR{}, \ExploreEThirdTwoOR{} and \ExploreEThirdThreeOR{} for the first, middle and last third, all close to 1.

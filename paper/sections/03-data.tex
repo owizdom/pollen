@@ -1,6 +1,9 @@
 \section{Data and measurement}
 \label{sec:data}
 
+This section explains how each submission becomes a data point: where the data came from, which submissions count, how a model is assigned to a company, how the parent is found, and how success is measured.
+The paper calls each submission a row.
+
 \subsection{Snapshot}
 \label{sec:snapshot}
 
@@ -19,10 +22,11 @@ At the end of the freeze, a guard checked that every study benchmark holds exact
 The loader, \file{snapshot/load.py}, reads only these files and checks them on every open (Appendix~\ref{app:snapshot}).
 A submission is flagged as promoted when its status is \field{accepted} and its promotion status is \field{promoted}.
 
-\subsection{Analysis rows}
+\subsection{Which submissions count}
 \label{sec:denominator}
 
-An analysis row is a submission that the evaluator scored, as decided by \file{outcomes/denominator.py}.
+Only submissions that the evaluator actually scored count, since a submission that never ran cannot succeed or fail on its merits.
+The paper calls these analysis rows, and \file{outcomes/denominator.py} decides which they are.
 The function drops cancelled rows and rows whose status is not accepted, rejected or failed.
 It drops accepted rows whose promotion status is set but is not one of promoted, failed or superseded, because their promotion was not final.
 It drops rows rejected before evaluation, matched by exact reason strings and patterns in \file{outcomes/denominator.yaml}.
@@ -35,8 +39,10 @@ Ambiguous failures, whose text does not say whether the submission caused them, 
 A failed row with no reason counts as ambiguous, and a reason that matches no class stops the pipeline with an error.
 The class list was built from the distinct failure reasons in the snapshot, without splitting any outcome by treatment.
 
-\subsection{Model family labels}
+\subsection{Which company's model}
 \label{sec:labels}
+
+Each submission's note starts with a line naming the model, and the study groups models by the company that makes them, called the model's family.
 
 The declared model is the text after \field{Model:} on the first non-empty line of the note; a note whose first line is anything else has no declared model.
 A checked-in table, \file{families/table.yaml}, maps each exact declared string to a family, which is the model's vendor.
@@ -71,10 +77,11 @@ The auditors differed on one rule: three of the five batches counted an agent li
 Recoding those 13 notes as silent gives 56 of 61, or 91.8\%, at the model level.
 The audit is recorded, not a gate, so the shortfall is a limitation of the labels (Section~\ref{sec:threats}).
 
-\subsection{Parents}
+\subsection{What each submission built on}
 \label{sec:parents}
 
-A submission's parents are the earlier submissions it built on.
+A submission's parent is the earlier submission it built on.
+Participants rarely say so in a machine-readable way, so the study uses three sources, from most to least direct.
 The lineage code in \file{lineage/} finds them from three sources, in a fixed order of precedence, and keeps the tree-distance parent for every analysis row as well.
 
 \paragraph{Declared parents.}
@@ -118,7 +125,7 @@ The parent rule took its final form after a first AT4 run failed before the lock
 That run let a solver's own unpromoted rows compete as candidates even when a different base was named, and agreement on text-declared bases was 1,555 of 3,106, or 50\%, mostly because a solver's own sibling attempt won the distance comparison (\file{docs/JOURNAL.md}).
 The revised rule, recorded in the specification before the lock, takes a declared parent first, then a base named in the note, and then the nearest promoted row.
 
-\subsection{Treatment cells}
+\subsection{The comparison groups}
 \label{sec:cells}
 
 A row is cross-solver when its single primary parent was submitted by a different solver.
@@ -127,8 +134,10 @@ Rows with a single parent and two known families fall into four cells: own linea
 The primary contrast fixes ``another solver's work'' and varies only the family.
 Within a solver, it compares that solver's cross-family attempts with the same solver's same-family attempts, which separates model pollination from people pollination.
 
-\subsection{Outcomes}
+\subsection{Measuring success}
 \label{sec:outcomes}
+
+The main measure of success is promotion: a submission is promoted when it beats the best score so far by the leaderboard's threshold and becomes the new default starting point.
 
 The outcome code in \file{outcomes/} writes outcome columns only to a sealed directory, and the treatment dataset (\file{analysis/dataset.py}) carries no outcome column.
 Outcomes are joined to treatments only inside the confirmatory drivers, after the lock check passes (Section~\ref{sec:lock}).
@@ -152,10 +161,10 @@ A benchmark whose recomputation disagrees with the recorded promotion status on 
 The recomputation reproduced the recorded promotions on \ATFiveReproduced{} benchmarks; the rule was not reproduced on \ATFiveNotReproducedList{}.
 On \bench{eigenlabs/flock-challenge-multi/x86}, every row that disagreed in a probe on 17 October predates 25 August 2026, the date of the first rejection citing a 100-basis-point threshold, so the threshold appears to have started part-way through the benchmark.
 
-\subsection{Confirmatory window}
+\subsection{The traceable period}
 \label{sec:window}
 
-Tree recovery must not depend on the outcome.
+The chance of finding a submission's code must not depend on whether it succeeded, or the comparison would be skewed.
 On ECDSA.Fail, accepted rows lack a submission commit more often than rejected rows, mostly in June, while every promoted row has a promoted commit.
 Without a correction, promoted rows would have parents more often than other rows.
 For each benchmark, \file{lineage/window.py} groups analysis rows by calendar week, starting on Mondays in UTC.

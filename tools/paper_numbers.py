@@ -189,6 +189,25 @@ def main():
     m["FlockUnknownParent"] = thousands(int((unk["parent_family"].isin(["Unknown", "Multi"]) | unk["parent_family"].isna()).sum()))
     m["FlockAnalysisRows"] = thousands(conf["benchmarks"]["eigenlabs/flock-challenge"]["counts"]["analysis_rows"])
 
+    # raw promotion rates in the primary rows, unadjusted (descriptive)
+    from analysis import design as _design
+    snap = study.RootSnapshot(root)
+    raw = {True: [0, 0], False: [0, 0]}
+    for n in names:
+        r = _design.primary_rows(study.load_bench(root, n, snap).df)
+        for cf, g in r.groupby(r["cross_family"].astype(bool)):
+            raw[bool(cf)][0] += int(g["y"].sum())
+            raw[bool(cf)][1] += len(g)
+    for cf, label in ((True, "Cross"), (False, "Same")):
+        a_, n_ = raw[cf]
+        m[f"Raw{label}Promoted"] = thousands(a_)
+        m[f"Raw{label}Rows"] = thousands(n_)
+        m[f"Raw{label}Rate"] = f"{100 * a_ / n_:.1f}\\%"
+    lo90, hi90 = math.exp(conf["pooled"]["ci90"][0]), math.exp(conf["pooled"]["ci90"][1])
+    m["PlainLowPct"] = f"{round(100 * (1 - lo90))}\\%"
+    m["PlainHighPct"] = f"{round(100 * (hi90 - 1))}\\%"
+    m["PlainPointPct"] = f"{round(100 * (math.exp(conf['pooled']['log_or']) - 1))}\\%"
+
     cov13, cov14 = coverage()
     m["ATThirteenCoverage"] = f"{cov13} of 100"
     m["ATFourteenCoverage"] = f"{cov14} of 100"

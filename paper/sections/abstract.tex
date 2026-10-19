@@ -1,17 +1,15 @@
 \begin{abstract}
-Open autoresearch leaderboards let many participants, each using their own AI models, build on one another's public submissions.
-A common explanation for their success is cross-model pollination: work from one vendor's model improves when a different vendor's model builds on it.
-I test this on a frozen public snapshot of \StudyK{} Yukon leaderboards, including ECDSA.Fail, with \AnalysisRowsTotal{} scored submissions.
-Each submission carries a declared model family, and its parent comes from declared attribution, a base named in its note, or code-tree distance.
-The pre-registered analysis works within each participant.
-It compares attempts that build on another participant's work from a different model family with attempts that build on same-family work.
-Per-benchmark logistic regressions with participant effects are pooled by random-effects meta-analysis, with an equivalence margin fixed before outcomes were joined.
-The pre-registered conditional fit fell back to Firth's penalised likelihood with participant fixed effects on every benchmark.
-The pooled odds ratio of promotion is \PooledOR{} (95\% interval \PooledORLow{} to \PooledORHigh{}; 90\% interval \PooledORNinetyLow{} to \PooledORNinetyHigh{}).
-The 90\% interval lies inside the margin of \MarginLow{} to \MarginHigh{}, so the verdict is \PooledVerdict{} on average across benchmarks.
-The margin was widened from $[0.80, 1.25]$ by a pre-registered power rule; under the original margin the result is inconclusive.
-On ECDSA.Fail alone the estimate is \BenchJOR{} (95\% interval \BenchJORLow{} to \BenchJORHigh{}), which is inconclusive.
-All nine sensitivity analyses agree with the primary.
-The point quoted in the post that motivated this study came from a cross-family step, which shows that such steps happen, not that they help on average.
-Testing the causal version would need platforms to log every attempt and the models behind it.
+On open autoresearch leaderboards, many people point their own AI agents at one shared problem and build on each other's public submissions.
+A popular explanation for why this works is cross-model pollination: when someone using one company's model picks up work produced with a different company's model, the result is more likely to be an improvement.
+I tested this on the public record of \StudyK{} Yukon leaderboards, including ECDSA.Fail, covering \AnalysisRowsTotal{} scored submissions.
+For each submission I recorded which company's model the participant declared and which earlier submission it built on.
+I fixed the whole analysis in advance, before the outcomes were joined to the data.
+The answer is no measurable effect.
+Raw promotion rates were \RawCrossRate{} when building on another company's model and \RawSameRate{} when building on the same company's.
+Once each participant is compared with themselves at the same stage of a leaderboard, the chances are essentially equal.
+The odds are about \PlainPointPct{} higher, and the data rule out anything beyond roughly \PlainLowPct{} lower or \PlainHighPct{} higher.
+That clears the pre-registered bar for calling the effect negligible on average, though a stricter bar set at first would have left it undecided.
+ECDSA.Fail alone has too few submissions to decide either way.
+The 843-qubit circuit quoted in the post that prompted this study did come from a cross-model step, which shows that such steps happen, not that they help on average.
+Code, data and the timestamped pre-registration are public.
 \end{abstract}

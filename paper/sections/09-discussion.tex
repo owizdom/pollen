@@ -1,32 +1,34 @@
 \section{Discussion}
 \label{sec:discussion}
 
-\subsection{What the verdict means}
+\subsection{What the result means}
 
-Across ten Yukon leaderboards, building on another solver's work from a different model vendor does not change the odds of promotion on average, within the pre-registered margin, a factor of 1.5 either way on the odds.
-The point estimate, \PooledOR{}, is close to 1, and every sensitivity analysis lands within 0.02 of it.
-In practical terms, a participant choosing which public submission to build on gains nothing on average by picking one produced with a different vendor's model, and loses nothing either.
+The plain reading is that the brand of model behind the work you build on does not matter for whether your submission gets promoted.
+Across ten Yukon leaderboards, a participant who builds on another company's model succeeds about as often as when the same participant builds on the same company's model.
+The data rule out a difference bigger than roughly \PlainLowPct{} down or \PlainHighPct{} up in the odds.
+Every alternative version of the analysis lands within 0.02 of the main estimate.
+For someone choosing which public submission to start from, picking one made with a different company's model gains nothing on average, and loses nothing either.
 
-Three qualifications bound the claim.
-It concerns the average across benchmarks; the prediction interval for a single new benchmark, \PredLow{} to \PredHigh{}, leaves room for moderate effects on individual leaderboards.
-It concerns promotion per submitted row, so it says nothing about attempts that were never submitted.
-And it holds within solvers: the contrast compares each participant's cross-family attempts with that same participant's same-family attempts, both building on someone else's work.
-Under the original margin, a factor of 1.25 either way, the result would have been inconclusive, and a sharper answer needs more data than these ten benchmarks hold.
+Three limits apply.
+The result is an average: on a single new leaderboard the effect could plausibly sit anywhere from \PredLow{} to \PredHigh{}.
+It counts only submitted work, so experiments that never reached the leaderboard are invisible.
+And it compares each participant with themselves, both times building on someone else's work, so it isolates the model and holds the person fixed.
+A sharper answer, one that would pass the original stricter bar, needs more data than these ten leaderboards hold.
 
-The label disagreements of Section~\ref{sec:labels} bear on how far to trust this.
-If declared families were assigned at random relative to the work actually done, the estimate would be pulled toward 1, and an equivalence verdict would be easier to reach than it should be.
-The audit found 93.2\% agreement among notes that mention a model, so the pull is bounded, but it is not zero.
+The labels matter too.
+If participants' declared models were often wrong in random ways, the estimate would be pulled toward ``no difference'', making this kind of verdict easier to reach than it should be.
+The label audit found that 93.2\% of the notes that mention a model agree with the declared one (Section~\ref{sec:labels}), so the pull is limited, but it is not zero.
 
 \subsection{Relation to the ECDSA.Fail paper}
 
 The ECDSA.Fail paper describes cross-pollination in prose at four places \citep{long2026ecdsafail}, quoted in Section~\ref{sec:intro}.
-Its \S5.4.1 observes that plateau-ending advances often came from other participants.
-This study holds the participant fixed and asks only about the model, and in that sense it tests a narrower claim than the paper makes.
-The two are compatible: different people can matter even if different models, as declared, do not.
+Its \S5.4.1 observes that the advances that ended plateaus often came from participants other than those behind the previous improvements.
+This study holds the participant fixed and asks only about the model, so it tests a narrower claim than that paper makes.
+The two fit together: different people can matter even if different models, as declared, do not.
 Its \S4.1 and \S4.3.3 attribute resilience to branches that differ in ``models, tools, backgrounds, and objectives''; a submission record can separate only the declared model from that list.
 Its \S4.3.2 describes agents from different families reviewing one another's conclusions inside one participant's workflow.
 That kind of pollination is invisible in submission data, because it leaves one \field{Model:} line, and the case in Section~\ref{sec:casegains} shows a note that credits two vendors under a single-vendor label.
-Plateau breaks, the event those passages emphasise, were too rare among cross-solver promotions for H3b to be tested on any benchmark.
+Plateau breaks, the events those passages emphasise, were too rare to test on any leaderboard.
 
 Kydo's reply used the phrase ``cross modal'', which in machine learning usually means mixing modalities such as text and images.
 Read in context, it refers to models from different vendors, and this paper uses that reading throughout.
@@ -34,14 +36,16 @@ Read in context, it refers to models from different vendors, and this paper uses
 \subsection{What else could explain the 2x}
 
 The comparison in the motivating post \citep{kannan2026post} is between one model in an evolutionary loop \citep{gu2026discovering} and an open swarm of participants \citep{long2026ecdsafail}.
-This study finds that, within the swarm, the vendor mix of a parent and child does not predict promotion.
-That leaves the swarm's other features as candidates: many independent people with their own tools and objectives, a public frontier that everyone restarts from, and an evaluator that runs around the clock.
+This study finds that, inside the swarm, which companies' models meet in a parent and child does not predict success.
+That points to the swarm's other features.
+Many independent people bring their own tools and goals, everyone restarts from a public best-so-far, and an evaluator checks every submission around the clock.
+That reading fits the post's own conclusion, that what open research needs is coordination.
 Every new attempt on Yukon starts by default from the best promoted submission (Section~\ref{sec:setting}), and the primary model holds that choice fixed through its current-best covariate.
 Which of these features drove the difference between the two searches is a separate question, and the data here do not answer it.
 
 \subsection{What a platform would need to log}
 
-The causal version of the question needs data that a submission record does not hold.
+To answer whether mixing models causes better results, rather than whether it goes with them, a platform would need data that a submission record does not hold.
 \begin{itemize}
   \item Every attempt, not only submissions, so that selection into submission can be measured.
   \item The model and harness of each agent that touched an attempt, not one declared line per submission.
@@ -54,7 +58,8 @@ Yukon already records traces privately and links them to submissions \citep{yuko
 \subsection{Limits}
 
 Section~\ref{sec:threats} lists the threats in full.
-The most important are self-selection within solvers, self-declared labels, and parent inference whose cell agrees with a labelled parent on 98.3\% of rows where that parent was the current best, but on only 59.8\% of the others.
+The most important are that participants choose their own models and starting points, and that model labels are self-declared.
+Another is that parents found from code put a submission in the same group, cross-company or same-company, as the parent the participant named 98.3\% of the time when that parent was the current best, but only 59.8\% of the time otherwise.
 The code and the label audit were reviewed by Claude models, and the analysis would benefit from outside statistical review.
 The release that accompanies this paper holds the snapshot, the lineage files, the code and the pre-registration, so every number here can be rebuilt offline.
 

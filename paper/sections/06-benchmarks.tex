@@ -1,14 +1,15 @@
-\section{Per-benchmark results and sensitivity}
+\section{Each leaderboard, and alternative analyses}
 \label{sec:perbench}
 
-\subsection{Per benchmark}
+\subsection{Each leaderboard}
 
-Table~\ref{tab:perbench} gives each benchmark's sample and estimate.
-Five point estimates lie above 1 and five below, and they range from \BenchJOR{} on \bench{gpsanant/ecdsafail-challenge} to \BenchCOR{} on \bench{eigenlabs/eip8200-challenges/modexp}.
-Informative solvers per benchmark range from 19 to 46. On nine benchmarks some of them have primary rows that are all cross-family or all same-family, and those solvers inform the covariates only.
+Table~\ref{tab:perbench} gives each leaderboard's numbers.
+The leaderboards do not lean one way: five estimates lie above 1 and five below, ranging from \BenchJOR{} on \bench{gpsanant/ecdsafail-challenge} to \BenchCOR{} on \bench{eigenlabs/eip8200-challenges/modexp}.
+Between 19 and 46 participants per leaderboard had both successes and failures, which is what the comparison needs.
+On nine leaderboards some of those participants only ever built on one kind of parent, so they help with the time trend and other adjustments but not with the comparison itself.
 
-The promotion rule was reproduced on \ATFiveReproduced{} benchmarks (Section~\ref{sec:outcomes}).
-On \ATFiveNotReproducedList{}, recomputation disagrees with the recorded status on more than 1\% of rows, and Y1 comes from the recorded status as the pre-registration requires.
+As a data check, I recomputed which submissions should have been promoted from their scores, and the recomputation matched Yukon's records on \ATFiveReproduced{} leaderboards (Section~\ref{sec:outcomes}).
+On \ATFiveNotReproducedList{} it disagrees on more than 1\% of submissions, apparently because the promotion threshold changed part-way through, so the analysis uses Yukon's recorded promotions there, as the plan requires.
 
 \begin{table}[t]
 \centering
@@ -27,18 +28,19 @@ Pooled (HKSJ) & \AnalysisRowsTotal{} & \FitRowsTotal{} & & & & \PooledOR{} [\Poo
 \end{tabular}
 \end{table}
 
-\subsection{Sensitivity analyses}
+\subsection{Alternative analyses}
 
-Table~\ref{tab:sensitivity} and Figure~\ref{fig:sens} recompute the pooled estimate under each of the nine pre-registered changes.
-Every pooled odds ratio lies between 1.01 and 1.03, and every 90\% interval lies inside the margin, so no single change moves the verdict.
-Analysis 2 estimates a different quantity, the effect of the immediate code parent rather than the declared origin, and agrees with the primary.
-Analysis 7 is identical to the primary: the author's \AuthorRows{} submissions are all on ECDSA.Fail, and the three that are analysis rows predate its confirmatory window.
-Analysis 8 keeps one member of each sibling pair and pools eight benchmarks.
+A result can depend on judgment calls, so the plan fixed nine alternative versions of the analysis in advance, each changing one call (Section~\ref{sec:sensitivity}).
+Table~\ref{tab:sensitivity} and Figure~\ref{fig:sens} show them.
+Every version gives a combined odds ratio between 1.01 and 1.03, and every 90\% interval stays inside the pre-registered range, so no single judgment call changes the answer.
+Version 2 asks a slightly different question, whether the immediate code parent matters rather than the declared starting point, and agrees too.
+Version 7 is identical to the main result: the author's \AuthorRows{} submissions are all on ECDSA.Fail, and the three that are analysis rows predate its confirmatory window.
+Version 8 keeps one leaderboard from each pair of closely related leaderboards and combines eight.
 
-Unknown labels concentrate on one benchmark.
+Unknown model labels are concentrated on one leaderboard.
 On \bench{eigenlabs/flock-challenge}, \FlockUnknownCell{} of \FlockAnalysisRows{} analysis rows are cross-solver rows with an Unknown or Multi family on one side, and in \FlockUnknownParent{} of them it is the parent's family that is missing.
-Analysis 1, which treats Unknown as a family of its own, moves that benchmark's odds ratio from \BenchEOR{} [\BenchEORLow{}, \BenchEORHigh{}] to \FlockSOneOR{} [\FlockSOneLow{}, \FlockSOneHigh{}].
-This per-benchmark figure is descriptive; the pre-registered analysis 1 reports only the pooled value.
+Version 1, which treats Unknown as a company of its own, moves that leaderboard's odds ratio from \BenchEOR{} [\BenchEORLow{}, \BenchEORHigh{}] to \FlockSOneOR{} [\FlockSOneLow{}, \FlockSOneHigh{}].
+This per-leaderboard figure is descriptive; the plan reports only the combined value for version 1.
 
 \begin{table}[t]
 \centering

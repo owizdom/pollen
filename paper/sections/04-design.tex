@@ -20,8 +20,13 @@ Every hypothesis is two-sided.
   \item E2 (exploratory): the H1 effect varies over the life of a benchmark, by thirds of its analysis rows.
 \end{itemize}
 
-\subsection{Primary model}
+\subsection{The main test}
 \label{sec:model}
+
+In plain terms, the main test asks whether a participant's submission is more likely to be promoted when it builds on another participant's work made with a different company's model than when it builds on another participant's work made with the same company's model.
+It compares each participant only with themselves, so that a skilled participant who happens to favour one kind of parent cannot create a difference on their own.
+It also adjusts for how far into the leaderboard's life the submission came, whether the parent was the best submission at the time, and how many submissions the participant had made before.
+The paragraphs below give the formal version.
 
 The primary result is H1 pooled across all study benchmarks, ECDSA.Fail included.
 Each benchmark contributes one log odds ratio from a conditional logistic regression of Y1 on the cross-family indicator, stratified by solver \citep{breslow1980}.
@@ -52,10 +57,11 @@ The between-benchmark variance $\tau^2$ is the DerSimonian--Laird estimate \cite
 The pooled interval uses the Hartung--Knapp--Sidik--Jonkman variance with a $t$ distribution on $k-1$ degrees of freedom \citep{hartung2001,sidik2002}.
 ECDSA.Fail's own estimate is the headline case study and is also a secondary test.
 
-\subsection{Equivalence and verdict}
+\subsection{How ``no effect'' is decided}
 \label{sec:equivalence}
 
-A null result is a finding only if the design can tell ``no effect'' from ``not enough data''.
+Finding no difference only means something if the data could have shown one, so the plan fixed in advance a range of odds ratios that counts as ``no meaningful effect'', called the margin.
+If the result's 90\% interval sits entirely inside that range, the effect is declared negligible; if the 95\% interval excludes 1, an effect is declared; otherwise the result is undecided.
 Equivalence uses two one-sided tests at $\alpha = 0.05$ \citep{schuirmann1987}, which amounts to checking whether the 90\% interval of the odds ratio lies inside the margin.
 The pre-registered margin is $[0.80, 1.25]$.
 The verdict is one of three.
@@ -77,8 +83,10 @@ Over \PowerSims{} simulated runs, power at the original margin was \PowerEquival
 The margin used in this paper is therefore \MarginFinal{}, and \file{docs/prereg.md} states this reason under the values fixed at the lock.
 The widening rule was written into the specification on 17 October, before the snapshot was frozen.
 
-\subsection{Secondary tests and multiplicity}
+\subsection{Narrower questions}
 \label{sec:secondary}
+
+Besides the main test, the plan asks whether cross-company building changes the size of improvements, the chance of a large jump or of breaking a plateau, and, on ECDSA.Fail, the chance of a new Pareto point. Running many tests raises the chance of a false alarm, so those that qualify are corrected together.
 
 Each secondary test is run per benchmark (\file{analysis/secondary.py}).
 \begin{itemize}
@@ -93,8 +101,10 @@ Every secondary test that passes this gate, with each benchmark's test as its ow
 A test that passes the gate but cannot be fitted stays in the family with $p = 1$.
 E1 and E2 are exploratory and are reported without correction.
 
-\subsection{Sensitivity analyses}
+\subsection{Alternative versions}
 \label{sec:sensitivity}
+
+Each of the nine alternatives below changes one judgment call and reruns the combined estimate.
 
 Each sensitivity analysis recomputes the pooled primary estimate with one change (\file{analysis/sensitivity.py}).
 \begin{enumerate}
