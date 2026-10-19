@@ -9,3 +9,7 @@ paper/*.out
 paper/*.bbl
 paper/*.blg
 .DS_Store
+snapshot/raw/
+lineage/frozen/
+outcomes/sealed/
+.pytest-last.txt
