@@ -6,6 +6,8 @@ model is fitted to each run.
 from __future__ import annotations
 
 import math
+from concurrent.futures import ProcessPoolExecutor
+from functools import partial
 
 import pandas as pd
 
@@ -63,23 +65,33 @@ def equivalence_power(frame, base_rate, **kw) -> float:
     return equivalence_power_report(frame, base_rate, **kw)["power"]
 
 
+def _pooled_sim(preps, keys, base_rates, icc, seed, margin, i):
+    """(equivalent, failed fits) for simulation i; the seed depends on i alone."""
+    ests, failed = [], 0
+    for j, k in enumerate(keys):
+        e = _one_fit(preps[k], base_rates[k], icc, seed * 100003 + i * 1009 + j)
+        if _valid(e):
+            ests.append(e)
+        else:
+            failed += 1
+    ok = len(ests) == len(keys) and _inside(models.meta_hksj(ests).ci90, margin)
+    return int(ok), failed
+
+
 def pooled_equivalence_power_report(frames, base_rates, margin=(0.80, 1.25), icc=0.05,
-                                    sims=2000, seed=20261017) -> dict:
+                                    sims=2000, seed=20261017, workers=1) -> dict:
     """Pooled primary estimand. A run with any failed benchmark is non-equivalent; failed_share
-    is the share of benchmark fits that failed."""
+    is the share of benchmark fits that failed. The result does not depend on workers."""
     keys = sorted(frames)
     preps = {k: _prepare(frames[k]) for k in keys}
-    ok = failed = 0
-    for i in range(sims):
-        ests = []
-        for j, k in enumerate(keys):
-            e = _one_fit(preps[k], base_rates[k], icc, seed * 100003 + i * 1009 + j)
-            if _valid(e):
-                ests.append(e)
-            else:
-                failed += 1
-        if len(ests) == len(keys):
-            ok += _inside(models.meta_hksj(ests).ci90, margin)
+    run = partial(_pooled_sim, preps, keys, base_rates, icc, seed, margin)
+    if workers > 1:
+        with ProcessPoolExecutor(workers) as ex:
+            res = list(ex.map(run, range(sims), chunksize=4))
+    else:
+        res = [run(i) for i in range(sims)]
+    ok = sum(r[0] for r in res)
+    failed = sum(r[1] for r in res)
     return {"power": ok / sims, "failed_share": failed / (sims * len(keys))}
 
 

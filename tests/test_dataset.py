@@ -486,3 +486,12 @@ def test_n1_power_on_a_dataset_frame_uses_dataset_knots(tmp_path, monkeypatch):
     monkeypatch.setattr(design, "time_spline", spy)
     power.equivalence_power(df, 0.3, sims=1, seed=1)
     assert seen and all(k is not None and k == pytest.approx(want) for k in seen)
+
+
+def test_pooled_power_is_identical_across_worker_counts():
+    from analysis import power
+    frames = {f"b{i}": cells_frame(12, 6, seed=i) for i in range(3)}
+    rates = {k: 0.3 for k in frames}
+    serial = power.pooled_equivalence_power_report(frames, rates, sims=6, seed=4)
+    pooled = power.pooled_equivalence_power_report(frames, rates, sims=6, seed=4, workers=2)
+    assert pooled == serial
