@@ -1,0 +1,338 @@
+{
+ "benchmarks": {
+  "davidtai/mlxfast-gemma4-26b-a4b": {
+   "counts": {
+    "analysis_rows": 2813,
+    "excluded": {
+     "multi_parent": 0,
+     "novel": 26,
+     "outside_window": 0,
+     "own_lineage": 308,
+     "unknown_family": 56
+    },
+    "firth": true,
+    "fit_rows": 2423,
+    "strata_dropped": 46,
+    "strata_kept": 40,
+    "strata_no_treatment_variation": 4
+   },
+   "estimate": {
+    "ci95": [
+     -0.237723,
+     0.552178
+    ],
+    "dropped_covariates": [],
+    "log_or": 0.157227,
+    "method": "firth",
+    "n": 2129,
+    "n_groups_informative": 40,
+    "se": 0.201509
+   },
+   "name": "davidtai/mlxfast-gemma4-26b-a4b"
+  },
+  "davidtai/qwen38-125b-a6b-cuda-v1": {
+   "counts": {
+    "analysis_rows": 5409,
+    "excluded": {
+     "multi_parent": 0,
+     "novel": 17,
+     "outside_window": 0,
+     "own_lineage": 759,
+     "unknown_family": 69
+    },
+    "firth": true,
+    "fit_rows": 4564,
+    "strata_dropped": 17,
+    "strata_kept": 21,
+    "strata_no_treatment_variation": 2
+   },
+   "estimate": {
+    "ci95": [
+     -0.313335,
+     0.761093
+    ],
+    "dropped_covariates": [],
+    "log_or": 0.223879,
+    "method": "firth",
+    "n": 4095,
+    "n_groups_informative": 21,
+    "se": 0.274094
+   },
+   "name": "davidtai/qwen38-125b-a6b-cuda-v1"
+  },
+  "eigenlabs/eip8200-challenges/modexp": {
+   "counts": {
+    "analysis_rows": 1332,
+    "excluded": {
+     "multi_parent": 21,
+     "novel": 82,
+     "outside_window": 0,
+     "own_lineage": 304,
+     "unknown_family": 31
+    },
+    "firth": true,
+    "fit_rows": 894,
+    "strata_dropped": 16,
+    "strata_kept": 20,
+    "strata_no_treatment_variation": 2
+   },
+   "estimate": {
+    "ci95": [
+     0.0149415,
+     0.988263
+    ],
+    "dropped_covariates": [],
+    "log_or": 0.501602,
+    "method": "firth",
+    "n": 846,
+    "n_groups_informative": 20,
+    "se": 0.248301
+   },
+   "name": "eigenlabs/eip8200-challenges/modexp"
+  },
+  "eigenlabs/eip8200-challenges/ripemd160": {
+   "counts": {
+    "analysis_rows": 1073,
+    "excluded": {
+     "multi_parent": 50,
+     "novel": 105,
+     "outside_window": 0,
+     "own_lineage": 321,
+     "unknown_family": 18
+    },
+    "firth": true,
+    "fit_rows": 579,
+    "strata_dropped": 11,
+    "strata_kept": 19,
+    "strata_no_treatment_variation": 0
+   },
+   "estimate": {
+    "ci95": [
+     -0.614095,
+     0.370079
+    ],
+    "dropped_covariates": [],
+    "log_or": -0.122008,
+    "method": "firth",
+    "n": 545,
+    "n_groups_informative": 19,
+    "se": 0.251069
+   },
+   "name": "eigenlabs/eip8200-challenges/ripemd160"
+  },
+  "eigenlabs/flock-challenge": {
+   "counts": {
+    "analysis_rows": 4605,
+    "excluded": {
+     "multi_parent": 4,
+     "novel": 48,
+     "outside_window": 0,
+     "own_lineage": 1352,
+     "unknown_family": 1416
+    },
+    "firth": true,
+    "fit_rows": 1785,
+    "strata_dropped": 20,
+    "strata_kept": 36,
+    "strata_no_treatment_variation": 9
+   },
+   "estimate": {
+    "ci95": [
+     -0.688108,
+     0.10569
+    ],
+    "dropped_covariates": [
+     "child_family_folded_MiniMax"
+    ],
+    "log_or": -0.291209,
+    "method": "firth",
+    "n": 1706,
+    "n_groups_informative": 36,
+    "se": 0.202503
+   },
+   "name": "eigenlabs/flock-challenge"
+  },
+  "eigenlabs/flock-challenge-multi/x86": {
+   "counts": {
+    "analysis_rows": 3240,
+    "excluded": {
+     "multi_parent": 61,
+     "novel": 95,
+     "outside_window": 0,
+     "own_lineage": 636,
+     "unknown_family": 88
+    },
+    "firth": true,
+    "fit_rows": 2360,
+    "strata_dropped": 29,
+    "strata_kept": 19,
+    "strata_no_treatment_variation": 6
+   },
+   "estimate": {
+    "ci95": [
+     -0.965158,
+     0.384185
+    ],
+    "dropped_covariates": [],
+    "log_or": -0.290486,
+    "method": "firth",
+    "n": 2154,
+    "n_groups_informative": 19,
+    "se": 0.344226
+   },
+   "name": "eigenlabs/flock-challenge-multi/x86"
+  },
+  "eigenlabs/lighter-prover-challenge": {
+   "counts": {
+    "analysis_rows": 8208,
+    "excluded": {
+     "multi_parent": 0,
+     "novel": 248,
+     "outside_window": 0,
+     "own_lineage": 687,
+     "unknown_family": 405
+    },
+    "firth": true,
+    "fit_rows": 6868,
+    "strata_dropped": 61,
+    "strata_kept": 46,
+    "strata_no_treatment_variation": 4
+   },
+   "estimate": {
+    "ci95": [
+     -0.178167,
+     0.648841
+    ],
+    "dropped_covariates": [],
+    "log_or": 0.235337,
+    "method": "firth",
+    "n": 5322,
+    "n_groups_informative": 46,
+    "se": 0.210975
+   },
+   "name": "eigenlabs/lighter-prover-challenge"
+  },
+  "eigenlabs/mlxfast-challenge": {
+   "counts": {
+    "analysis_rows": 1883,
+    "excluded": {
+     "multi_parent": 0,
+     "novel": 56,
+     "outside_window": 0,
+     "own_lineage": 286,
+     "unknown_family": 281
+    },
+    "firth": true,
+    "fit_rows": 1260,
+    "strata_dropped": 51,
+    "strata_kept": 32,
+    "strata_no_treatment_variation": 8
+   },
+   "estimate": {
+    "ci95": [
+     -0.970451,
+     0.084626
+    ],
+    "dropped_covariates": [],
+    "log_or": -0.442912,
+    "method": "firth",
+    "n": 890,
+    "n_groups_informative": 32,
+    "se": 0.269157
+   },
+   "name": "eigenlabs/mlxfast-challenge"
+  },
+  "eigenlabs/sig-golf/full": {
+   "counts": {
+    "analysis_rows": 685,
+    "excluded": {
+     "multi_parent": 49,
+     "novel": 8,
+     "outside_window": 0,
+     "own_lineage": 113,
+     "unknown_family": 28
+    },
+    "firth": true,
+    "fit_rows": 487,
+    "strata_dropped": 18,
+    "strata_kept": 23,
+    "strata_no_treatment_variation": 2
+   },
+   "estimate": {
+    "ci95": [
+     -0.0593787,
+     0.991943
+    ],
+    "dropped_covariates": [
+     "child_family_folded_xAI"
+    ],
+    "log_or": 0.466282,
+    "method": "firth",
+    "n": 424,
+    "n_groups_informative": 23,
+    "se": 0.268199
+   },
+   "name": "eigenlabs/sig-golf/full"
+  },
+  "gpsanant/ecdsafail-challenge": {
+   "counts": {
+    "analysis_rows": 1439,
+    "excluded": {
+     "multi_parent": 5,
+     "novel": 450,
+     "outside_window": 110,
+     "own_lineage": 319,
+     "unknown_family": 138
+    },
+    "firth": true,
+    "fit_rows": 417,
+    "strata_dropped": 51,
+    "strata_kept": 20,
+    "strata_no_treatment_variation": 4
+   },
+   "estimate": {
+    "ci95": [
+     -1.98045,
+     0.186154
+    ],
+    "dropped_covariates": [
+     "child_family_folded_MiniMax",
+     "child_family_folded_xAI"
+    ],
+    "log_or": -0.897149,
+    "method": "firth",
+    "n": 272,
+    "n_groups_informative": 20,
+    "se": 0.552716
+   },
+   "name": "gpsanant/ecdsafail-challenge"
+  }
+ },
+ "case_study": {
+  "benchmark": "gpsanant/ecdsafail-challenge",
+  "verdict": "inconclusive"
+ },
+ "excluded_benchmarks": {},
+ "margin": [
+  0.67,
+  1.5
+ ],
+ "pooled": {
+  "ci90": [
+   -0.197418,
+   0.243651
+  ],
+  "ci95": [
+   -0.249035,
+   0.295268
+  ],
+  "k": 10,
+  "log_or": 0.0231166,
+  "tau2": 0.0633117,
+  "tau2_ci": [
+   0.0,
+   0.504436
+  ]
+ },
+ "verdict": "equivalent to no effect"
+}

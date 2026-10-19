@@ -1,0 +1,811 @@
+{
+ "E1": {
+  "davidtai/mlxfast-gemma4-26b-a4b": {
+   "n_multi": 3,
+   "n_single": 2755,
+   "promoted_rate_multi": 0.0,
+   "promoted_rate_single": 0.0642468,
+   "y1": {
+    "ci95": [
+     -2.06012,
+     5.04601
+    ],
+    "dropped_covariates": [],
+    "log_or": 1.49295,
+    "method": "firth",
+    "n": 2461,
+    "n_groups_informative": 40,
+    "se": 1.81282
+   },
+   "y3": {
+    "dropped_covariates": [],
+    "log_or": 1.38779e-20,
+    "method": "quantreg",
+    "n": 177,
+    "n_groups_informative": 40,
+    "se": null
+   }
+  },
+  "davidtai/qwen38-125b-a6b-cuda-v1": {
+   "n_multi": 0,
+   "n_single": 5323,
+   "promoted_rate_multi": null,
+   "promoted_rate_single": 0.023483,
+   "y1": {
+    "dropped_covariates": [
+     "week_2026-W38",
+     "week_2026-W39"
+    ],
+    "log_or": null,
+    "method": "unidentified",
+    "n": 4855,
+    "n_groups_informative": 22,
+    "se": null
+   },
+   "y3": {
+    "dropped_covariates": [],
+    "log_or": 9.63422e-19,
+    "method": "quantreg",
+    "n": 125,
+    "n_groups_informative": 22,
+    "se": null
+   }
+  },
+  "eigenlabs/eip8200-challenges/modexp": {
+   "n_multi": 28,
+   "n_single": 1203,
+   "promoted_rate_multi": 0.392857,
+   "promoted_rate_single": 0.15877,
+   "y1": {
+    "ci95": [
+     -0.425974,
+     3.39529
+    ],
+    "dropped_covariates": [
+     "week_2026-W42"
+    ],
+    "log_or": 1.48466,
+    "method": "clogit",
+    "n": 1182,
+    "n_groups_informative": 23,
+    "se": 0.974831
+   },
+   "y3": {
+    "ci95": [
+     -0.022197,
+     0.0298103
+    ],
+    "dropped_covariates": [],
+    "log_or": 0.00380666,
+    "method": "quantreg",
+    "n": 202,
+    "n_groups_informative": 25,
+    "se": 0.0132674
+   }
+  },
+  "eigenlabs/eip8200-challenges/ripemd160": {
+   "n_multi": 56,
+   "n_single": 903,
+   "promoted_rate_multi": 0.767857,
+   "promoted_rate_single": 0.477298,
+   "y1": {
+    "ci95": [
+     -2.60482,
+     1.38954
+    ],
+    "dropped_covariates": [],
+    "log_or": -0.607639,
+    "method": "clogit",
+    "n": 921,
+    "n_groups_informative": 22,
+    "se": 1.01899
+   },
+   "y3": {
+    "ci95": [
+     -0.000487281,
+     0.000355971
+    ],
+    "dropped_covariates": [],
+    "log_or": -6.56551e-05,
+    "method": "quantreg",
+    "n": 474,
+    "n_groups_informative": 26,
+    "se": 0.000215119
+   }
+  },
+  "eigenlabs/flock-challenge": {
+   "n_multi": 4,
+   "n_single": 3950,
+   "promoted_rate_multi": 0.0,
+   "promoted_rate_single": 0.0574684,
+   "y1": {
+    "ci95": [
+     -4.36196,
+     5.53753
+    ],
+    "dropped_covariates": [
+     "week_2026-W37",
+     "week_2026-W38",
+     "week_2026-W39",
+     "week_2026-W40",
+     "week_2026-W42"
+    ],
+    "log_or": 0.587787,
+    "method": "firth",
+    "n": 3065,
+    "n_groups_informative": 40,
+    "se": 2.52543
+   },
+   "y3": {
+    "dropped_covariates": [],
+    "log_or": -1.55957e-19,
+    "method": "quantreg",
+    "n": 227,
+    "n_groups_informative": 42,
+    "se": null
+   }
+  },
+  "eigenlabs/flock-challenge-multi/x86": {
+   "n_multi": 104,
+   "n_single": 3001,
+   "promoted_rate_multi": 0.00961538,
+   "promoted_rate_single": 0.0606465,
+   "y1": {
+    "ci95": [
+     -3.3463,
+     1.78707
+    ],
+    "dropped_covariates": [
+     "week_2026-W37"
+    ],
+    "log_or": -0.779612,
+    "method": "firth",
+    "n": 2894,
+    "n_groups_informative": 21,
+    "se": 1.30956
+   },
+   "y3": {
+    "ci95": [
+     -0.000624387,
+     0.00757748
+    ],
+    "dropped_covariates": [],
+    "log_or": 0.00347655,
+    "method": "quantreg",
+    "n": 183,
+    "n_groups_informative": 21,
+    "se": 0.00209235
+   }
+  },
+  "eigenlabs/lighter-prover-challenge": {
+   "n_multi": 51,
+   "n_single": 7642,
+   "promoted_rate_multi": 0.0,
+   "promoted_rate_single": 0.0211986,
+   "y1": {
+    "ci95": [
+     -3.49887,
+     2.35364
+    ],
+    "dropped_covariates": [],
+    "log_or": -0.572616,
+    "method": "firth",
+    "n": 6184,
+    "n_groups_informative": 47,
+    "se": 1.49301
+   },
+   "y3": {
+    "dropped_covariates": [],
+    "log_or": -2.17189e-18,
+    "method": "quantreg",
+    "n": 162,
+    "n_groups_informative": 47,
+    "se": null
+   }
+  },
+  "eigenlabs/mlxfast-challenge": {
+   "n_multi": 3,
+   "n_single": 1583,
+   "promoted_rate_multi": 0.0,
+   "promoted_rate_single": 0.0840177,
+   "y1": {
+    "ci95": [
+     -2.6718,
+     6.96496
+    ],
+    "dropped_covariates": [],
+    "log_or": 2.14658,
+    "method": "firth",
+    "n": 1220,
+    "n_groups_informative": 34,
+    "se": 2.4584
+   },
+   "y3": {
+    "dropped_covariates": [],
+    "log_or": 2.23467e-17,
+    "method": "quantreg",
+    "n": 133,
+    "n_groups_informative": 34,
+    "se": null
+   }
+  },
+  "eigenlabs/sig-golf/full": {
+   "n_multi": 49,
+   "n_single": 599,
+   "promoted_rate_multi": 0.571429,
+   "promoted_rate_single": 0.42404,
+   "y1": {
+    "ci95": [
+     -1.18463,
+     1.14584
+    ],
+    "dropped_covariates": [],
+    "log_or": -0.0193902,
+    "method": "clogit",
+    "n": 603,
+    "n_groups_informative": 27,
+    "se": 0.594519
+   },
+   "y3": {
+    "ci95": [
+     -0.002064,
+     0.00291502
+    ],
+    "dropped_covariates": [],
+    "log_or": 0.00042551,
+    "method": "quantreg",
+    "n": 282,
+    "n_groups_informative": 31,
+    "se": 0.00127018
+   }
+  },
+  "gpsanant/ecdsafail-challenge": {
+   "n_multi": 41,
+   "n_single": 659,
+   "promoted_rate_multi": 0.512195,
+   "promoted_rate_single": 0.491654,
+   "y1": {
+    "ci95": [
+     0.555476,
+     3.16289
+    ],
+    "dropped_covariates": [],
+    "log_or": 1.85918,
+    "method": "firth",
+    "n": 524,
+    "n_groups_informative": 24,
+    "se": 0.665168
+   },
+   "y3": {
+    "ci95": [
+     -0.000546255,
+     0.000731628
+    ],
+    "dropped_covariates": [],
+    "log_or": 9.26866e-05,
+    "method": "quantreg",
+    "n": 345,
+    "n_groups_informative": 37,
+    "se": 0.000325997
+   }
+  }
+ },
+ "E2": {
+  "benchmarks": {
+   "davidtai/mlxfast-gemma4-26b-a4b": {
+    "third1": {
+     "ci95": [
+      -0.421942,
+      0.921492
+     ],
+     "dropped_covariates": [
+      "time_s4"
+     ],
+     "log_or": 0.249775,
+     "method": "firth",
+     "n": 560,
+     "n_groups_informative": 26,
+     "se": 0.342719
+    },
+    "third2": {
+     "ci95": [
+      -0.363925,
+      1.67578
+     ],
+     "dropped_covariates": [
+      "child_family_folded_Meta",
+      "child_family_folded_Zhipu",
+      "child_family_folded_xAI"
+     ],
+     "log_or": 0.655928,
+     "method": "firth",
+     "n": 625,
+     "n_groups_informative": 13,
+     "se": 0.520343
+    },
+    "third3": {
+     "ci95": [
+      -0.647045,
+      0.684017
+     ],
+     "dropped_covariates": [
+      "child_family_folded_xAI",
+      "time_s4"
+     ],
+     "log_or": 0.0184857,
+     "method": "firth",
+     "n": 740,
+     "n_groups_informative": 23,
+     "se": 0.339563
+    }
+   },
+   "davidtai/qwen38-125b-a6b-cuda-v1": {
+    "third1": {
+     "ci95": [
+      -0.0146967,
+      1.28166
+     ],
+     "dropped_covariates": [
+      "time_s4"
+     ],
+     "log_or": 0.633482,
+     "method": "firth",
+     "n": 1338,
+     "n_groups_informative": 21,
+     "se": 0.330709
+    },
+    "third2": {
+     "ci95": [
+      -3.98745,
+      -0.294041
+     ],
+     "dropped_covariates": [
+      "child_family_folded_DeepSeek",
+      "child_family_folded_Other",
+      "child_family_folded_Zhipu"
+     ],
+     "log_or": -2.14075,
+     "method": "firth",
+     "n": 1023,
+     "n_groups_informative": 7,
+     "se": 0.942213
+    },
+    "third3": {
+     "ci95": [
+      -2.91047,
+      11.5305
+     ],
+     "dropped_covariates": [
+      "child_family_folded_DeepSeek",
+      "child_family_folded_Google",
+      "child_family_folded_Zhipu",
+      "parent_family_folded_Other",
+      "time_s4"
+     ],
+     "log_or": 4.31,
+     "method": "firth",
+     "n": 570,
+     "n_groups_informative": 4,
+     "se": 3.68398
+    }
+   },
+   "eigenlabs/eip8200-challenges/modexp": {
+    "third1": {
+     "ci95": [
+      -0.111053,
+      1.86653
+     ],
+     "dropped_covariates": [
+      "time_s4"
+     ],
+     "log_or": 0.877739,
+     "method": "firth",
+     "n": 249,
+     "n_groups_informative": 12,
+     "se": 0.504495
+    },
+    "third2": {
+     "ci95": [
+      -0.76821,
+      0.876174
+     ],
+     "dropped_covariates": [
+      "child_family_folded_Other"
+     ],
+     "log_or": 0.0539819,
+     "method": "firth",
+     "n": 328,
+     "n_groups_informative": 11,
+     "se": 0.419493
+    },
+    "third3": {
+     "ci95": [
+      -2.64924,
+      1.38494
+     ],
+     "dropped_covariates": [
+      "child_family_folded_OpenAI",
+      "parent_family_folded_Other",
+      "time_s4"
+     ],
+     "log_or": -0.632154,
+     "method": "firth",
+     "n": 237,
+     "n_groups_informative": 9,
+     "se": 1.02915
+    }
+   },
+   "eigenlabs/eip8200-challenges/ripemd160": {
+    "third1": {
+     "ci95": [
+      -1.87148,
+      0.0177526
+     ],
+     "dropped_covariates": [
+      "child_family_folded_xAI",
+      "time_s4"
+     ],
+     "log_or": -0.926863,
+     "method": "firth",
+     "n": 174,
+     "n_groups_informative": 11,
+     "se": 0.481956
+    },
+    "third2": {
+     "ci95": [
+      -0.534058,
+      1.41595
+     ],
+     "dropped_covariates": [
+      "child_family_folded_xAI"
+     ],
+     "log_or": 0.440946,
+     "method": "firth",
+     "n": 177,
+     "n_groups_informative": 12,
+     "se": 0.49746
+    },
+    "third3": {
+     "ci95": [
+      -1.2129,
+      1.47275
+     ],
+     "dropped_covariates": [
+      "child_family_folded_Other",
+      "child_family_folded_xAI",
+      "time_s4"
+     ],
+     "log_or": 0.129926,
+     "method": "firth",
+     "n": 163,
+     "n_groups_informative": 8,
+     "se": 0.685129
+    }
+   },
+   "eigenlabs/flock-challenge": {
+    "third1": {
+     "ci95": [
+      -0.809431,
+      0.0487039
+     ],
+     "dropped_covariates": [
+      "time_s4"
+     ],
+     "log_or": -0.380364,
+     "method": "firth",
+     "n": 1182,
+     "n_groups_informative": 32,
+     "se": 0.218916
+    },
+    "third2": {
+     "ci95": [
+      -2.1934,
+      4.06889
+     ],
+     "dropped_covariates": [
+      "child_family_folded_Other"
+     ],
+     "log_or": 0.937745,
+     "method": "firth",
+     "n": 504,
+     "n_groups_informative": 10,
+     "se": 1.59755
+    },
+    "third3": {
+     "dropped_covariates": [
+      "child_family_folded_MiniMax",
+      "child_family_folded_OpenAI",
+      "log_prior_rows",
+      "parent_family_folded_OpenAI",
+      "parent_is_current_best",
+      "time_s1",
+      "time_s2",
+      "time_s3",
+      "time_s4"
+     ],
+     "log_or": null,
+     "method": "unidentified",
+     "n": 9,
+     "n_groups_informative": 1,
+     "se": null
+    }
+   },
+   "eigenlabs/flock-challenge-multi/x86": {
+    "third1": {
+     "ci95": [
+      -1.23963,
+      0.390686
+     ],
+     "dropped_covariates": [
+      "time_s4"
+     ],
+     "log_or": -0.424474,
+     "method": "firth",
+     "n": 576,
+     "n_groups_informative": 15,
+     "se": 0.415906
+    },
+    "third2": {
+     "ci95": [
+      -0.901081,
+      3.64017
+     ],
+     "dropped_covariates": [
+      "child_family_folded_MiniMax"
+     ],
+     "log_or": 1.36955,
+     "method": "firth",
+     "n": 499,
+     "n_groups_informative": 5,
+     "se": 1.1585
+    },
+    "third3": {
+     "ci95": [
+      -3.15665,
+      4.00365
+     ],
+     "dropped_covariates": [
+      "time_s4"
+     ],
+     "log_or": 0.423501,
+     "method": "firth",
+     "n": 551,
+     "n_groups_informative": 3,
+     "se": 1.82664
+    }
+   },
+   "eigenlabs/lighter-prover-challenge": {
+    "third1": {
+     "ci95": [
+      -0.244622,
+      0.656935
+     ],
+     "dropped_covariates": [
+      "time_s4"
+     ],
+     "log_or": 0.206156,
+     "method": "firth",
+     "n": 2052,
+     "n_groups_informative": 37,
+     "se": 0.229993
+    },
+    "third2": {
+     "ci95": [
+      -7.05576,
+      0.329369
+     ],
+     "dropped_covariates": [
+      "child_family_folded_Google",
+      "child_family_folded_Other",
+      "child_family_folded_Other:Cursor",
+      "child_family_folded_Zhipu",
+      "parent_family_folded_DeepSeek"
+     ],
+     "log_or": -3.3632,
+     "method": "firth",
+     "n": 431,
+     "n_groups_informative": 4,
+     "se": 1.884
+    },
+    "third3": {
+     "ci95": [
+      -1.28483,
+      2.44079
+     ],
+     "dropped_covariates": [
+      "child_family_folded_Other",
+      "child_family_folded_Other:Cursor",
+      "time_s4"
+     ],
+     "log_or": 0.57798,
+     "method": "firth",
+     "n": 709,
+     "n_groups_informative": 11,
+     "se": 0.950432
+    }
+   },
+   "eigenlabs/mlxfast-challenge": {
+    "third1": {
+     "ci95": [
+      -0.827799,
+      1.80086
+     ],
+     "dropped_covariates": [
+      "child_family_folded_Other",
+      "time_s4"
+     ],
+     "log_or": 0.486531,
+     "method": "firth",
+     "n": 261,
+     "n_groups_informative": 18,
+     "se": 0.670589
+    },
+    "third2": {
+     "ci95": [
+      -1.28465,
+      0.15923
+     ],
+     "dropped_covariates": [],
+     "log_or": -0.562708,
+     "method": "firth",
+     "n": 404,
+     "n_groups_informative": 17,
+     "se": 0.368343
+    },
+    "third3": {
+     "ci95": [
+      -2.37593,
+      1.18603
+     ],
+     "dropped_covariates": [
+      "child_family_folded_Moonshot",
+      "child_family_folded_Other",
+      "child_family_folded_Zhipu",
+      "child_family_folded_xAI",
+      "time_s4"
+     ],
+     "log_or": -0.59495,
+     "method": "firth",
+     "n": 152,
+     "n_groups_informative": 6,
+     "se": 0.908681
+    }
+   },
+   "eigenlabs/sig-golf/full": {
+    "third1": {
+     "ci95": [
+      -0.324929,
+      2.66245
+     ],
+     "dropped_covariates": [
+      "child_family_folded_OpenAI",
+      "child_family_folded_Other",
+      "child_family_folded_xAI",
+      "time_s4"
+     ],
+     "log_or": 1.16876,
+     "method": "firth",
+     "n": 78,
+     "n_groups_informative": 10,
+     "se": 0.7621
+    },
+    "third2": {
+     "ci95": [
+      -0.658576,
+      1.24636
+     ],
+     "dropped_covariates": [
+      "child_family_folded_Other",
+      "child_family_folded_xAI"
+     ],
+     "log_or": 0.293894,
+     "method": "firth",
+     "n": 169,
+     "n_groups_informative": 14,
+     "se": 0.485963
+    },
+    "third3": {
+     "ci95": [
+      -1.06765,
+      1.09402
+     ],
+     "dropped_covariates": [
+      "child_family_folded_OpenAI",
+      "child_family_folded_Other",
+      "child_family_folded_xAI",
+      "time_s4"
+     ],
+     "log_or": 0.013189,
+     "method": "firth",
+     "n": 97,
+     "n_groups_informative": 13,
+     "se": 0.551456
+    }
+   },
+   "gpsanant/ecdsafail-challenge": {
+    "third1": {
+     "dropped_covariates": [
+      "child_family_folded_OpenAI",
+      "child_family_folded_Other",
+      "child_family_folded_xAI",
+      "log_prior_rows",
+      "parent_family_folded_OpenAI",
+      "parent_is_current_best",
+      "time_s1",
+      "time_s2",
+      "time_s3",
+      "time_s4"
+     ],
+     "log_or": null,
+     "method": "unidentified",
+     "n": 14,
+     "n_groups_informative": 3,
+     "se": null
+    },
+    "third2": {
+     "ci95": [
+      -3.7295,
+      0.5795
+     ],
+     "dropped_covariates": [
+      "child_family_folded_MiniMax",
+      "child_family_folded_Other",
+      "child_family_folded_xAI",
+      "parent_family_folded_Other"
+     ],
+     "log_or": -1.575,
+     "method": "firth",
+     "n": 121,
+     "n_groups_informative": 14,
+     "se": 1.09925
+    },
+    "third3": {
+     "ci95": [
+      -1.97965,
+      5.37408
+     ],
+     "dropped_covariates": [
+      "parent_family_folded_Moonshot",
+      "parent_family_folded_Other",
+      "time_s3"
+     ],
+     "log_or": 1.69721,
+     "method": "firth",
+     "n": 36,
+     "n_groups_informative": 5,
+     "se": 1.87599
+    }
+   }
+  },
+  "pooled": {
+   "third1": {
+    "ci95": [
+     -0.348439,
+     0.585444
+    ],
+    "k": 9,
+    "log_or": 0.118503,
+    "tau2": 0.169217
+   },
+   "third2": {
+    "ci95": [
+     -0.848562,
+     0.637789
+    ],
+    "k": 10,
+    "log_or": -0.105387,
+    "tau2": 0.345364
+   },
+   "third3": {
+    "ci95": [
+     -0.315103,
+     0.396128
+    ],
+    "k": 9,
+    "log_or": 0.0405125,
+    "tau2": 0.0
+   }
+  }
+ },
+ "label": "exploratory"
+}

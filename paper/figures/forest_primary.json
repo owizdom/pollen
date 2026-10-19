@@ -1,0 +1,70 @@
+{
+ "rows": [
+  {
+   "hi": 0.552185,
+   "label": "davidtai/mlxfast-gemma4-26b-a4b",
+   "lo": -0.237731,
+   "log_or": 0.157227
+  },
+  {
+   "hi": 0.761103,
+   "label": "davidtai/qwen38-125b-a6b-cuda-v1",
+   "lo": -0.313345,
+   "log_or": 0.223879
+  },
+  {
+   "hi": 0.988272,
+   "label": "eigenlabs/eip8200-challenges/modexp",
+   "lo": 0.014932,
+   "log_or": 0.501602
+  },
+  {
+   "hi": 0.370087,
+   "label": "eigenlabs/eip8200-challenges/ripemd160",
+   "lo": -0.614103,
+   "log_or": -0.122008
+  },
+  {
+   "hi": 0.105697,
+   "label": "eigenlabs/flock-challenge",
+   "lo": -0.688115,
+   "log_or": -0.291209
+  },
+  {
+   "hi": 0.384197,
+   "label": "eigenlabs/flock-challenge-multi/x86",
+   "lo": -0.965169,
+   "log_or": -0.290486
+  },
+  {
+   "hi": 0.648848,
+   "label": "eigenlabs/lighter-prover-challenge",
+   "lo": -0.178174,
+   "log_or": 0.235337
+  },
+  {
+   "hi": 0.0846357,
+   "label": "eigenlabs/mlxfast-challenge",
+   "lo": -0.97046,
+   "log_or": -0.442912
+  },
+  {
+   "hi": 0.991952,
+   "label": "eigenlabs/sig-golf/full",
+   "lo": -0.059388,
+   "log_or": 0.466282
+  },
+  {
+   "hi": 0.186174,
+   "label": "gpsanant/ecdsafail-challenge",
+   "lo": -1.98047,
+   "log_or": -0.897149
+  },
+  {
+   "hi": 0.295268,
+   "label": "pooled",
+   "lo": -0.249035,
+   "log_or": 0.0231166
+  }
+ ]
+}

@@ -1,0 +1,58 @@
+{
+ "rows": [
+  {
+   "hi": 0.294586,
+   "label": "s1_unknown_family",
+   "lo": -0.239093,
+   "log_or": 0.0277467
+  },
+  {
+   "hi": 0.283537,
+   "label": "s2_tree_parents",
+   "lo": -0.243693,
+   "log_or": 0.0199221
+  },
+  {
+   "hi": 0.299021,
+   "label": "s3_drop_nonce_rows",
+   "lo": -0.276801,
+   "log_or": 0.01111
+  },
+  {
+   "hi": 0.284625,
+   "label": "s4_coarse_family",
+   "lo": -0.258852,
+   "log_or": 0.0128865
+  },
+  {
+   "hi": 0.315937,
+   "label": "s5_drop_first_72h",
+   "lo": -0.291003,
+   "log_or": 0.0124672
+  },
+  {
+   "hi": 0.27806,
+   "label": "s6_harness_effects",
+   "lo": -0.243224,
+   "log_or": 0.0174179
+  },
+  {
+   "hi": 0.295268,
+   "label": "s7_drop_author_rows",
+   "lo": -0.249035,
+   "log_or": 0.0231166
+  },
+  {
+   "hi": 0.321969,
+   "label": "s8_one_per_sibling_pair",
+   "lo": -0.291055,
+   "log_or": 0.0154571
+  },
+  {
+   "hi": 0.304121,
+   "label": "s9_drop_ambiguous_failures",
+   "lo": -0.244102,
+   "log_or": 0.0300098
+  }
+ ]
+}
