@@ -11,7 +11,6 @@ import statsmodels.api as sm
 from scipy import stats
 from scipy.special import expit
 from scipy.optimize import brentq
-from statsmodels.discrete.conditional_models import ConditionalLogit
 
 
 @dataclass(frozen=True)
@@ -175,6 +174,102 @@ def _quasi_separated(d, outcome, treatment, group) -> bool:
     return bool(pos or neg)
 
 
+# ------------------------------------------------------------------ clogit engine
+
+class _ClogitEngine:
+    """Exact conditional logit with analytic score and Hessian.
+
+    Each stratum's denominator is the elementary symmetric polynomial e_k of the row
+    weights, built by the forward recursion together with its first and second
+    derivatives. A stratum with more events than non-events is fitted on its complement
+    (y flipped, x negated), which leaves the likelihood unchanged and keeps k small.
+    """
+
+    def __init__(self, endog, exog, groups):
+        endog = np.asarray(endog, float)
+        exog = np.asarray(exog, float)
+        groups = np.asarray(groups)
+        self.k_params = exog.shape[1]
+        self._strata = []
+        for gid in pd.unique(groups):
+            m = groups == gid
+            y, X = endog[m], exog[m]
+            k = int(round(y.sum()))
+            if k == 0 or k == len(y):
+                continue
+            if k > len(y) - k:
+                y, X, k = 1 - y, -X, len(y) - k
+            self._strata.append((X, k, X[y > 0].sum(axis=0)))
+
+    def _terms(self, beta, order):
+        p = self.k_params
+        ll, sc, he = 0.0, np.zeros(p), np.zeros((p, p))
+        for X, k, xs in self._strata:
+            eta = X @ beta
+            c = eta.max()
+            w = np.exp(eta - c)
+            E = np.zeros(k + 1)
+            E[0] = 1.0
+            G = np.zeros((k + 1, p)) if order >= 1 else None
+            H = np.zeros((k + 1, p, p)) if order >= 2 else None
+            logscale = 0.0
+            for i in range(len(w)):
+                wi, xi = w[i], X[i]
+                top = min(i + 1, k)
+                if order >= 2:
+                    xx = np.outer(xi, xi)
+                    H[1:top + 1] += wi * (H[:top] + xi[None, :, None] * G[:top, None, :]
+                                          + G[:top, :, None] * xi[None, None, :]
+                                          + xx[None] * E[:top, None, None])
+                if order >= 1:
+                    G[1:top + 1] += wi * (G[:top] + xi[None, :] * E[:top, None])
+                E[1:top + 1] += wi * E[:top]
+                s = E.max()
+                if s > 1e100 or s < 1e-100:
+                    E /= s
+                    if order >= 1:
+                        G /= s
+                    if order >= 2:
+                        H /= s
+                    logscale += math.log(s)
+            ek = E[k]
+            ll += xs @ beta - (math.log(ek) + logscale + k * c)
+            if order >= 1:
+                m = G[k] / ek
+                sc += xs - m
+            if order >= 2:
+                he -= H[k] / ek - np.outer(m, m)
+        return ll, sc, he
+
+    def loglike(self, beta):
+        return self._terms(np.asarray(beta, float), 0)[0]
+
+    def score(self, beta):
+        return self._terms(np.asarray(beta, float), 1)[1]
+
+    def hessian(self, beta):
+        return self._terms(np.asarray(beta, float), 2)[2]
+
+    def fit(self, maxiter=CLOGIT_MAX_ITER, tol=1e-10):
+        """Damped Newton from zero. Returns (params, covariance); the caller checks convergence."""
+        beta = np.zeros(self.k_params)
+        ll, sc, he = self._terms(beta, 2)
+        for _ in range(maxiter):
+            step = np.linalg.solve(he, -sc)
+            t = 1.0
+            while True:
+                cand = beta + t * step
+                ll_c = self.loglike(cand)
+                if ll_c >= ll - 1e-12 or t < 1e-8:
+                    break
+                t /= 2
+            beta = cand
+            ll, sc, he = self._terms(beta, 2)
+            if np.max(np.abs(sc)) < tol or np.max(np.abs(t * step)) < tol:
+                break
+        return beta, np.linalg.inv(-he)
+
+
 def cond_logit(df, outcome, treatment, covariates, group) -> Estimate:
     covariates = list(covariates)
     d = df[[outcome, treatment, group] + covariates].dropna().copy()
@@ -194,10 +289,9 @@ def cond_logit(df, outcome, treatment, covariates, group) -> Estimate:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         try:
-            model = ConditionalLogit(endog, exog, groups=d[group].to_numpy())
-            res = model.fit(method="newton", maxiter=CLOGIT_MAX_ITER, disp=False)
-            params = np.asarray(res.params, float)
-            bse = np.asarray(res.bse, float)
+            model = _ClogitEngine(endog, exog, d[group].to_numpy())
+            params, cov = model.fit()
+            bse = np.sqrt(np.diag(cov))
             bad = (
                 not np.all(np.isfinite(params))
                 or not np.all(np.isfinite(bse))

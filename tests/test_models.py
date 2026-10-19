@@ -603,3 +603,49 @@ def test_at13_or_one_equivalence_rate_matches_power_prediction(models, simulate)
     rate = hits / n
     half = 2.576 * math.sqrt(predicted * (1 - predicted) * (1 / n + 1 / sims))
     assert predicted - half <= rate <= predicted + half, (rate, predicted, half)
+
+
+# ---------------------------------------------------------------- clogit engine
+
+def _strata_data(seed, n_groups=12, p=4):
+    rng = np.random.default_rng(seed)
+    sizes = rng.integers(3, 60, n_groups)
+    g = np.repeat(np.arange(n_groups), sizes)
+    X = rng.normal(size=(len(g), p))
+    rate = rng.uniform(0.1, 0.9, n_groups)[g]  # some strata have more events than non-events
+    y = (rng.uniform(size=len(g)) < rate).astype(float)
+    return y, X, g
+
+
+@pytest.mark.parametrize("seed", range(6))
+def test_clogit_engine_matches_statsmodels(models, seed):
+    from statsmodels.discrete.conditional_models import ConditionalLogit
+
+    y, X, g = _strata_data(seed)
+    ref = ConditionalLogit(y, X, groups=g)
+    rres = ref.fit(method="newton", maxiter=200, disp=False)
+    eng = models._ClogitEngine(y, X, g)
+    params, cov = eng.fit()
+    assert np.allclose(params, rres.params, atol=1e-5), (params, rres.params)
+    beta = np.asarray(rres.params) + 0.1
+    assert eng.loglike(beta) == pytest.approx(ref.loglike(beta), rel=1e-9)
+    assert np.allclose(eng.score(beta), ref.score(beta), atol=1e-6)
+    hess = -np.linalg.inv(cov)
+    assert np.allclose(hess, ref.hessian(params), rtol=1e-4, atol=1e-4)
+
+
+def test_cond_logit_is_fast_on_a_power_sized_frame(models, simulate):
+    import time
+
+    rng = np.random.default_rng(3)
+    n = 2400
+    d = pd.DataFrame({"solver": rng.integers(0, 40, n), "t": rng.integers(0, 2, n).astype(float)})
+    cov = [f"x{j}" for j in range(15)]
+    for c in cov:
+        d[c] = rng.normal(size=n)
+    d["y"] = (rng.uniform(size=n) < 0.3).astype(float)
+    t = time.time()
+    r = models.cond_logit(d, "y", "t", cov, "solver")
+    assert r.method == "clogit"
+    assert time.time() - t < 5.0
+
