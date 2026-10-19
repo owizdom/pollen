@@ -3,7 +3,15 @@
 
 On 16 October 2026, Sreeram Kannan compared two circuit searches for elliptic-curve point addition in a public post \citep{kannan2026post}:
 ``anons beat anthropic by 2x / anthropic gets 21M gates at 843 qubits / ecdsa.fail gets 11.9M gates at 843 qubits.''
-Kydo replied that this was ``also a good case study of how cross modal pollination might produce better results'' \citep{kydo2026reply}.
+The next day Kydo replied that this was ``also a good case study of how cross modal pollination might produce better results'' \citep{kydo2026reply}.
+Figure~\ref{fig:posts} shows both posts.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.46\linewidth]{figures/motivating_posts.png}
+\caption{The post and reply that motivated this study, as displayed on X: the post by Sreeram Kannan on 16 October 2026, quoting Anthropic's announcement, and the reply by Kydo on 17 October 2026 \citep{kannan2026post,kydo2026reply}. The 843-qubit, 11.9M-gate point it quotes is traced in Section~\ref{sec:case843}.}
+\label{fig:posts}
+\end{figure}
 
 The two searches differ in how they were organised.
 The first is the evolutionary framework of \citet{gu2026discovering}, in which a single model, Claude Mythos~5, proposes circuit-generating programs inside OpenEvolve and an independent evaluator scores them.
