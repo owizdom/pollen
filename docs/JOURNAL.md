@@ -57,3 +57,13 @@
 - AT3 recorded: 69 agree, 5 contradict, 126 silent; 93.2% model-level (below the 95% bar; AT3 is recorded, not a gate), 94.6% family-level. Auditors: claude-opus-5-5. families/audit/RESULT.md.
 - Wisdom approved the prereg-v1 lock in advance (2026-10-18: "i approve the lock approval"). Condition kept: lock only once AT2, AT4, AT5, AT15 are green and the power gate has run; any failure there goes back to Wisdom before tagging.
 - v2.9 parent rule (Wisdom chose 'labels, then promoted' 2026-10-19). AT4 text 2,773/3,069 (90.4%) PASS; declared 18/24 reported. AT15 PASS on all 10. make check at 9acbd33: 454 passed, 0 failed, 0 skipped, 400 s. Lineage frozen: 10 benchmarks, 0 unfetchable commits, 315 MB.
+
+### 2026-10-19 (power gate)
+
+- A 5-simulation timing run of the power gate had not finished after 100 CPU-minutes. Profile: statsmodels `ConditionalLogit` spent 51 of 55 s in its numeric Hessian over a recursive pure-Python denominator, on a 487-row frame (sig-golf).
+- `4bbffb4` replaces it with an exact conditional logit (elementary symmetric polynomial recursion with analytic score and Hessian). Tests match statsmodels' Newton fit, score and Hessian. The largest frame (lighter, 6,868 rows) now fits in 2.2 s.
+- Planted fits then showed sig-golf and ecdsa.fail failing in 8 of 8 runs, so pooled power was 0 by construction. Cause: Firth's full Fisher steps cycled around the optimum (penalised score stuck at 1.4e-3). `0e4759a` adds an Armijo or shrinking-score line search, and a stall below 1e-6 counts as converged. Afterwards 0 of 80 planted fits failed across the 10 benchmarks.
+- Most planted fits use Firth because nuisance covariates (sparse folded families, spline terms) separate; spec §5.1 allows this and the paper reports it.
+- `92c2bc7` runs simulations across 6 workers with per-simulation seeds; a test asserts the result is identical to serial.
+- make check after these commits: 466 passed, 0 failed, 0 skipped, 153 s.
+- 2,000-simulation gate started.
